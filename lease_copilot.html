@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lease Co-Pilot P&L Engine v6.0</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .font-black { font-weight: 900; }
+        .glass { background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); }
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="flex justify-between items-center mb-12">
+            <div class="flex-1">
+                <h1 class="text-3xl font-black uppercase tracking-tighter text-white">Lease <span class="text-indigo-500">Co-Pilot</span></h1>
+                <p class="text-xs font-bold text-gray-500 uppercase tracking-widest mt-1">P&L Engine v6.2 Launch-Ready Dashboard</p>
+            </div>
+            
+            <!-- Launch Readiness Bar -->
+            <div class="flex-1 max-w-md mx-8">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Launch Readiness (Bangalore)</span>
+                    <span id="launchPercent" class="text-[10px] font-black text-green-400">68%</span>
+                </div>
+                <div class="w-full bg-gray-800 h-2 rounded-full overflow-hidden">
+                    <div id="launchBar" class="bg-gradient-to-r from-orange-500 to-green-500 h-full transition-all duration-1000" style="width: 68%"></div>
+                </div>
+                <p id="launchStatus" class="text-[8px] font-bold text-gray-500 uppercase mt-1">340 / 500 Listings</p>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <div class="bg-indigo-600/10 border border-indigo-500/20 px-4 py-2 rounded-2xl">
+                    <span class="text-[10px] font-black text-indigo-400 uppercase block leading-none">Status</span>
+                    <span class="text-sm font-black text-white uppercase">Engine Active</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Dashboard -->
+        <div class="grid lg:grid-cols-12 gap-8">
+            <!-- Left: Controls & Simulation -->
+            <div class="lg:col-span-4 space-y-6">
+                <section class="bg-gray-800/50 border border-gray-700 rounded-[32px] p-8">
+                    <h2 class="text-lg font-black uppercase tracking-tight mb-6">Simulation Controls</h2>
+                    
+                    <div class="space-y-6">
+                        <div>
+                            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Item Category</label>
+                            <select id="simCat" class="w-full bg-gray-900 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-1 ring-gray-700 focus:ring-indigo-500 transition-all">
+                                <option value="Electronics">Electronics</option>
+                                <option value="Appliance">Appliance</option>
+                                <option value="Furniture">Furniture</option>
+                                <option value="Lifestyle">Lifestyle</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Market Retail Value (MRV)</label>
+                            <div class="relative">
+                                <span class="absolute left-5 top-4 text-gray-500 font-bold">₹</span>
+                                <input type="number" id="simMRV" value="85000" class="w-full bg-gray-900 border-none rounded-2xl pl-10 pr-5 py-4 text-sm font-bold outline-none ring-1 ring-gray-700 focus:ring-indigo-500 transition-all">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Condition</label>
+                                <select id="simCond" class="w-full bg-gray-900 border-none rounded-2xl px-4 py-4 text-sm font-bold outline-none ring-1 ring-gray-700 focus:ring-indigo-500 transition-all">
+                                    <option value="New">New</option>
+                                    <option value="Good">Good</option>
+                                    <option value="Fair" selected>Fair</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Tenure (Mo)</label>
+                                <input type="number" id="simTenure" value="12" class="w-full bg-gray-900 border-none rounded-2xl px-4 py-4 text-sm font-bold outline-none ring-1 ring-gray-700 focus:ring-indigo-500 transition-all">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Seller Type</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setSeller('regular')" id="seller-regular" class="py-3 rounded-xl border-2 border-indigo-600 bg-indigo-600/10 text-white text-[10px] font-black uppercase tracking-widest transition-all">P2P Seller</button>
+                                <button onclick="setSeller('wholesaler')" id="seller-wholesaler" class="py-3 rounded-xl border-2 border-gray-700 bg-gray-800 text-gray-500 text-[10px] font-black uppercase tracking-widest transition-all">B2B Wholesaler</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Payment Method</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <button onclick="setPayment('nach')" id="pay-nach" class="py-3 rounded-xl border-2 border-indigo-600 bg-indigo-600/10 text-white text-[10px] font-black uppercase tracking-widest transition-all">e-NACH</button>
+                                <button onclick="setPayment('card')" id="pay-card" class="py-3 rounded-xl border-2 border-gray-700 bg-gray-800 text-gray-500 text-[10px] font-black uppercase tracking-widest transition-all">Credit Card</button>
+                            </div>
+                        </div>
+
+                        <!-- v6.2 Retention Toggles -->
+                        <div class="pt-4 border-t border-gray-700 space-y-4">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="text-[10px] font-black text-white uppercase block">Subscription</span>
+                                    <span class="text-[8px] font-bold text-gray-500 uppercase">₹499/mo Plan</span>
+                                </div>
+                                <input type="checkbox" id="simSubscriber" onchange="update()" class="w-5 h-5 accent-indigo-500">
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="text-[10px] font-black text-white uppercase block">DigiLocker</span>
+                                    <span class="text-[8px] font-bold text-gray-500 uppercase">Verified Identity</span>
+                                </div>
+                                <input type="checkbox" id="simDigilocker" onchange="update()" class="w-5 h-5 accent-indigo-500">
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <span class="text-[10px] font-black text-white uppercase block">Loyal Renter</span>
+                                    <span class="text-[8px] font-bold text-gray-500 uppercase">3+ Leases No Incidents</span>
+                                </div>
+                                <input type="checkbox" id="simLoyal" onchange="update()" class="w-5 h-5 accent-indigo-500">
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="bg-indigo-600 rounded-[32px] p-8 text-white">
+                    <h3 class="text-sm font-black uppercase tracking-widest mb-2">Trust Score Engine</h3>
+                    <p class="text-xs text-indigo-100 mb-6">Adjust renter profile to see approval status</p>
+                    
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold">CIBIL Score</span>
+                            <select id="renterCibil" class="bg-white/10 border-none rounded-lg text-xs font-black p-2 outline-none">
+                                <option value="750" class="text-gray-900">750+ (Excellent)</option>
+                                <option value="700" class="text-gray-900">700-749 (Good)</option>
+                                <option value="650" class="text-gray-900">650-699 (Fair)</option>
+                                <option value="300" class="text-gray-900">Below 650</option>
+                            </select>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold">Income Verified</span>
+                            <input type="checkbox" id="renterIncome" checked class="w-5 h-5 accent-yellow-400">
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <span class="text-xs font-bold">Address Verified</span>
+                            <input type="checkbox" id="renterAddress" checked class="w-5 h-5 accent-yellow-400">
+                        </div>
+                    </div>
+                </section>
+            </div>
+
+            <!-- Right: Results & Analysis -->
+            <div class="lg:col-span-8 space-y-8">
+                <!-- Summary Cards -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="bg-gray-800 border border-gray-700 rounded-3xl p-6">
+                        <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Monthly Rent</span>
+                        <div class="flex items-baseline gap-1">
+                            <span class="text-3xl font-black" id="resRent">₹0</span>
+                            <span class="text-[10px] font-bold text-gray-500 uppercase">/mo</span>
+                        </div>
+                        <div id="logisticsBadge" class="mt-2 inline-flex items-center gap-1.5 px-2 py-1 bg-amber-500/10 border border-amber-500/20 rounded-lg hidden">
+                            <span class="text-[8px] font-black text-amber-500 uppercase">+ ₹<span id="resLogisticsSmall">0</span> Logistics Fee</span>
+                        </div>
+                        <div id="resB2BCompare" class="mt-3 p-2 bg-green-600/10 border border-green-500/20 rounded-xl hidden">
+                            <span class="text-[9px] font-black text-green-400 uppercase block">Wholesaler Price (RentoMojo)</span>
+                            <span class="text-sm font-black text-white" id="valB2BPrice">₹0</span>
+                            <span class="text-[8px] font-bold text-green-500 block">SAVE ₹<span id="valSavings">0</span>/mo</span>
+                        </div>
+                        <span id="resTrack" class="mt-4 inline-block px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter"></span>
+                    </div>
+                    <div class="bg-gray-800 border border-gray-700 rounded-3xl p-6">
+                        <span class="text-[10px] font-black text-gray-500 uppercase tracking-widest block mb-2">Platform Net</span>
+                        <div class="flex items-baseline gap-1 text-indigo-400">
+                            <span class="text-3xl font-black" id="resPlatformNet">₹0</span>
+                            <span class="text-[10px] font-bold uppercase">/mo</span>
+                        </div>
+                        <span class="text-[9px] font-bold text-gray-500 block mt-2">After Insurance & Provision</span>
+                    </div>
+                    <div class="bg-gray-900 border-2 border-indigo-500/50 rounded-3xl p-6 shadow-2xl shadow-indigo-500/10">
+                        <span class="text-[10px] font-black text-indigo-400 uppercase tracking-widest block mb-2">Trust Score</span>
+                        <div class="flex items-center gap-3">
+                            <span class="text-4xl font-black text-white" id="resTrustScore">0</span>
+                            <div class="space-y-1">
+                                <span id="resApproval" class="text-[10px] font-black uppercase block"></span>
+                                <span id="resTrustBadge" class="text-[8px] font-bold text-gray-500 uppercase block"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detailed Breakdown -->
+                <section class="bg-gray-800 border border-gray-700 rounded-[40px] overflow-hidden">
+                    <div class="p-8 border-b border-gray-700 flex justify-between items-center bg-gray-800/50">
+                        <h2 class="text-xl font-black uppercase tracking-tight">Asset Economics Breakdown</h2>
+                        <div id="subscriptionBadge" class="hidden items-center gap-2 px-4 py-2 bg-yellow-400 text-black rounded-2xl animate-pulse">
+                            <span class="text-[10px] font-black uppercase tracking-widest">Subscriber Perks Active</span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-10 grid md:grid-cols-2 gap-12">
+                        <div class="space-y-6">
+                            <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Platform Metrics</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-400">Platform Take (Gross)</span>
+                                    <span class="font-black" id="valGross">₹0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-400">Insurance Cost (P.M.)</span>
+                                    <span class="font-black text-red-400" id="valIns">₹0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-400">Loss Provision</span>
+                                    <span class="font-black text-amber-400" id="valLoss">₹0</span>
+                                </div>
+                                <div class="pt-4 border-t border-gray-700 flex justify-between items-center">
+                                    <span class="text-sm font-black text-white uppercase">True Platform Profit</span>
+                                    <span class="text-xl font-black text-green-500" id="valTrueProfit">₹0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="space-y-6">
+                            <h3 class="text-[10px] font-black text-indigo-400 uppercase tracking-[0.2em]">Renter & Seller View</h3>
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-400">Monthly Rent (Incl. GST)</span>
+                                    <span class="font-black text-white" id="valInvoice">₹0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-400">Initial Payment (Deli + Pick)</span>
+                                    <span class="font-black text-white" id="valLogistics">₹0</span>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm font-medium text-gray-400">Security Deposit</span>
+                                    <div class="text-right">
+                                        <span class="font-black text-white block" id="valDeposit">₹0</span>
+                                        <span id="depositNudge" class="text-[8px] font-black text-indigo-400 uppercase hidden">Verified Reduction</span>
+                                    </div>
+                                </div>
+                                <div class="pt-4 border-t border-gray-700 flex justify-between items-center">
+                                    <span class="text-sm font-black text-white uppercase italic">Payable Now</span>
+                                    <span class="text-xl font-black text-yellow-400" id="valPayableNow">₹0</span>
+                                </div>
+                                <div class="flex justify-between items-center opacity-60">
+                                    <span class="text-xs font-medium text-gray-400">Seller Net Payout</span>
+                                    <span class="text-sm font-black text-indigo-400" id="valSellerNet">₹0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Daily Profit Projection Table -->
+                    <div class="p-8 border-t border-gray-700 bg-gray-900/30">
+                        <h3 class="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em] mb-6">Daily Scale Profit Projections</h3>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left">
+                                <thead>
+                                    <tr class="text-[8px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-800">
+                                        <th class="pb-4">Daily Leases</th>
+                                        <th class="pb-4">Monthly Leases</th>
+                                        <th class="pb-4">Monthly Profit</th>
+                                        <th class="pb-4">Annual Profit</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="projectionTable" class="text-xs font-bold text-gray-300">
+                                    <!-- Populated by JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Deposit Release & Recovery Tracker -->
+                    <div class="bg-gray-900/50 p-8 border-t border-gray-700">
+                        <div class="grid md:grid-cols-2 gap-10">
+                            <div>
+                                <div class="flex justify-between items-center mb-4">
+                                    <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Deposit Release Schedule</h4>
+                                    <span id="valDepositRelease" class="text-[9px] font-black text-indigo-400 uppercase"></span>
+                                </div>
+                                <div class="w-full bg-gray-800 h-3 rounded-full overflow-hidden">
+                                    <div id="releaseBar" class="bg-indigo-600 h-full transition-all duration-1000" style="width: 0%"></div>
+                                </div>
+                                <div class="flex justify-between mt-2 text-[8px] font-bold text-gray-500 uppercase">
+                                    <span>Start</span>
+                                    <span>50% Term</span>
+                                    <span>End</span>
+                                </div>
+                            </div>
+
+                            <div class="space-y-4">
+                                <div class="flex justify-between items-center">
+                                    <h4 class="text-[10px] font-black text-gray-500 uppercase tracking-widest">Recovery Chain Success Rate</h4>
+                                    <span id="valRecoveryProb" class="text-[9px] font-black text-green-400 uppercase"></span>
+                                </div>
+                                <div class="flex gap-1 h-3">
+                                    <div class="flex-1 bg-green-500 rounded-sm opacity-30"></div>
+                                    <div class="flex-1 bg-green-500 rounded-sm opacity-50"></div>
+                                    <div class="flex-1 bg-green-500 rounded-sm opacity-70"></div>
+                                    <div class="flex-1 bg-green-500 rounded-sm"></div>
+                                    <div class="flex-1 bg-gray-800 rounded-sm"></div>
+                                    <div class="flex-1 bg-gray-800 rounded-sm"></div>
+                                </div>
+                                <p id="recoveryStage" class="text-[9px] font-bold text-gray-400 italic"></p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ─── TRACK-SPECIFIC CONSTANTS ──────────────────────────────
+        const P2P = {
+            rentRate: { Electronics: 0.025, Appliance: 0.030, Furniture: 0.025, Lifestyle: 0.035 },
+            take: 0.15,
+            insurance: 0.010,
+            depositMo: 1,
+            maxBAV: 50000,
+        };
+
+        const B2B2C = {
+            wholesaleDiscount: 0.82,
+            rentRate: { Electronics: 0.030, Appliance: 0.035, Furniture: 0.030, Lifestyle: 0.040 },
+            take: 0.18,
+            insurance: 0.012,
+            depositMo: 2,
+        };
+
+        const CONDITION_MOD = { 'New': 1.0, 'Good': 0.85, 'Fair': 0.7 };
+        const TIER_MULT = { 'Ultra Short-Term': 1.50, 'Mid-Term': 1.15, 'Long-Term': 1.00, 'Multi-Year': 0.95 };
+        const GST_RATE = 0.18;
+        const MIN_DEPOSIT = 500;
+
+        const LOSS_PROVISION = {
+            P2P_highValue: 0.04,
+            P2P_lowValue: 0.02,
+            B2B2C_wholesaler: 0.01,
+        };
+
+        const PAYMENT_METHOD_REQUIREMENTS = {
+            nach_mandatory_above: 20000,
+            nach_discount: 0.05,
+        };
+
+        const RECOVERY_STAGES = [
+            { stage: 1, label: "Auto-retry payment 3x", timeWindow: "0-48hrs", successRate: 0.30 },
+            { stage: 2, label: "SMS + email + call", timeWindow: "48-72hrs", successRate: 0.25 },
+            { stage: 3, label: "Legal notice", timeWindow: "3-7 days", successRate: 0.20 },
+            { stage: 4, label: "Deploy recovery agent", timeWindow: "7-14 days", successRate: 0.15 },
+            { stage: 5, label: "Police complaint", timeWindow: "14-21 days", successRate: 0.05 },
+            { stage: 6, label: "Collections agency", timeWindow: "21-90 days", successRate: 0.05 },
+        ];
+
+        // ─── v6.2 CONSTANTS ───────────────────────────────────────
+        const SUBSCRIPTION = {
+            price: 499,
+            benefits: { rentDiscount: 0.05, freeDelivery: true, waivedBookingFee: true }
+        };
+
+        const LOGISTICS = { baseFee: 150, perKmFee: 10, pickupFee: 100, maximum: 500 };
+
+        const RETENTION = {
+            minTrustForDepositFree: 75,
+            maxBavForZeroDeposit: 30000,
+            reducedDepositMult: 0.5,
+            loyaltyReduction: 0.20
+        };
+
+        const LAUNCH_THRESHOLD = { minListings: 500, minCity: "Bangalore" };
+
+        // Simulation State
+        let currentSellerType = 'regular';
+        let currentPaymentMethod = 'nach';
+
+        function setSeller(type) {
+            currentSellerType = type;
+            document.querySelectorAll('[id^="seller-"]').forEach(btn => {
+                btn.className = "py-3 rounded-xl border-2 border-gray-700 bg-gray-800 text-gray-500 text-[10px] font-black uppercase tracking-widest transition-all";
+            });
+            const active = document.getElementById(`seller-${type}`);
+            active.className = "py-3 rounded-xl border-2 border-indigo-600 bg-indigo-600/10 text-white text-[10px] font-black uppercase tracking-widest transition-all";
+            update();
+        }
+
+        function setPayment(method) {
+            currentPaymentMethod = method;
+            document.querySelectorAll('[id^="pay-"]').forEach(btn => {
+                btn.className = "py-3 rounded-xl border-2 border-gray-700 bg-gray-800 text-gray-500 text-[10px] font-black uppercase tracking-widest transition-all";
+            });
+            const active = document.getElementById(`pay-${method}`);
+            active.className = "py-3 rounded-xl border-2 border-indigo-600 bg-indigo-600/10 text-white text-[10px] font-black uppercase tracking-widest transition-all";
+            update();
+        }
+
+        function getTier(tenure) {
+            if (tenure <= 3) return 'Ultra Short-Term';
+            if (tenure <= 11) return 'Mid-Term';
+            if (tenure <= 18) return 'Long-Term';
+            return 'Multi-Year';
+        }
+
+        function update() {
+            const cat = document.getElementById('simCat').value;
+            const mrv = parseFloat(document.getElementById('simMRV').value) || 0;
+            const cond = document.getElementById('simCond').value;
+            const tenure = parseInt(document.getElementById('simTenure').value) || 1;
+            
+            const condMod = CONDITION_MOD[cond];
+            const bav = mrv * condMod;
+            const tier = getTier(tenure);
+            const mult = TIER_MULT[tier];
+
+            // Assign Track - Force B2B2C for high value, but don't reject
+            let track = currentSellerType === 'wholesaler' ? 'B2B2C' : (bav > P2P.maxBAV ? 'B2B2C' : 'P2P');
+            
+            // Calculate B2B2C price for comparison regardless of current track
+            const b2bCostBasis = mrv * B2B2C.wholesaleDiscount;
+            const b2bRate = B2B2C.rentRate[cat] || 0.030;
+            const b2bRent = b2bCostBasis * b2bRate * mult;
+
+            // Calculate P2P price for current item
+            const p2pRate = P2P.rentRate[cat] || 0.025;
+            const p2pRent = bav * p2pRate * mult;
+
+            const config = track === 'P2P' ? P2P : B2B2C;
+            let currentRent = track === 'P2P' ? p2pRent : b2bRent;
+            
+            // v6.2 Logistics
+            const distance = 5; // Default distance
+            const deliveryFee = Math.min(LOGISTICS.baseFee + Math.max(0, distance - 5) * LOGISTICS.perKmFee, LOGISTICS.maximum);
+            const pickupFee = Math.min(LOGISTICS.pickupFee + Math.max(0, distance - 5) * LOGISTICS.perKmFee, LOGISTICS.maximum);
+            let totalLogistics = deliveryFee + pickupFee;
+
+            // v6.2 Subscription Application
+            const isSubscriber = document.getElementById('simSubscriber').checked;
+            if (isSubscriber) {
+                currentRent *= (1 - SUBSCRIPTION.benefits.rentDiscount);
+                totalLogistics = 0; // Free delivery benefit
+                document.getElementById('subscriptionBadge').classList.remove('hidden');
+                document.getElementById('subscriptionBadge').classList.add('flex');
+            } else {
+                document.getElementById('subscriptionBadge').classList.add('hidden');
+                document.getElementById('subscriptionBadge').classList.remove('flex');
+            }
+
+            // UI logic for showing B2B comparison
+            const compareEl = document.getElementById('resB2BCompare');
+            if (track === 'P2P' && b2bRent < p2pRent) {
+                compareEl.classList.remove('hidden');
+                document.getElementById('valB2BPrice').innerText = `₹${Math.round(b2bRent).toLocaleString()}`;
+                document.getElementById('valSavings').innerText = Math.round(p2pRent - b2bRent).toLocaleString();
+            } else if (track === 'B2B2C' && bav > P2P.maxBAV && currentSellerType === 'regular') {
+                // High value item forced to B2B2C
+                compareEl.classList.remove('hidden');
+                document.getElementById('valB2BPrice').innerText = `₹${Math.round(b2bRent).toLocaleString()}`;
+                document.getElementById('valSavings').innerText = "High Value forced Wholesaler price";
+            } else {
+                compareEl.classList.add('hidden');
+            }
+
+            const costBasis = track === 'P2P' ? bav : mrv * B2B2C.wholesaleDiscount;
+            const finalRent = currentRent;
+            
+            // e-NACH Discount
+            let nachDiscount = 0;
+            if (currentPaymentMethod === 'nach' && bav > PAYMENT_METHOD_REQUIREMENTS.nach_mandatory_above) {
+                nachDiscount = finalRent * PAYMENT_METHOD_REQUIREMENTS.nach_discount;
+            }
+
+            const platformGross = finalRent * config.take;
+            const insuranceCost = (costBasis * config.insurance) / 12;
+            const platformNet = platformGross - insuranceCost;
+            
+            const lossKey = track === 'P2P' ? (bav > 50000 ? 'P2P_highValue' : 'P2P_lowValue') : 'B2B2C_wholesaler';
+            const lossProvision = (finalRent * tenure) * LOSS_PROVISION[lossKey] / tenure;
+            const truePlatformProfit = platformNet - lossProvision;
+
+            // Trust Score
+            let trustScore = 0;
+            const cibil = parseInt(document.getElementById('renterCibil').value);
+            if (cibil >= 750) trustScore += 40;
+            else if (cibil >= 700) trustScore += 30;
+            else if (cibil >= 650) trustScore += 20;
+            if (document.getElementById('renterIncome').checked) trustScore += 20;
+            if (document.getElementById('renterAddress').checked) trustScore += 20;
+            trustScore += 20; // Default history for demo
+
+            const requiredTrust = bav > 30000 ? 80 : 70;
+            const isApproved = trustScore >= (track === 'B2B2C' ? 60 : requiredTrust);
+
+            // v6.2 Deposit Logic (Retention)
+            const isDigilocker = document.getElementById('simDigilocker').checked;
+            const isLoyal = document.getElementById('simLoyal').checked;
+            let baseDeposit = Math.max(finalRent * config.depositMo, MIN_DEPOSIT);
+            
+            let finalDeposit = baseDeposit;
+            let depositReductionReason = "";
+
+            if (isDigilocker && trustScore >= RETENTION.minTrustForDepositFree) {
+                if (bav <= RETENTION.maxBavForZeroDeposit) {
+                    finalDeposit = 0;
+                    depositReductionReason = "Verified 0-Deposit";
+                } else {
+                    finalDeposit = baseDeposit * RETENTION.reducedDepositMult;
+                    depositReductionReason = "Verified 50% Off";
+                }
+            } else if (isLoyal) {
+                finalDeposit = baseDeposit * (1 - RETENTION.loyaltyReduction);
+                depositReductionReason = "Loyalty 20% Off";
+            }
+
+            const bookingFee = (track === 'B2B2C' && (!isSubscriber || !SUBSCRIPTION.benefits.waivedBookingFee)) 
+                ? Math.min(Math.max(costBasis * 0.005, 49), 999) 
+                : 0;
+            
+            const sellerNet = finalRent - platformGross;
+            const renterGST = finalRent * GST_RATE;
+            const renterInvoice = finalRent + renterGST - nachDiscount;
+            
+            // Total Payable Now = 1st Month Rent + GST + Deposit + Booking Fee + Logistics
+            const payableNow = renterInvoice + finalDeposit + (bookingFee / tenure) + totalLogistics;
+
+            // Update UI
+            document.getElementById('resRent').innerText = `₹${Math.round(finalRent).toLocaleString()}`;
+            
+            // v6.3 Logistics Visibility for Normal Customers
+            const logBadge = document.getElementById('logisticsBadge');
+            if (totalLogistics > 0) {
+                logBadge.classList.remove('hidden');
+                document.getElementById('resLogisticsSmall').innerText = Math.round(totalLogistics).toLocaleString();
+            } else {
+                logBadge.classList.add('hidden');
+            }
+
+            document.getElementById('resPlatformNet').innerText = `₹${Math.round(truePlatformProfit).toLocaleString()}`;
+            document.getElementById('resTrustScore').innerText = trustScore;
+            
+            const trackEl = document.getElementById('resTrack');
+            trackEl.innerText = track;
+            trackEl.className = `mt-4 inline-block px-3 py-1 rounded-full text-[8px] font-black uppercase tracking-tighter ${
+                track === 'P2P' ? 'bg-indigo-600/20 text-indigo-400' : 
+                track === 'B2B2C' ? 'bg-green-600/20 text-green-400' : 'bg-red-600/20 text-red-400'
+            }`;
+
+            const approvalEl = document.getElementById('resApproval');
+            approvalEl.innerText = isApproved ? 'Approved' : 'Low Trust Score';
+            approvalEl.className = `text-[10px] font-black uppercase block ${isApproved ? 'text-green-500' : 'text-red-500'}`;
+            document.getElementById('resTrustBadge').innerText = `Req: ${requiredTrust} for this asset`;
+
+            // Metrics
+            document.getElementById('valGross').innerText = `₹${Math.round(platformGross).toLocaleString()}`;
+            document.getElementById('valIns').innerText = `₹${Math.round(insuranceCost).toLocaleString()}`;
+            document.getElementById('valLoss').innerText = `₹${Math.round(lossProvision).toLocaleString()}`;
+            document.getElementById('valTrueProfit').innerText = `₹${Math.round(truePlatformProfit).toLocaleString()}`;
+            
+            document.getElementById('valInvoice').innerText = `₹${Math.round(renterInvoice).toLocaleString()}`;
+            document.getElementById('valLogistics').innerText = `₹${Math.round(totalLogistics).toLocaleString()}`;
+            document.getElementById('valDeposit').innerText = `₹${Math.round(finalDeposit).toLocaleString()}`;
+            document.getElementById('valPayableNow').innerText = `₹${Math.round(payableNow).toLocaleString()}`;
+            
+            const nudgeEl = document.getElementById('depositNudge');
+            if (depositReductionReason) {
+                nudgeEl.innerText = depositReductionReason;
+                nudgeEl.classList.remove('hidden');
+            } else {
+                nudgeEl.classList.add('hidden');
+            }
+            
+            document.getElementById('valSellerNet').innerText = `₹${Math.round(sellerNet).toLocaleString()}`;
+
+            // v6.2 Projections
+            const avgProfit = truePlatformProfit;
+            const table = document.getElementById('projectionTable');
+            table.innerHTML = [10, 50, 100, 500, 1000, 5000].map(d => {
+                const monthlyProfit = d * 30 * avgProfit;
+                const annualProfit = d * 365 * avgProfit;
+                return `
+                    <tr class="border-b border-gray-800/50 hover:bg-white/5 transition-colors">
+                        <td class="py-4">${d}</td>
+                        <td class="py-4">${(d * 30).toLocaleString()}</td>
+                        <td class="py-4 text-green-500">₹${Math.round(monthlyProfit/1000)}k</td>
+                        <td class="py-4 text-indigo-400 font-black">₹${annualProfit > 10000000 ? (annualProfit/10000000).toFixed(1) + 'Cr' : (annualProfit/100000).toFixed(1) + 'L'}</td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Deposit & Recovery
+            document.getElementById('valDepositRelease').innerText = tenure >= 6 ? '50% Released at Mo 3' : 'Held until end';
+            document.getElementById('releaseBar').style.width = tenure >= 6 ? '50%' : '10%';
+            
+            const baseRec = currentPaymentMethod === 'nach' ? 0.92 : 0.60;
+            const trustBonus = trustScore >= 80 ? 1.3 : 1.0;
+            const recoveryProb = Math.min(baseRec * trustBonus, 0.95);
+            document.getElementById('valRecoveryProb').innerText = `${Math.round(recoveryProb * 100)}% Est. Recovery`;
+            document.getElementById('recoveryStage').innerText = `Recovery Strategy: ${RECOVERY_STAGES[0].label} (${RECOVERY_STAGES[0].timeWindow})`;
+        }
+
+        // Listeners
+        ['simCat', 'simMRV', 'simCond', 'simTenure', 'renterCibil', 'renterIncome', 'renterAddress'].forEach(id => {
+            document.getElementById(id).addEventListener('change', update);
+            document.getElementById(id).addEventListener('input', update);
+        });
+
+        // Initial run
+        update();
+    </script>
+</body>
+</html>
