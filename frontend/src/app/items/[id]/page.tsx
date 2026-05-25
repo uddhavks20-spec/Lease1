@@ -101,36 +101,6 @@ export default function ItemDetailPage() {
       duration: duration
     });
     router.push("/checkout");
-  };
-    try {
-      const res = await api.post('/rentals', {
-        itemId: id,
-        durationMonths: duration,
-      })
-      const { order } = res.data
-      const options = {
-        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_mock',
-        amount: order.amount,
-        currency: order.currency,
-        name: 'Lease',
-        description: 'Initial Rental Payment',
-        order_id: order.id,
-        handler: function (response: any) {
-          toast.success('Payment successful! Rental started.')
-          router.push('/renter/dashboard')
-        },
-        prefill: {
-          name: 'Student User',
-          email: 'student@example.com',
-        },
-        theme: { color: '#2563eb' },
-      }
-      const rzp = new window.Razorpay(options)
-      rzp.open()
-    } catch (e: any) {
-      toast.error(e.response?.data?.error || 'Unable to start rental')
-    }
-  }
 
   if (loading) return (
     <div className="container py-20 flex justify-center">
