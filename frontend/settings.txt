@@ -1,0 +1,4 @@
+root: C:\Users\kisha\Documents\trae_projects\lease\frontend 
+path: C:\Program Files\nodejs 
+arch: 64 
+proxy: none

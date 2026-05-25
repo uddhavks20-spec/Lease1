@@ -1,0 +1,16 @@
+node_modules
+# Node dependencies
+node_modules/
+dist/
+.env
+
+# Java/Spring Boot
+target/
+*.class
+.mvn/
+bin/
+
+# IDE specific (Trae/VS Code)
+.vscode/
+.trae/
+.DS_Store
