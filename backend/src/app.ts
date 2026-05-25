@@ -8,6 +8,7 @@ import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import { apiRouter } from './routes/index'
 import { errorHandler } from './middleware/errorHandler'
+import { initBootstrap } from './utils/init'
 
 const app = express()
 
@@ -43,12 +44,16 @@ app.use(limiter)
 app.get('/health', (_req: Request, res: Response) => res.json({ ok: true, ts: Date.now(), env: process.env.NODE_ENV }))
 
 // Welcome route
-app.get('/', (_req: Request, res: Response) => {
+app.get('/', async (_req: Request, res: Response) => {
+  // Run bootstrap on every root hit in Vercel to ensure admin exists
+  if (process.env.VERCEL) {
+    await initBootstrap().catch(console.error)
+  }
   res.json({
     message: 'Lease API is running',
     version: '1.0.0',
     status: 'online',
-    docs: '/api-docs' // Optional: if you have docs
+    docs: '/api-docs'
   })
 })
 
