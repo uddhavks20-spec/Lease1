@@ -4,7 +4,7 @@ import { useCart } from "@/lib/cart-context";
 import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Trash2, ShoppingBag, ArrowRight, ShieldCheck, Info, CheckCircle2, CreditCard, Truck, RefreshCw, Tag } from "lucide-react";
+import { Trash2, ShoppingBag, ArrowRight, ShieldCheck, Info, CheckCircle2, CreditCard, Truck, RefreshCw, Tag, Gift, X } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -12,7 +12,26 @@ export default function CartPage() {
   const { cart, removeFromCart, totalMonthlyRent, totalDeposit } = useCart();
   
   // Platform fee (guest side) is already included in totalMonthlyRent via the 5% markup
-  const totalPayableNow = totalMonthlyRent + totalDeposit;
+  const [referralCode, setReferralCode] = useState('');
+  const [appliedReferral, setAppliedReferral] = useState('');
+  const [referralDiscount, setReferralDiscount] = useState(0);
+  const [showReferralInput, setShowReferralInput] = useState(false);
+
+  const totalPayableNow = totalMonthlyRent + totalDeposit - referralDiscount;
+
+  const applyReferral = () => {
+    if (!referralCode.trim()) return;
+    localStorage.setItem('lease_referral_applied', referralCode.trim());
+    setAppliedReferral(referralCode.trim());
+    setReferralDiscount(100);
+    setShowReferralInput(false);
+  };
+
+  const removeReferral = () => {
+    localStorage.removeItem('lease_referral_applied');
+    setAppliedReferral('');
+    setReferralDiscount(0);
+  };
 
   if (cart.length === 0) {
     return (
@@ -162,7 +181,15 @@ export default function CartPage() {
                   <span className="font-black text-green-600 uppercase">Included</span>
                 </div>
                 
-                <div className="pt-8 border-t border-gray-100 dark:border-gray-700">
+                {referralDiscount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-600 font-bold flex items-center gap-1">
+                      <Gift className="h-3 w-3" /> Referral Discount
+                    </span>
+                    <span className="font-black text-green-600">-{formatCurrency(referralDiscount)}</span>
+                  </div>
+                )}
+                <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex justify-between items-center mb-1">
                     <div className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Payable Now</div>
                     <div className="text-4xl font-black text-primary-600">{formatCurrency(totalPayableNow)}</div>
