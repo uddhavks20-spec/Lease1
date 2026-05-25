@@ -12,6 +12,7 @@ import notificationsRouter from './modules/notifications'
 import categoriesRouter from './modules/categories'
 import citiesRouter from './modules/cities'
 import kycRouter from './modules/kyc'
+import creditRouter from './modules/credit'
 
 export const apiRouter = Router()
 
@@ -28,3 +29,4 @@ apiRouter.use('/notifications', notificationsRouter)
 apiRouter.use('/categories', categoriesRouter)
 apiRouter.use('/cities', citiesRouter)
 apiRouter.use('/kyc', kycRouter)
+apiRouter.use('/credit', creditRouter)
