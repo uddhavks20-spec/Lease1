@@ -113,21 +113,51 @@ export default function CartPage() {
             ))}
           </div>
 
-          {/* Coupon Section */}
+          {/* Coupon/Referral Section */}
           <Card className="border-2 border-dashed border-gray-200 dark:border-gray-800 bg-transparent rounded-3xl p-6">
-            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-2xl flex items-center justify-center">
-                  <Tag className="h-6 w-6 text-primary-600" />
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 bg-primary-50 dark:bg-primary-900/20 rounded-2xl flex items-center justify-center">
+                    <Gift className="h-6 w-6 text-primary-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900 dark:text-white">Have a Referral Code?</h4>
+                    <p className="text-sm text-gray-500">You and your friend get ?100 off each</p>
+                  </div>
                 </div>
-                <div>
-                  <h4 className="font-bold text-gray-900 dark:text-white">Have a Coupon/Referral?</h4>
-                  <p className="text-sm text-gray-500">Apply it to get extra discounts</p>
-                </div>
+                <Button onClick={() => setShowReferralInput(!showReferralInput)} variant="outline" className="w-full sm:w-auto font-bold border-primary-600 text-primary-600 rounded-xl">
+                  {showReferralInput ? "Cancel" : "Apply Referral"}
+                </Button>
               </div>
-              <Button variant="outline" className="w-full sm:w-auto font-bold border-primary-600 text-primary-600 rounded-xl">
-                Apply Coupon
-              </Button>
+              {showReferralInput && !appliedReferral && (
+                <div className="flex gap-3">
+                  <input
+                    type="text"
+                    placeholder="Enter referral code"
+                    className="flex-1 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all"
+                    value={referralCode}
+                    onChange={(e) => setReferralCode(e.target.value)}
+                  />
+                  <Button onClick={applyReferral} className="font-bold rounded-xl px-8">
+                    Apply
+                  </Button>
+                </div>
+              )}
+              {appliedReferral && (
+                <div className="flex items-center justify-between p-4 bg-green-50 dark:bg-green-900/10 rounded-2xl border border-green-200 dark:border-green-900/20">
+                  <div className="flex items-center gap-3">
+                    <Gift className="h-5 w-5 text-green-600" />
+                    <div>
+                      <p className="text-sm font-bold text-green-800 dark:text-green-400">Referral Applied!</p>
+                      <p className="text-xs text-green-600 dark:text-green-500">Code: {appliedReferral} - ?100 off for you and your friend</p>
+                    </div>
+                  </div>
+                  <button onClick={removeReferral} className="p-1 text-green-600 hover:text-red-500 transition-colors">
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </div>
           </Card>
 
