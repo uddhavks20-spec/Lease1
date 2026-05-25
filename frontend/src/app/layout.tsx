@@ -7,6 +7,7 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/lib/auth-context'
 import { CartProvider } from '@/lib/cart-context'
 import { Header } from '@/components/Header'
+import { Suspense } from 'react' // Import Suspense
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -47,8 +48,14 @@ export default function RootLayout({
         >
           <AuthProvider>
             <CartProvider>
-              <Header />
-              <main>{children}</main>
+              <Suspense>
+                <Header />
+              </Suspense>
+              <main className="flex-1">
+                <Suspense>
+                  {children}
+                </Suspense>
+              </main>
               <Toaster
                 position="top-right"
                 toastOptions={{

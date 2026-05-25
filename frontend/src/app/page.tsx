@@ -36,13 +36,10 @@ export default function HomePage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("Fetching latest items...");
     api.get('/items?limit=4').then(res => {
-      console.log("Latest items fetched:", res.data.items);
       setLatestItems(res.data.items || []);
       setLoading(false);
     }).catch((err) => {
-      console.error("Error fetching latest items:", err);
       setLoading(false);
     });
   }, []);

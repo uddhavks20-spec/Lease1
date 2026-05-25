@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowRight, CheckCircle2, MapPin, Truck, ShieldCheck, CreditCard, ChevronLeft, Smartphone, Wallet, Banknote, Percent, Zap, Shield, Lock, Sparkles } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image"; // Import Image
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -477,8 +478,13 @@ export default function CheckoutPage() {
               <div className="space-y-4 max-h-48 overflow-y-auto pr-2">
                 {cart.map((item) => (
                   <div key={item.id} className="flex gap-4 py-2 border-b border-gray-50 dark:border-gray-700 last:border-none">
-                    <div className="w-12 h-12 bg-gray-50 dark:bg-gray-900 rounded-xl flex items-center justify-center p-2">
-                      <img src={item.image || '/images/placeholder.png'} alt={item.title} className="w-full h-full object-contain" />
+                    <div className="w-12 h-12 bg-gray-50 dark:bg-gray-900 rounded-xl flex items-center justify-center p-2 relative overflow-hidden">
+                      <Image 
+                        src={item.image || '/images/placeholder.png'} 
+                        alt={item.title} 
+                        fill
+                        className="object-contain" 
+                      />
                     </div>
                     <div className="flex-1 space-y-1">
                       <p className="font-bold text-gray-900 dark:text-white text-xs line-clamp-1">{item.title}</p>

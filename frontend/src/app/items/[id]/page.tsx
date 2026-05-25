@@ -1,5 +1,6 @@
 "use client"
 
+import Image from 'next/image' // Import Image
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import api from '@/lib/api'
@@ -73,8 +74,8 @@ export default function ItemDetailPage() {
   
   const totalFirstPayment = renterMonthlyRent + dynamicDeposit;
   const totalRentalCost = renterMonthlyRent * duration;
-  const savings = item ? Number(item.retail_price) - totalRentalCost : 0;
-  const savingsPercent = item ? Math.round((savings / Number(item.retail_price)) * 100) : 0;
+  const savings = item && item.retail_price > 0 ? Number(item.retail_price) - totalRentalCost : 0;
+  const savingsPercent = item && item.retail_price > 0 ? Math.round((savings / Number(item.retail_price)) * 100) : 0;
 
   const handleAddToCart = () => {
     if (!item) return;
@@ -134,10 +135,11 @@ export default function ItemDetailPage() {
         {/* Left: Images */}
         <div className="lg:col-span-7 space-y-4">
           <div className="aspect-square bg-white dark:bg-gray-800 rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center p-10 shadow-sm relative group">
-            <img 
+            <Image 
               src={item.images?.[0]?.image_url || '/images/placeholder.png'} 
               alt={item.title}
-              className="max-w-full max-h-full object-contain group-hover:scale-105 transition-transform duration-500"
+              fill
+              className="object-contain group-hover:scale-105 transition-transform duration-500 p-10"
             />
             {savingsPercent > 0 && (
               <Badge className="absolute top-6 left-6 bg-green-500 hover:bg-green-600 text-white border-none px-3 py-1 text-sm font-bold">
