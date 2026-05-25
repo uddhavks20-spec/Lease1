@@ -33,6 +33,15 @@ const advertisements = [
 
 export default function HomePage() {
   const [latestItems, setLatestItems] = useState<any[]>([]);
+  const [creditData, setCreditData] = useState<any>(null);
+  const formatCredit = (num: number) => num.toLocaleString('en-IN');
+
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      api.get('/credit/me').then(r => setCreditData(r.data)).catch(() => {});
+    }
+  }, []);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -206,69 +215,117 @@ export default function HomePage() {
               </div>
             </section>
 
-            {/* Lease Credit (Slice-style) */}
-            <section className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-indigo-600 to-purple-700 p-8 md:p-16 text-white shadow-2xl">
-              <div className="relative z-10 grid md:grid-cols-2 gap-10 items-center">
-                <div className="space-y-8">
-                  <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-widest">
-                    <Sparkles className="w-3 h-3 text-yellow-300" />
-                    New: Lease Credit
-                  </div>
-                  <h2 className="text-4xl md:text-6xl font-black leading-tight tracking-tighter">
-                    Don't have the cash? <br />
-                    <span className="text-yellow-300 italic">Slice it into 3.</span>
-                  </h2>
-                  <p className="text-lg text-indigo-100 font-medium max-w-md">
-                    The simplest way to pay for your rentals. 0% interest, 3 easy payments, no hidden fees. Just like your favorite card, but for campus rentals.
-                  </p>
-                  <div className="flex flex-wrap gap-6">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                        <Percent className="w-5 h-5 text-yellow-300" />
-                      </div>
-                      <span className="text-sm font-bold">0% Interest</span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-                        <Zap className="w-5 h-5 text-yellow-300" />
-                      </div>
-                      <span className="text-sm font-bold">Instant Approval</span>
-                    </div>
-                  </div>
-                  <Button className="h-14 px-10 bg-white text-indigo-600 hover:bg-yellow-300 hover:text-indigo-700 font-black rounded-2xl shadow-xl transition-all uppercase tracking-widest text-xs">
-                    Get Your Credit Limit <ArrowRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </div>
-                
-                <div className="relative hidden md:block">
-                  <div className="absolute -inset-10 bg-white/20 blur-3xl rounded-full" />
-                  <div className="relative bg-gradient-to-br from-gray-900 to-black p-8 rounded-[32px] border border-white/10 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-700">
-                    <div className="flex justify-between items-start mb-12">
-                      <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center">
-                        <CreditCard className="w-6 h-6" />
-                      </div>
-                      <Badge className="bg-yellow-300 text-indigo-900 border-none font-black uppercase text-[10px]">Active</Badge>
-                    </div>
-                    <div className="space-y-1 mb-8">
-                      <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Credit Limit</p>
-                      <p className="text-4xl font-black tracking-tighter">₹25,000</p>
-                    </div>
-                    <div className="flex justify-between items-end">
-                      <div className="space-y-1">
-                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Lease Holder</p>
-                        <p className="text-xs font-bold uppercase">Rahul Sharma</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Valid Thru</p>
-                        <p className="text-xs font-bold">05/28</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
+            {/* Lease Money (Slice-style) */}
+<section className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-indigo-600 to-purple-700 p-8 md:p-16 text-white shadow-2xl">
+  <div className="relative z-10 grid md:grid-cols-2 gap-10 items-center">
+    <div className="space-y-8">
+      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/20 backdrop-blur-md border border-white/10 text-[10px] font-black uppercase tracking-widest">
+        <Sparkles className="w-3 h-3 text-yellow-300" />
+        New: Lease Money
+      </div>
+      <h2 className="text-4xl md:text-6xl font-black leading-tight tracking-tighter">
+        Rent now, <br />
+        <span className="text-yellow-300 italic">pay in 3 slices.</span>
+      </h2>
+      <p className="text-lg text-indigo-100 font-medium max-w-md">
+        Your personal campus credit line. 0% interest BNPL, instant approval, and rewards for every on-time payment. Powered by Lease Money.
+      </p>
+      <div className="flex flex-wrap gap-6">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+            <Percent className="w-5 h-5 text-yellow-300" />
+          </div>
+          <span className="text-sm font-bold">0% Interest</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+            <Zap className="w-5 h-5 text-yellow-300" />
+          </div>
+          <span className="text-sm font-bold">Instant Approval</span>
+        </div>
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
+            <Shield className="w-5 h-5 text-yellow-300" />
+          </div>
+          <span className="text-sm font-bold">Escrow Secure</span>
+        </div>
+      </div>
 
-            {/* Why Choose Lease? */}
+      {creditData ? (
+        <div className="space-y-4">
+          <div className="grid grid-cols-3 gap-4">
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10">
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-1">Credit Score</p>
+              <p className="text-3xl font-black text-white">{creditData.creditScore}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mt-1">{creditData.tier}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10">
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-1">Limit</p>
+              <p className="text-3xl font-black text-white">â‚¹{formatCredit(creditData.creditLimit)}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mt-1">Available: â‚¹{formatCredit(creditData.availableCredit)}</p>
+            </div>
+            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10">
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-1">Rentals</p>
+              <p className="text-3xl font-black text-white">{creditData.completedRentals}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mt-1">{creditData.onTimeReturns} on time</p>
+            </div>
+          </div>
+          <Link href="/credit">
+            <Button className="h-14 px-10 bg-white text-indigo-600 hover:bg-yellow-300 hover:text-indigo-700 font-black rounded-2xl shadow-xl transition-all uppercase tracking-widest text-xs w-full">
+              Manage Lease Money <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </div>
+      ) : (
+        <Button className="h-14 px-10 bg-white text-indigo-600 hover:bg-yellow-300 hover:text-indigo-700 font-black rounded-2xl shadow-xl transition-all uppercase tracking-widest text-xs">
+          Get Your Credit Limit <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      )}
+    </div>
+
+    <div className="relative hidden md:block">
+      <div className="absolute -inset-10 bg-white/20 blur-3xl rounded-full" />
+      <div className="relative bg-gradient-to-br from-gray-900 to-black p-8 rounded-[32px] border border-white/10 shadow-2xl transform rotate-3 hover:rotate-0 transition-transform duration-700">
+        <div className="flex justify-between items-start mb-12">
+          <div className="w-12 h-12 bg-indigo-600 rounded-xl flex items-center justify-center">
+            <CreditCard className="w-6 h-6" />
+          </div>
+          <Badge className="bg-yellow-300 text-indigo-900 border-none font-black uppercase text-[10px]">
+            {creditData ? creditData.tier : 'Active'}
+          </Badge>
+        </div>
+        <div className="space-y-1 mb-8">
+          <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Credit Limit</p>
+          <p className="text-4xl font-black tracking-tighter">
+            â‚¹{creditData ? formatCredit(creditData.availableCredit) : '25,000'}
+          </p>
+        </div>
+        <div className="space-y-3">
+          <div className="w-full bg-gray-800 rounded-full h-2 overflow-hidden">
+            <div className="bg-indigo-500 h-full rounded-full transition-all duration-500"
+              style={{ width: creditData ? `${((creditData.creditLimit - creditData.availableCredit) / creditData.creditLimit) * 100}%` : '0%' }}
+            />
+          </div>
+          <div className="flex justify-between text-[10px] text-gray-500 font-black uppercase tracking-widest">
+            <span>â‚¹{creditData ? formatCredit(creditData.usedCredit) : '0'} used</span>
+            <span>â‚¹{creditData ? formatCredit(creditData.creditLimit) : '25,000'} limit</span>
+          </div>
+        </div>
+        <div className="flex justify-between items-end mt-8 pt-8 border-t border-gray-800">
+          <div className="space-y-1">
+            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Lease Holder</p>
+            <p className="text-xs font-bold uppercase">Verified Student</p>
+          </div>
+          <div className="text-right">
+            <p className="text-[8px] font-black text-gray-500 uppercase tracking-widest">Valid Thru</p>
+            <p className="text-xs font-bold">Unlimited</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+{/* Why Choose Lease? */}
             <section className="py-12 border-y border-gray-100 dark:border-gray-800">
               <div className="text-center mb-16">
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
