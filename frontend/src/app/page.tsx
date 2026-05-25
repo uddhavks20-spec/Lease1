@@ -13,7 +13,7 @@ import { formatCurrency } from "@/lib/utils";
 const popularItemsMock = [
   { name: "Split AC 1.5 Ton", slug: "air-conditioners", img: "https://images.unsplash.com/photo-1604636559893-a748bfecfa0e?auto=format&fit=crop&q=80&w=800", price: "₹1200/mo", badge: "5-Star Inverter" },
   { name: "Smart TV 43\"", slug: "televisions", img: "https://images.unsplash.com/photo-1536494126589-29fadf0d7e3c?auto=format&fit=crop&q=80&w=800", price: "₹800/mo", badge: "4K UHD" },
-  { name: "3-Seater Sofa", slug: "study-furniture", img: "https://images.unsplash.com/photo-1565182999561-18d7dc61c393?auto=format&fit=crop&q=80&w=800", price: "₹600/mo", badge: "Solid Wood" },
+  { name: "3-Seater Sofa", slug: "study-furniture", img: "https://images.unsplash.com/photo-1763565909003-46e9dfb68a00?auto=format&fit=crop&q=80&w=800", price: "₹600/mo", badge: "Solid Wood" },
   { name: "MacBook Pro M2", slug: "laptops-electronics", img: "https://images.unsplash.com/photo-1591900256859-f96fc8097a7e?auto=format&fit=crop&q=80&w=800", price: "₹2500/mo", badge: "Mint Condition" },
 ]
 
@@ -21,13 +21,13 @@ const categoryTiles = [
   { name: "Air Conditioners", slug: "air-conditioners", img: "https://images.unsplash.com/photo-1604636559893-a748bfecfa0e?auto=format&fit=crop&q=80&w=800" },
   { name: "Televisions", slug: "televisions", img: "https://images.unsplash.com/photo-1536494126589-29fadf0d7e3c?auto=format&fit=crop&q=80&w=800" },
   { name: "Laptops & Electronics", slug: "laptops-electronics", img: "https://images.unsplash.com/photo-1591900256859-f96fc8097a7e?auto=format&fit=crop&q=80&w=800" },
-  { name: "Study & Furniture", slug: "study-furniture", img: "https://images.unsplash.com/photo-1518455027359-f3f8164ba6bd?auto=format&fit=crop&q=80&w=800" },
+  { name: "Study & Furniture", slug: "study-furniture", img: "https://images.unsplash.com/photo-1763565909003-46e9dfb68a00?auto=format&fit=crop&q=80&w=800" },
   { name: "Clothing", slug: "clothing-accessories", img: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&q=80&w=800" },
 ]
 
 const advertisements = [
   { title: "iPhone 15 Pro", desc: "Rent at ₹1999/mo", img: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-black" },
-  { title: "Gaming Laptop", desc: "Next-gen Performance", img: "https://images.unsplash.com/photo-1603302576837-37561b2e2302?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-blue-900" },
+  { title: "Gaming Laptop", desc: "Next-gen Performance", img: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-blue-900" },
   { title: "Noise Cancel Headphones", desc: "Pure Sound", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-purple-900" },
 ]
 
@@ -76,7 +76,7 @@ export default function HomePage() {
               
               {/* Decorative background image */}
               <div className="absolute right-0 bottom-0 w-1/2 h-full opacity-20 pointer-events-none">
-                <Image src="https://images.unsplash.com/photo-1591900256859-f96fc8097a7e?auto=format&fit=crop&q=80&w=800" alt="Hero" fill className="object-contain translate-x-1/4 translate-y-1/4 scale-150" />
+                <Image src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800" alt="Hero" fill className="object-contain translate-x-1/4 translate-y-1/4 scale-150" />
               </div>
             </section>
 
