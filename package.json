@@ -1,9 +1,0 @@
-{
-  "devDependencies": {
-    "@types/cors": "^2.8.19",
-    "@types/morgan": "^1.9.10"
-  },
-  "dependencies": {
-    "next": "^16.1.6"
-  }
-}
