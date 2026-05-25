@@ -101,6 +101,7 @@ export default function ItemDetailPage() {
       duration: duration
     });
     router.push("/checkout");
+  };
 
   if (loading) return (
     <div className="container py-20 flex justify-center">
