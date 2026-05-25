@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Home, Search, Shield, TrendingUp, Users, Calendar, ArrowRight, Zap, Sparkles, ShoppingBag, CreditCard, Percent, Smartphone } from 'lucide-react'
 import api from '@/lib/api'
 import { formatCurrency } from "@/lib/utils";
+import { useAuth } from '@/lib/auth-context'
 
 const popularItemsMock = [
   { name: "Split AC 1.5 Ton", slug: "air-conditioners", img: "https://images.unsplash.com/photo-1604636559893-a748bfecfa0e?auto=format&fit=crop&q=80&w=800", price: "₹1200/mo", badge: "5-Star Inverter" },
@@ -43,6 +44,21 @@ export default function HomePage() {
     }
   }, []);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+  const { user } = useAuth();
+
+  const referralCode = user?.id
+    ? user.id.slice(0, 8).toUpperCase()
+    : 'GUEST' + Math.random().toString(36).slice(2, 8).toUpperCase();
+
+  const copyReferralLink = () => {
+    const link = window.location.origin + '/signup?ref=' + referralCode;
+    navigator.clipboard.writeText(link).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
 
   useEffect(() => {
     api.get('/items?limit=4').then(res => {
