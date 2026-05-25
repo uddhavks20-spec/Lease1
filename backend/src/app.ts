@@ -1,7 +1,9 @@
 import 'dotenv/config'
 import express, { type Request, type Response } from 'express'
+// @ts-ignore
 import cors from 'cors'
 import helmet from 'helmet'
+// @ts-ignore
 import morgan from 'morgan'
 import rateLimit from 'express-rate-limit'
 import { apiRouter } from './routes/index'
@@ -38,7 +40,17 @@ const limiter = rateLimit({
 app.use(limiter)
 
 // Health check
-app.get('/health', (_req: Request, res: Response) => res.json({ ok: true, ts: Date.now() }))
+app.get('/health', (_req: Request, res: Response) => res.json({ ok: true, ts: Date.now(), env: process.env.NODE_ENV }))
+
+// Welcome route
+app.get('/', (_req: Request, res: Response) => {
+  res.json({
+    message: 'Lease API is running',
+    version: '1.0.0',
+    status: 'online',
+    docs: '/api-docs' // Optional: if you have docs
+  })
+})
 
 // API routes
 app.use('/api', apiRouter)
