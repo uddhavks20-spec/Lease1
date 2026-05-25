@@ -334,8 +334,8 @@ export default function HomePage() {
               <div className="bg-yellow-400 rounded-2xl p-6 text-yellow-900 shadow-lg shadow-yellow-100">
                 <h4 className="font-black text-xl mb-2">Refer a Friend!</h4>
                 <p className="text-sm font-medium mb-4">Get ₹100 credit for every successful referral.</p>
-                <Button className="w-full bg-yellow-900 text-yellow-400 hover:bg-yellow-800 font-bold rounded-xl">
-                  Invite Now
+                <Button onClick={copyReferralLink} className="w-full bg-yellow-900 text-yellow-400 hover:bg-yellow-800 font-bold rounded-xl">
+                  {copied ? "Copied!" : "Invite Now"}
                 </Button>
               </div>
             </div>
