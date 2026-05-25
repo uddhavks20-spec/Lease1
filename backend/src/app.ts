@@ -19,7 +19,7 @@ app.use(helmet())
 const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || '*'
 app.use(
   cors({
-    origin: FRONTEND_ORIGIN,
+    origin: true,
     credentials: true,
   })
 )
