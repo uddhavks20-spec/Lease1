@@ -34,7 +34,7 @@ const advertisements = [
 export default function HomePage() {
   const [latestItems, setLatestItems] = useState<any[]>([]);
   const [creditData, setCreditData] = useState<any>(null);
-  const formatCredit = (num: number) => num.toLocaleString('en-IN');
+  
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -224,8 +224,7 @@ export default function HomePage() {
         New: Lease Money
       </div>
       <h2 className="text-4xl md:text-6xl font-black leading-tight tracking-tighter">
-        Rent now, <br />
-        <span className="text-yellow-300 italic">pay in 3 slices.</span>
+        Rent it before you own it.<br /><span className="text-yellow-300 italic">No interest. No drama.</span>
       </h2>
       <p className="text-lg text-indigo-100 font-medium max-w-md">
         Your personal campus credit line. 0% interest BNPL, instant approval, and rewards for every on-time payment. Powered by Lease Money.
@@ -261,8 +260,8 @@ export default function HomePage() {
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10">
               <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-1">Limit</p>
-              <p className="text-3xl font-black text-white">â‚¹{formatCredit(creditData.creditLimit)}</p>
-              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mt-1">Available: â‚¹{formatCredit(creditData.availableCredit)}</p>
+              <p className="text-3xl font-black text-white">â‚¹{creditData.creditLimit}</p>
+              <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mt-1">Available: â‚¹{creditData.availableCredit}</p>
             </div>
             <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 text-center border border-white/10">
               <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mb-1">Rentals</p>
@@ -270,11 +269,7 @@ export default function HomePage() {
               <p className="text-[10px] font-black uppercase tracking-widest text-indigo-200 mt-1">{creditData.onTimeReturns} on time</p>
             </div>
           </div>
-          <Link href="/credit">
-            <Button className="h-14 px-10 bg-white text-indigo-600 hover:bg-yellow-300 hover:text-indigo-700 font-black rounded-2xl shadow-xl transition-all uppercase tracking-widest text-xs w-full">
-              Manage Lease Money <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
-          </Link>
+          <Link href="/browse"><Button className="h-14 px-10 bg-white text-indigo-600 hover:bg-yellow-300 hover:text-indigo-700 font-black rounded-2xl shadow-xl transition-all uppercase tracking-widest text-xs w-full">Explore Rentals <ArrowRight className="ml-2 h-4 w-4" /></Button></Link>
         </div>
       ) : (
         <Button className="h-14 px-10 bg-white text-indigo-600 hover:bg-yellow-300 hover:text-indigo-700 font-black rounded-2xl shadow-xl transition-all uppercase tracking-widest text-xs">
@@ -297,7 +292,7 @@ export default function HomePage() {
         <div className="space-y-1 mb-8">
           <p className="text-[10px] font-black text-gray-500 uppercase tracking-widest">Credit Limit</p>
           <p className="text-4xl font-black tracking-tighter">
-            â‚¹{creditData ? formatCredit(creditData.availableCredit) : '25,000'}
+            â‚¹{creditData ? creditData.availableCredit : '25,000'}
           </p>
         </div>
         <div className="space-y-3">
@@ -307,8 +302,8 @@ export default function HomePage() {
             />
           </div>
           <div className="flex justify-between text-[10px] text-gray-500 font-black uppercase tracking-widest">
-            <span>â‚¹{creditData ? formatCredit(creditData.usedCredit) : '0'} used</span>
-            <span>â‚¹{creditData ? formatCredit(creditData.creditLimit) : '25,000'} limit</span>
+            <span>â‚¹{creditData ? creditData.usedCredit : '0'} used</span>
+            <span>â‚¹{creditData ? creditData.creditLimit : '25,000'} limit</span>
           </div>
         </div>
         <div className="flex justify-between items-end mt-8 pt-8 border-t border-gray-800">
