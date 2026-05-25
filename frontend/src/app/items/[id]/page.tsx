@@ -90,7 +90,18 @@ export default function ItemDetailPage() {
     toast.success('Added to cart');
   };
 
-  const startRental = async () => {
+  const startRental = () => {
+    if (!item) return;
+    addToCart({
+      id: item.id,
+      title: item.title,
+      monthly_rent: renterMonthlyRent,
+      deposit_amount: dynamicDeposit,
+      image: item.images?.[0]?.image_url || "/images/placeholder.png",
+      duration: duration
+    });
+    router.push("/checkout");
+  };
     try {
       const res = await api.post('/rentals', {
         itemId: id,
