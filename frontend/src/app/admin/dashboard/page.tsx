@@ -97,7 +97,7 @@ export default function AdminDashboard() {
                           <span className="text-[10px] font-black bg-primary-600 text-white px-2 py-0.5 rounded-full uppercase tracking-widest">v3.1</span>
                           <h3 className="text-xl font-black uppercase tracking-tighter text-gray-900 dark:text-white">📊 TRANSACTION MONITOR: {i.title}</h3>
                         </div>
-                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Market Retail: {formatCurrency(i.retail_price)} | Condition: {i.condition.toUpperCase()}</p>
+                        <p className="text-[10px] font-bold text-gray-400 uppercase tracking-[0.2em]">Market Retail: {formatCurrency(i.retail_price)} | Condition: {(i.condition || 'good').toUpperCase()}</p>
                       </div>
                       <Badge className="bg-amber-500 text-white border-none font-black uppercase text-[10px] px-4 py-1 rounded-full animate-pulse">Awaiting Audit</Badge>
                     </div>
@@ -206,24 +206,82 @@ export default function AdminDashboard() {
               <CheckCircle2 className="w-6 h-6 text-green-600" />
               <h2 className="text-xl font-black uppercase tracking-tighter">KYC Verifications</h2>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-6">
               {pendingKycs.map((k: any) => (
-                <div key={k.user_id} className="bg-white dark:bg-gray-800 p-5 rounded-3xl border border-gray-100 dark:border-gray-800 flex items-center justify-between shadow-sm">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center font-black text-gray-400">
-                      {k.user_id.slice(0,1).toUpperCase()}
+                <div key={k.user_id} className="bg-white dark:bg-gray-800 rounded-[32px] border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-100 dark:bg-gray-900 rounded-full flex items-center justify-center font-black text-gray-400 text-sm">
+                          {(k.user_id || '?').slice(0,1).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="text-sm font-black text-gray-900 dark:text-white uppercase">User ID: {(k.user_id || '').slice(0,8)}</p>
+                          <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Pending Verification</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button 
+                          onClick={() => approveKyc(k.user_id)}
+                          className="h-10 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] px-5"
+                        >
+                          Approve
+                        </Button>
+                        <Button 
+                          variant="outline"
+                          className="h-10 rounded-xl border-2 border-red-100 text-red-500 font-black uppercase text-[10px] px-5 hover:bg-red-50"
+                        >
+                          Reject
+                        </Button>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-xs font-black text-gray-900 dark:text-white uppercase">User ID: {k.user_id.slice(0,8)}</p>
-                      <p className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Status: Pending Verification</p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      {k.document_front_url && (
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Document Front</p>
+                          <div className="aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                            <img src={k.document_front_url} alt="Document Front" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                          </div>
+                        </div>
+                      )}
+                      {k.document_back_url && (
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Document Back</p>
+                          <div className="aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                            <img src={k.document_back_url} alt="Document Back" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                          </div>
+                        </div>
+                      )}
+                      {k.selfie_url && (
+                        <div className="space-y-1">
+                          <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Selfie</p>
+                          <div className="aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                            <img src={k.selfie_url} alt="Selfie" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-[10px] font-bold">
+                      <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
+                        <span className="text-gray-400 uppercase tracking-wider block mb-0.5">Aadhaar</span>
+                        <span className="text-gray-900 dark:text-white">{(k.aadhaar_number || '').slice(0,4)}XXXX</span>
+                      </div>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
+                        <span className="text-gray-400 uppercase tracking-wider block mb-0.5">PAN</span>
+                        <span className="text-gray-900 dark:text-white">{(k.pan_number || '').slice(0,2)}XXXX{(k.pan_number || '').slice(-1)}</span>
+                      </div>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
+                        <span className="text-gray-400 uppercase tracking-wider block mb-0.5">College ID</span>
+                        <span className="text-gray-900 dark:text-white">{(k.college_id || 'N/A')}</span>
+                      </div>
+                      <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
+                        <span className="text-gray-400 uppercase tracking-wider block mb-0.5">Submitted</span>
+                        <span className="text-gray-900 dark:text-white">{k.created_at ? new Date(k.created_at).toLocaleDateString() : 'N/A'}</span>
+                      </div>
                     </div>
                   </div>
-                  <Button 
-                    onClick={() => approveKyc(k.user_id)}
-                    className="h-10 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-black uppercase text-[10px] px-6"
-                  >
-                    Verify
-                  </Button>
                 </div>
               ))}
               {!pendingKycs.length && <div className="text-gray-500 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl text-center font-bold uppercase tracking-widest text-[10px]">All KYCs processed</div>}
