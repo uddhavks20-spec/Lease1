@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Info, Calculator, ChevronDown, PackageCheck, Shield } from 'lucide-react'
-import { LeaseBot } from '@/components/LeaseBot'
+import { LeaseGuru } from '@/components/LeaseGuru'
 import { mockProductsData, MockProduct } from '@/data/mockProductsData'
 
 // Constants for Pricing Logic
@@ -206,7 +206,7 @@ export default function NewItemPage() {
 
   return (
     <div className="container py-10 max-w-5xl">
-      <LeaseBot role="seller" />
+      <LeaseGuru role="seller" />
       <div className="flex items-center gap-3 mb-8">
         <div className="w-12 h-12 bg-primary-600 rounded-2xl flex items-center justify-center text-white shadow-lg shadow-primary-200">
           <PackageCheck className="w-6 h-6" />
