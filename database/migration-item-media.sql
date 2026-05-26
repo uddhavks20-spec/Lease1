@@ -21,4 +21,6 @@ CREATE TABLE IF NOT EXISTS item_verifications (
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TRIGGER IF NOT EXISTS update_item_verifications_updated_at BEFORE UPDATE ON item_verifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+-- Trigger for updated_at (dropped first to avoid errors on re-run)
+DROP TRIGGER IF EXISTS update_item_verifications_updated_at ON item_verifications;
+CREATE TRIGGER update_item_verifications_updated_at BEFORE UPDATE ON item_verifications FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
