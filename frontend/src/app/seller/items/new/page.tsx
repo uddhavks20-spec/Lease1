@@ -44,6 +44,42 @@ export default function NewItemPage() {
   const [manualRentOverride, setManualRentOverride] = useState(false)
   const [customAttributes, setCustomAttributes] = useState<Record<string, string>>({})
 
+  // Image & video state
+  const [imageViews, setImageViews] = useState<Record<string, string>>({
+    Front: '',
+    Rear: '',
+    Left: '',
+    Right: ''
+  })
+  const [videoUrl, setVideoUrl] = useState('')
+
+  // Product verification state
+  const [verification, setVerification] = useState({
+    purchaseReceiptUrl: '',
+    serialNumber: '',
+    originalBoxPhotoUrl: '',
+    damagePhotoUrl: '',
+    notes: ''
+  })
+
+  const handleImageUpload = (view: string, file: File | null) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setImageViews(prev => ({ ...prev, [view]: e.target?.result as string }))
+    }
+    reader.readAsDataURL(file)
+  }
+
+  const handleVerificationImage = (field: string, file: File | null) => {
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setVerification(prev => ({ ...prev, [field]: e.target?.result as string }))
+    }
+    reader.readAsDataURL(file)
+  }
+
   useEffect(() => {
     api.get('/categories').then((res) => setCategories(res.data.categories))
     api.get('/cities').then((res) => setCities(res.data.cities))
@@ -122,6 +158,26 @@ export default function NewItemPage() {
       toast.error('Please select category and city')
       return
     }
+
+    // Build images array from uploaded views
+    const images: any[] = []
+    let hasPrimary = false
+    Object.entries(imageViews).forEach(([view, dataUrl]) => {
+      if (dataUrl) {
+        if (!hasPrimary) {
+          images.push({ dataUrl, is_primary: true, view })
+          hasPrimary = true
+        } else {
+          images.push({ dataUrl, is_primary: false, view })
+        }
+      }
+    })
+
+    if (images.length === 0) {
+      toast.error('Please upload at least one product image')
+      return
+    }
+
     try {
       const finalizedSubAttributes = { ...form.subAttributes }
       Object.keys(finalizedSubAttributes).forEach(key => {
@@ -133,8 +189,13 @@ export default function NewItemPage() {
       const res = await api.post('/items', {
         ...form,
         subAttributes: finalizedSubAttributes,
-        // Backend logic: Lender gets 95%, Renter pays 105%
-        images: [{ image_url: form.imageUrl, is_primary: true }]
+        images,
+        videoUrl: videoUrl || undefined,
+        purchaseReceiptUrl: verification.purchaseReceiptUrl || undefined,
+        serialNumber: verification.serialNumber || undefined,
+        originalBoxPhotoUrl: verification.originalBoxPhotoUrl || undefined,
+        damagePhotoUrl: verification.damagePhotoUrl || undefined,
+        verificationNotes: verification.notes || undefined,
       })
       toast.success('Item created successfully!')
       router.push(`/items/${res.data.id}`)
