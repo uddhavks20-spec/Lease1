@@ -78,12 +78,12 @@ export default function HomePage() {
           <div className="flex-1 space-y-16">
             
             {/* Hero Section */}
-            <section className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-gray-900 to-black p-8 md:p-20 text-white shadow-2xl">
+            <section className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-gray-900 to-black p-6 md:p-20 text-white shadow-2xl">
               <div className="relative z-10 max-w-2xl">
-                <Badge className="bg-primary-600 text-white border-none mb-6 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest">
+                <Badge className="bg-primary-600 text-white border-none mb-6 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest inline-block">
                   🚀 Campus Exclusive
                 </Badge>
-                <h1 className="text-5xl md:text-7xl font-black mb-6 leading-[1.1] tracking-tighter">
+                <h1 className="text-4xl sm:text-5xl md:text-7xl font-black mb-6 leading-[1.1] tracking-tighter">
                   Rent Smart, <br />
                   <span className="text-primary-500 italic">Live Premium</span>
                 </h1>
@@ -112,7 +112,7 @@ export default function HomePage() {
                 <div className="w-20 h-1.5 bg-primary-600 mx-auto rounded-full" />
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
                 {categoryTiles.map((cat) => (
                   <Link key={cat.slug} href={`/browse?category=${cat.slug}`}>
                     <div className="group cursor-pointer flex flex-col items-center">
@@ -125,7 +125,7 @@ export default function HomePage() {
                           className="object-contain transition-transform duration-300 ease-out group-hover:scale-110 transform-gpu"
                         />
                       </div>
-                      <h3 className="text-gray-900 dark:text-white font-black text-sm uppercase tracking-widest text-center group-hover:text-primary-600 transition-colors">
+                      <h3 className="text-gray-900 dark:text-white font-black text-sm uppercase tracking-widest text-center line-clamp-1 group-hover:text-primary-600 transition-colors">
                         {cat.name}
                       </h3>
                     </div>
@@ -146,7 +146,7 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
                 {popularItemsMock.map((item) => (
                   <Link key={item.name} href={`/browse?q=${item.name}`}>
                     <div className="group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl transform-gpu">
@@ -261,7 +261,7 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
                 <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -387,7 +387,7 @@ export default function HomePage() {
       {/* Footer */}
       <footer className="bg-gray-900 text-gray-400 py-12 border-t border-gray-800">
         <div className="container mx-auto px-4">
-          <div className="grid md:grid-cols-4 gap-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div>
               <div className="flex items-center space-x-2 mb-4">
                 <div className="w-8 h-8 bg-gradient-to-r from-primary-600 to-secondary-600 rounded-lg flex items-center justify-center">
