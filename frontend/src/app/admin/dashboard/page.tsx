@@ -4,7 +4,8 @@ import { useEffect, useState } from 'react'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { toast } from 'react-hot-toast'
-import { Shield, TrendingUp, AlertTriangle, CheckCircle2, DollarSign, Clock, Package } from 'lucide-react'
+import Link from 'next/link'
+import { Shield, TrendingUp, AlertTriangle, CheckCircle2, DollarSign, Clock, Package, Camera, Eye } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
 const formatCurrency = (amount: number) => {
@@ -21,6 +22,7 @@ export default function AdminDashboard() {
   const [pendingKycs, setPendingKycs] = useState([] as any[])
   const [pendingVerifications, setPendingVerifications] = useState([] as any[])
   const [pendingWkyc, setPendingWkyc] = useState([] as any[])
+  const [pendingVisionReviews, setPendingVisionReviews] = useState([] as any[])
   const [summary, setSummary] = useState(null as any)
 
   const load = () => {
@@ -30,6 +32,27 @@ export default function AdminDashboard() {
     api.get('/admin/verifications/pending').then((r: any) => setPendingVerifications(r.data.verifications || []))
     api.get('/admin/wholesaler-kyc/pending').then((r: any) => setPendingWkyc(r.data.kycs || []))
     api.get('/analytics/summary').then((r: any) => setSummary(r.data || null))
+    // Fetch rentals with check-in photos pending review
+    api.get('/rentals', { params: { status: 'active' } }).then(async (r: any) => {
+      const rentals = r.data.rentals || []
+      const withCheckin = []
+      for (const rental of rentals) {
+        try {
+          const status = await api.get(`/vision/status/${rental.id}`)
+          const d = status.data
+          if (d.checkinPhotos?.length > 0 && !d.analysis?.settled) {
+            withCheckin.push({
+              ...d,
+              rental_id: rental.id,
+              _checkoutCount: d.checkoutPhotos?.length || 0,
+              _checkinCount: d.checkinPhotos?.length || 0,
+              _depositAmount: d.deposit?.amount || 0,
+            })
+          }
+        } catch (e) {}
+      }
+      setPendingVisionReviews(withCheckin)
+    }).catch(() => {})
   }
 
   useEffect(() => {
@@ -45,6 +68,16 @@ export default function AdminDashboard() {
     await api.patch(`/admin/rentals/${id}/approve`)
     toast.success('Rental approved')
     load()
+  }
+  const runVisionSettlement = async (rentalId: string) => {
+    setPendingVisionReviews((prev: any[]) => prev.map(v => v.rental_id === rentalId ? { ...v, _running: true } : v))
+    try {
+      const res = await api.post(`/vision/settle/${rentalId}`)
+      toast.success(`Settlement: ${res.data.settlement.action}`)
+      load()
+    } catch (e: any) {
+      toast.error(e?.response?.data?.error || 'Analysis failed')
+    }
   }
     const approveVerification = async (itemId: string) => {
     await api.patch(`/admin/verifications/${itemId}/approve`)
@@ -419,6 +452,55 @@ export default function AdminDashboard() {
               {!pendingRentals.length && <div className="text-gray-500 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl text-center font-bold uppercase tracking-widest text-[10px]">No pending rentals</div>}
             </div>
           </div>
+        </section>
+
+        {/* Vision / Return Flow Reviews */}
+        <section className="mt-16 space-y-6">
+          <div className="flex items-center gap-3">
+            <Camera className="w-7 h-7 text-primary-600" />
+            <h2 className="text-2xl font-black uppercase tracking-tighter">Vision Returns</h2>
+          </div>
+          {pendingVisionReviews.length > 0 ? (
+            <div className="grid gap-4">
+              {pendingVisionReviews.map((v: any) => (
+                <div key={v.id} className="bg-white dark:bg-gray-800 p-6 rounded-3xl border border-gray-100 dark:border-gray-800 shadow-sm space-y-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-100 dark:bg-amber-900/20 rounded-xl flex items-center justify-center">
+                        <Eye className="w-5 h-5 text-amber-600" />
+                      </div>
+                      <div>
+                        <p className="text-sm font-black uppercase tracking-tight">Rental #{v.rental_id?.slice(0,8)}</p>
+                        <p className="text-[10px] font-bold text-gray-500">Check-in photos uploaded — ready for vision analysis</p>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Link href={`/vision/status/${v.rental_id}`}>
+                        <Button variant="outline" size="sm" className="rounded-xl text-[10px] font-black uppercase tracking-widest">
+                          Review Photos
+                        </Button>
+                      </Link>
+                      <Button 
+                        onClick={() => runVisionSettlement(v.rental_id)}
+                        disabled={v._running}
+                        size="sm"
+                        className="rounded-xl bg-primary-600 hover:bg-primary-700 text-white text-[10px] font-black uppercase tracking-widest"
+                      >
+                        {v._running ? 'Processing...' : 'Run Analysis'}
+                      </Button>
+                    </div>
+                  </div>
+                  <div className="flex gap-4 text-[10px] text-gray-500">
+                    <span>Checkout: {v._checkoutCount || 0} photos</span>
+                    <span>Check-in: {v._checkinCount || 0} photos</span>
+                    <span>Deposit: ₹{Number(v._depositAmount || 0).toLocaleString('en-IN')}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-gray-500 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl text-center font-bold uppercase tracking-widest text-[10px]">No pending vision reviews</div>
+          )}
         </section>
       </div>
     </div>

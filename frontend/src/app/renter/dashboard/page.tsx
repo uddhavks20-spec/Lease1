@@ -100,9 +100,20 @@ export default function RenterDashboard() {
                             <h3 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-tight">Rental #{rental.id.slice(0, 8)}</h3>
                             <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">{rental.duration_months} Months Duration</p>
                           </div>
-                          <Button variant="ghost" size="sm" className="rounded-xl font-black text-[10px] uppercase tracking-widest group-hover:bg-primary-50 group-hover:text-primary-600">
-                            Details <ArrowRight className="ml-2 h-3 w-3" />
-                          </Button>
+                          <div className="flex gap-2">
+                            {(rental.status === 'active' || rental.status === 'scheduled') && (
+                              <Link href={`/renter/return/${rental.id}`}>
+                                <Button size="sm" className="rounded-xl font-black text-[10px] uppercase tracking-widest bg-amber-600 hover:bg-amber-700 text-white">
+                                  <Camera className="w-3 h-3 mr-1" /> Return Item
+                                </Button>
+                              </Link>
+                            )}
+                            <Link href={`/vision/status/${rental.id}`}>
+                              <Button variant="ghost" size="sm" className="rounded-xl font-black text-[10px] uppercase tracking-widest group-hover:bg-primary-50 group-hover:text-primary-600">
+                                Details <ArrowRight className="ml-2 h-3 w-3" />
+                              </Button>
+                            </Link>
+                          </div>
                         </div>
                         
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
