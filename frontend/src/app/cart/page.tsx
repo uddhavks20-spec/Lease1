@@ -97,7 +97,7 @@ export default function CartPage() {
                         </div>
                       </div>
                       
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 pt-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4 pt-2">
                         <div className="space-y-0.5">
                           <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Rent / mo</p>
                           <p className="font-bold text-gray-900 dark:text-white">{formatCurrency(item.monthly_rent)}</p>
@@ -132,7 +132,7 @@ export default function CartPage() {
                 </Button>
               </div>
               {showReferralInput && !appliedReferral && (
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3">
                   <input
                     type="text"
                     placeholder="Enter referral code"
@@ -168,7 +168,7 @@ export default function CartPage() {
               <RefreshCw className="h-6 w-6 text-primary-600" />
               What Happens Next?
             </h3>
-            <div className="grid sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
               {[
                 { icon: CreditCard, title: "Pay Initial Amount", desc: "Pay deposit and first month's rent to confirm your order." },
                 { icon: ShieldCheck, title: "KYC Verification", desc: "Quickly verify your student ID and document details." },
