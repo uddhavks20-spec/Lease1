@@ -10,7 +10,7 @@ interface User {
   email: string
   firstName: string
   lastName: string
-  role: 'admin' | 'seller' | 'renter'
+  role: 'admin' | 'seller' | 'renter' | 'wholesaler'
   isVerified: boolean
   xpPoints: number
   level: string
@@ -30,7 +30,7 @@ interface RegisterData {
   password: string
   firstName: string
   lastName: string
-  role: 'seller' | 'renter'
+  role: 'seller' | 'renter' | 'wholesaler'
   phone?: string
   dateOfBirth?: string
 }
@@ -97,6 +97,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       toast.success('Welcome back!')
       if (normalized.role === 'admin') router.push('/admin/dashboard')
       else if (normalized.role === 'seller') router.push('/seller/dashboard')
+      else if (normalized.role === 'wholesaler') router.push('/wholesaler/dashboard')
       else router.push('/renter/dashboard')
       
     } catch (error) {
@@ -134,6 +135,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(normalized)
       toast.success('Account created. Complete KYC verification.')
       if (userData.role === 'seller') router.push('/seller/kyc')
+      else if (userData.role === 'wholesaler') router.push('/wholesaler/kyc')
       else router.push('/renter/kyc')
       
     } catch (error) {
