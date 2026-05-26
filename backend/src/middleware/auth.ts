@@ -3,7 +3,7 @@ import type { Request, Response, NextFunction } from 'express'
 
 export interface AuthPayload {
   sub: string
-  role: 'admin' | 'seller' | 'renter'
+  role: 'admin' | 'seller' | 'renter' | 'wholesaler'
 }
 
 declare global {
