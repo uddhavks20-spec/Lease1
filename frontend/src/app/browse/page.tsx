@@ -80,7 +80,7 @@ export default function BrowsePage() {
       <div className="flex flex-col mb-8 gap-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">Browse Items</h1>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 dark:text-white">Browse Items</h1>
             <p className="text-gray-500 font-medium">Find the best rentals in your campus community</p>
           </div>
           
@@ -163,7 +163,7 @@ export default function BrowsePage() {
         {/* Advanced Filters Panel */}
         {showFilters && (
           <Card className="border-none bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl animate-in fade-in slide-in-from-top-4 duration-300">
-            <div className="grid md:grid-cols-3 gap-8">
+            <div className="grid md:grid-cols-3 gap-6 md:gap-8">
               <div className="space-y-3">
                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Price Range (Monthly)</label>
                 <div className="flex items-center gap-3">
@@ -211,7 +211,7 @@ export default function BrowsePage() {
         )}
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 xl:gap-8">
         {items.map((it: Item) => (
           <Link key={it.id} href={`/items/${it.id}`} className="group">
             <Card className="border-none bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group-hover:-translate-y-2 transform-gpu">
