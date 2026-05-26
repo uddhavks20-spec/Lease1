@@ -6,7 +6,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Package, Clock, CheckCircle2, AlertCircle, CreditCard, ArrowRight, Shield } from "lucide-react";
+import { Package, Clock, CheckCircle2, AlertCircle, CreditCard, ArrowRight, Shield, Camera } from "lucide-react";
 import Link from "next/link";
 import { LeaseBot } from "@/components/LeaseBot";
 
