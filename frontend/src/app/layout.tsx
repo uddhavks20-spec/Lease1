@@ -22,6 +22,10 @@ export const metadata: Metadata = {
   description: 'Rent and lend items securely within your campus community. Student-only rental marketplace starting in Kanpur.',
   keywords: 'rental, marketplace, students, campus, kanpur, india',
   authors: [{ name: 'Lease Team' }],
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
   // Viewport removed from here
 }
 
