@@ -48,7 +48,7 @@ export function Header() {
           <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
             <span className="text-white font-bold text-xl">L</span>
           </div>
-          <span className="text-xl font-bold gradient-text hidden sm:inline-block">Lease</span>
+          <span className="text-xl font-bold gradient-text hidden md:inline-block">Lease</span>
         </Link>
 
         {/* Search & Location */}
@@ -57,13 +57,13 @@ export function Header() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
             <input
               type="search"
-              placeholder="Search for items (e.g. MacBook, Sofa)..."
+              placeholder="Search laptops, ACs..."
               className="w-full bg-gray-100 dark:bg-gray-800 border-none rounded-full pl-9 pr-4 py-2 text-sm focus:ring-2 focus:ring-primary-500"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-full px-4 py-1.5 min-w-[140px] shadow-sm hover:border-primary-500 transition-all group">
+          <div className="flex items-center gap-1 bg-white dark:bg-gray-800 border-2 border-gray-100 dark:border-gray-700 rounded-full px-3 lg:px-4 py-1.5 min-w-[100px] lg:min-w-[140px] shadow-sm hover:border-primary-500 transition-all group">
             <MapPin className="h-4 w-4 text-primary-600 group-hover:scale-110 transition-transform" />
             <select
               className="bg-transparent border-none text-xs font-bold text-gray-700 dark:text-gray-300 focus:ring-0 cursor-pointer outline-none w-full"
