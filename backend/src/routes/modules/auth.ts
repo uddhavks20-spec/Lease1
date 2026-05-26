@@ -14,7 +14,7 @@ router.post(
   body('password').isLength({ min: 8 }),
   body('firstName').isString(),
   body('lastName').isString(),
-  body('role').isIn(['seller', 'renter']),
+  body('role').isIn(['seller', 'renter', 'wholesaler']),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const { email, password, firstName, lastName, role } = req.body
