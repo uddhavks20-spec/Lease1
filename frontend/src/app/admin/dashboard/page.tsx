@@ -19,12 +19,14 @@ export default function AdminDashboard() {
   const [pendingItems, setPendingItems] = useState([] as any[])
   const [pendingRentals, setPendingRentals] = useState([] as any[])
   const [pendingKycs, setPendingKycs] = useState([] as any[])
+  const [pendingVerifications, setPendingVerifications] = useState([] as any[])
   const [summary, setSummary] = useState(null as any)
 
   const load = () => {
     api.get('/items', { params: { status: 'pending' } }).then((r: any) => setPendingItems(r.data.items || []))
     api.get('/rentals', { params: { status: 'pending' } }).then((r: any) => setPendingRentals(r.data.rentals || []))
     api.get('/admin/kyc/pending').then((r: any) => setPendingKycs(r.data.kycs || []))
+    api.get('/admin/verifications/pending').then((r: any) => setPendingVerifications(r.data.verifications || []))
     api.get('/analytics/summary').then((r: any) => setSummary(r.data || null))
   }
 
@@ -40,6 +42,18 @@ export default function AdminDashboard() {
   const approveRental = async (id: string) => {
     await api.patch(`/admin/rentals/${id}/approve`)
     toast.success('Rental approved')
+    load()
+  }
+    const approveVerification = async (itemId: string) => {
+    await api.patch(`/admin/verifications/${itemId}/approve`)
+    toast.success('Product verified')
+    load()
+  }
+  const rejectVerification = async (itemId: string) => {
+    const reason = window.prompt('Rejection reason:')
+    if (!reason) return
+    await api.patch(`/admin/verifications/${itemId}/reject`, { reason })
+    toast.success('Product verification rejected')
     load()
   }
   const approveKyc = async (userId: string) => {
@@ -285,6 +299,81 @@ export default function AdminDashboard() {
                 </div>
               ))}
               {!pendingKycs.length && <div className="text-gray-500 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl text-center font-bold uppercase tracking-widest text-[10px]">All KYCs processed</div>}
+            </div>
+          </div>
+
+                    {/* Product Verifications */}
+          <div className="mb-8">
+            <div className="flex items-center gap-2 mb-6">
+              <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+              <h2 className="text-xl font-black uppercase tracking-tighter">Product Verifications</h2>
+            </div>
+            <div className="space-y-6">
+              {pendingVerifications.map((v: any) => (
+                <div key={v.id} className="bg-white dark:bg-gray-800 rounded-[32px] border border-gray-100 dark:border-gray-800 overflow-hidden shadow-sm">
+                  <div className="p-6 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {v.primary_image ? (
+                          <img src={v.primary_image} alt={v.item_title} className="w-14 h-14 rounded-2xl object-cover bg-gray-50 border border-gray-100" />
+                        ) : (
+                          <div className="w-14 h-14 bg-gray-100 dark:bg-gray-900 rounded-2xl flex items-center justify-center text-gray-400 font-black text-xs">NoImg</div>
+                        )}
+                        <div>
+                          <p className="text-sm font-black text-gray-900 dark:text-white uppercase">{v.item_title}</p>
+                          <p className="text-[10px] font-bold text-amber-500 uppercase tracking-widest">Pending Verification</p>
+                          {v.serial_number && <p className="text-[9px] text-gray-400 font-medium">SN: {v.serial_number}</p>}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => approveVerification(v.item_id)} className="h-10 px-5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-black uppercase text-[10px] transition-all">Approve</button>
+                        <button onClick={() => rejectVerification(v.item_id)} className="h-10 px-5 rounded-xl border-2 border-red-100 text-red-500 font-black uppercase text-[10px] hover:bg-red-50 transition-all">Reject</button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {v.purchase_receipt_url && (
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Receipt</p>
+                          <a href={v.purchase_receipt_url} target="_blank" rel="noopener noreferrer" className="block aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:opacity-80 transition-opacity">
+                            <img src={v.purchase_receipt_url} alt="Receipt" className="w-full h-full object-cover" onError={(e) => { (e.target).style.display = 'none' }} />
+                          </a>
+                        </div>
+                      )}
+                      {v.original_box_photo_url && (
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Box Photo</p>
+                          <a href={v.original_box_photo_url} target="_blank" rel="noopener noreferrer" className="block aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:opacity-80 transition-opacity">
+                            <img src={v.original_box_photo_url} alt="Box" className="w-full h-full object-cover" onError={(e) => { (e.target).style.display = 'none' }} />
+                          </a>
+                        </div>
+                      )}
+                      {v.damage_photo_url && (
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Damage</p>
+                          <a href={v.damage_photo_url} target="_blank" rel="noopener noreferrer" className="block aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:opacity-80 transition-opacity">
+                            <img src={v.damage_photo_url} alt="Damage" className="w-full h-full object-cover" onError={(e) => { (e.target).style.display = 'none' }} />
+                          </a>
+                        </div>
+                      )}
+                      {v.video_url && (
+                        <div className="space-y-1">
+                          <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Video</p>
+                          <a href={v.video_url} target="_blank" rel="noopener noreferrer" className="block aspect-[4/3] bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-900/30 flex items-center justify-center hover:opacity-80 transition-opacity">
+                            <svg className="w-8 h-8 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                          </a>
+                        </div>
+                      )}
+                    </div>
+                    {v.notes && (
+                      <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-2xl">
+                        <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Seller Notes</p>
+                        <p className="text-xs text-gray-700 dark:text-gray-300">{v.notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+              {!pendingVerifications.length && <div className="text-gray-500 bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl text-center font-bold uppercase tracking-widest text-[10px]">No pending product verifications</div>}
             </div>
           </div>
 
