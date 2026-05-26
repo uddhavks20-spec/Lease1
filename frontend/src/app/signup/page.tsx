@@ -11,7 +11,7 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'seller' | 'renter'>('renter')
+  const [role, setRole] = useState<'seller' | 'renter' | 'wholesaler'>('renter')
 
 
 
@@ -42,9 +42,10 @@ export default function SignupPage() {
         </div>
         <div>
           <label className="label">Role</label>
-          <select className="input-field" value={role} onChange={(e) => setRole(e.target.value as 'seller' | 'renter')}>
+          <select className="input-field" value={role} onChange={(e) => setRole(e.target.value as 'seller' | 'renter' | 'wholesaler')}>
             <option value="renter">Renter</option>
             <option value="seller">Seller</option>
+            <option value="wholesaler">Wholesaler</option>
           </select>
         </div>
         <Button disabled={isLoading} className="w-full" type="submit">
