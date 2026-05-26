@@ -99,17 +99,12 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
 
     // Insert images into item_images table
     if (images.length > 0) {
-      const imageValues = images.map((img: any, i: number) => `($1, $${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`).join(', ')
-      const imageParams: any[] = [itemId]
-      images.forEach((img: any) => {
-        imageParams.push(img.image_url || img.dataUrl)
-        imageParams.push(img.is_primary !== undefined ? img.is_primary : false)
-        imageParams.push(img.view || null)
-      })
-      await db.query(
-        `INSERT INTO item_images (item_id, image_url, is_primary, alt_text) VALUES ${imageValues}`,
-        imageParams
-      )
+      for (const img of images) {
+        await db.query(
+          `INSERT INTO item_images (item_id, image_url, is_primary, alt_text) VALUES ($1, $2, $3, $4)`,
+          [itemId, img.dataUrl || img.image_url, img.is_primary || false, img.view || null]
+        )
+      }
     }
 
     // Insert product verification if any details provided
