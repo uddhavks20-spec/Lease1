@@ -152,3 +152,31 @@ router.patch('/verifications/:itemId/reject', async (req, res, next) => {
     next(e)
   }
 })
+// Wholesaler KYC verification endpoints
+router.get('/wholesaler-kyc/pending', async (_req, res, next) => {
+  try {
+    const rows = (await db.query(
+      `SELECT wk.*, u.email, u.first_name || ' ' || u.last_name as wholesaler_name
+       FROM wholesaler_kycs wk JOIN users u ON u.id=wk.user_id
+       WHERE wk.status='pending' ORDER BY wk.created_at ASC`
+    )).rows
+    res.json({ kycs: rows })
+  } catch (e) { next(e) }
+})
+
+router.patch('/wholesaler-kyc/:userId/approve', async (req, res, next) => {
+  try {
+    const adminId = req.user!.sub
+    await db.query("UPDATE wholesaler_kycs SET status='approved', verified_by=$1, verified_at=NOW(), updated_at=NOW() WHERE user_id=$2", [adminId, req.params.userId])
+    res.json({ ok: true })
+  } catch (e) { next(e) }
+})
+
+router.patch('/wholesaler-kyc/:userId/reject', async (req, res, next) => {
+  try {
+    const adminId = req.user!.sub
+    const { reason } = req.body || {}
+    await db.query("UPDATE wholesaler_kycs SET status='rejected', rejection_reason=$1, verified_by=$2, verified_at=NOW(), updated_at=NOW() WHERE user_id=$3", [reason || 'Rejected', adminId, req.params.userId])
+    res.json({ ok: true })
+  } catch (e) { next(e) }
+})
