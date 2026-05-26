@@ -45,7 +45,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const finalLimit = limit ? parseInt(limit as string) : 50
     const result = await db.query(
-      `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.category_id, i.city_id, i.status, i.retail_price, i.sub_attributes, i.condition,
+      `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.category_id, i.city_id, i.status, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url,
               (SELECT image_url FROM item_images WHERE item_id = i.id AND is_primary = true LIMIT 1) as image_url
        FROM items i ${where} ${orderClause} LIMIT $${params.length + 1}`,
       [...params, finalLimit]
@@ -70,6 +70,14 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
       subAttributes = {},
       minRentDuration = 3,
       maxRentDuration = 12,
+      images = [],
+      videoUrl,
+      // Product verification fields
+      purchaseReceiptUrl,
+      serialNumber,
+      originalBoxPhotoUrl,
+      damagePhotoUrl,
+      verificationNotes,
     } = req.body
 
     // Prevent duplicate listings from the same seller with the same title
@@ -83,11 +91,39 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
 
     const status = process.env.TEST_MODE === 'true' ? 'approved' : 'pending'
     const result = await db.query(
-      `INSERT INTO items (seller_id, title, description, category_id, city_id, monthly_rent, deposit_amount, retail_price, sub_attributes, min_rent_duration, max_rent_duration, status)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING id`,
-      [sellerId, title, description, categoryId, cityId, monthlyRent, depositAmount, originalPrice, JSON.stringify(subAttributes), minRentDuration, maxRentDuration, status]
+      `INSERT INTO items (seller_id, title, description, category_id, city_id, monthly_rent, deposit_amount, retail_price, sub_attributes, min_rent_duration, max_rent_duration, status, video_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
+      [sellerId, title, description, categoryId, cityId, monthlyRent, depositAmount, originalPrice, JSON.stringify(subAttributes), minRentDuration, maxRentDuration, status, videoUrl || null]
     )
-    res.status(201).json({ id: result.rows[0].id })
+    const itemId = result.rows[0].id
+
+    // Insert images into item_images table
+    if (images.length > 0) {
+      const imageValues = images.map((img: any, i: number) => `($1, $${i * 3 + 2}, $${i * 3 + 3}, $${i * 3 + 4})`).join(', ')
+      const imageParams: any[] = [itemId]
+      images.forEach((img: any) => {
+        imageParams.push(img.image_url || img.dataUrl)
+        imageParams.push(img.is_primary !== undefined ? img.is_primary : false)
+        imageParams.push(img.view || null)
+      })
+      await db.query(
+        `INSERT INTO item_images (item_id, image_url, is_primary, alt_text) VALUES ${imageValues}`,
+        imageParams
+      )
+    }
+
+    // Insert product verification if any details provided
+    if (purchaseReceiptUrl || serialNumber || originalBoxPhotoUrl || damagePhotoUrl) {
+      await db.query(
+        `INSERT INTO item_verifications (item_id, purchase_receipt_url, serial_number, original_box_photo_url, damage_photo_url, notes, status)
+         VALUES ($1, $2, $3, $4, $5, $6, 'pending')`,
+        [itemId, purchaseReceiptUrl || null, serialNumber || null, originalBoxPhotoUrl || null, damagePhotoUrl || null, verificationNotes || null]
+      )
+      // Mark item verification status as pending
+      await db.query(`UPDATE items SET verified_status='pending' WHERE id=$1`, [itemId])
+    }
+
+    res.status(201).json({ id: itemId })
   } catch (e) {
     next(e)
   }
@@ -123,7 +159,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     const { id } = req.params
     const row = (
       await db.query(
-        `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.status, i.category_id, i.city_id, i.retail_price, i.sub_attributes,
+        `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.status, i.category_id, i.city_id, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url,
                 u.first_name || ' ' || u.last_name as seller_name
          FROM items i JOIN users u ON u.id=i.seller_id
          WHERE i.id=$1`,
@@ -131,9 +167,15 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       )
     ).rows[0]
     if (!row) return res.status(404).json({ error: 'Not found' })
-    const images = (await db.query(`SELECT image_url, is_primary, alt_text FROM item_images WHERE item_id=$1`, [id]))
+    const images = (await db.query(`SELECT image_url, is_primary, alt_text FROM item_images WHERE item_id=$1 ORDER BY is_primary DESC, created_at ASC`, [id]))
       .rows
-    res.json({ item: row, images })
+    // Get product verification info
+    const verification = (await db.query(
+      `SELECT status, purchase_receipt_url, serial_number, original_box_photo_url, damage_photo_url, notes, rejection_reason, created_at
+       FROM item_verifications WHERE item_id=$1 ORDER BY created_at DESC LIMIT 1`,
+      [id]
+    )).rows[0] || null
+    res.json({ item: row, images, verification })
   } catch (e) {
     next(e)
   }
