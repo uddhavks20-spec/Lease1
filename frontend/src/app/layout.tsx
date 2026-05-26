@@ -7,7 +7,8 @@ import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/lib/auth-context'
 import { CartProvider } from '@/lib/cart-context'
 import { Header } from '@/components/Header'
-import { Suspense } from 'react' // Import Suspense
+import { Suspense } from 'react'
+import { LeaseGuru } from '@/components/LeaseGuru' // Import Suspense
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -60,7 +61,8 @@ export default function RootLayout({
                   {children}
                 </Suspense>
               </main>
-              <Toaster
+              <LeaseGuru />
+          <Toaster
                 position="top-right"
                 toastOptions={{
                   duration: 4000,
