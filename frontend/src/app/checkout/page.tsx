@@ -168,7 +168,7 @@ export default function CheckoutPage() {
         {/* Left Column: Delivery & Details */}
         <div className="lg:col-span-8 space-y-8">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Checkout</h1>
+            <h1 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Checkout</h1>
             <p className="text-gray-500 font-bold text-xs uppercase tracking-widest">Complete your order details</p>
           </div>
 
@@ -471,7 +471,7 @@ export default function CheckoutPage() {
           <Card className="border-none bg-white dark:bg-gray-800 shadow-2xl shadow-gray-200/50 dark:shadow-none rounded-[40px] overflow-hidden sticky top-24">
             <div className="p-8 space-y-8">
               <div className="space-y-1">
-                <h3 className="text-2xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">Payment Details</h3>
+                <h3 className="text-xl md:text-2xl font-black text-gray-900 dark:text-white tracking-tighter uppercase">Payment Details</h3>
                 <p className="text-xs text-gray-500 font-bold uppercase tracking-widest">Initial Amount</p>
               </div>
 
@@ -516,7 +516,7 @@ export default function CheckoutPage() {
                 <div className="pt-6 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex justify-between items-center mb-1">
                     <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Total Payable Now</div>
-                    <div className="text-3xl font-black text-primary-600">{formatCurrency(totalPayableNow)}</div>
+                    <div className="text-2xl md:text-3xl font-black text-primary-600">{formatCurrency(totalPayableNow)}</div>
                   </div>
                   <p className="text-[9px] text-gray-400 font-bold italic">* Security deposit is 100% refundable at the end of tenure.</p>
                 </div>
