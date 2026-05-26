@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const baseURL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4001/api'
+const baseURL = process.env.NEXT_PUBLIC_API_URL || 'https://lease1-backend.vercel.app/api'
 
 export const api = axios.create({
   baseURL,
