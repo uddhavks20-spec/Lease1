@@ -8,7 +8,7 @@ router.use(auth(true), requireRoles('admin'))
 
 router.get('/kyc/pending', async (_req, res, next) => {
   try {
-    const rows = (await db.query(`SELECT user_id, status, created_at FROM kycs WHERE status='pending' ORDER BY created_at ASC`))
+    const rows = (await db.query(`SELECT user_id, aadhaar_number, pan_number, college_id, document_front_url, document_back_url, selfie_url, status, created_at FROM kycs WHERE status='pending' ORDER BY created_at ASC`))
       .rows
     res.json({ kycs: rows })
   } catch (e) {
