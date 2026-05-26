@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [pendingRentals, setPendingRentals] = useState([] as any[])
   const [pendingKycs, setPendingKycs] = useState([] as any[])
   const [pendingVerifications, setPendingVerifications] = useState([] as any[])
+  const [pendingWkyc, setPendingWkyc] = useState([] as any[])
   const [summary, setSummary] = useState(null as any)
 
   const load = () => {
@@ -27,6 +28,7 @@ export default function AdminDashboard() {
     api.get('/rentals', { params: { status: 'pending' } }).then((r: any) => setPendingRentals(r.data.rentals || []))
     api.get('/admin/kyc/pending').then((r: any) => setPendingKycs(r.data.kycs || []))
     api.get('/admin/verifications/pending').then((r: any) => setPendingVerifications(r.data.verifications || []))
+    api.get('/admin/wholesaler-kyc/pending').then((r: any) => setPendingWkyc(r.data.kycs || []))
     api.get('/analytics/summary').then((r: any) => setSummary(r.data || null))
   }
 
@@ -54,6 +56,18 @@ export default function AdminDashboard() {
     if (!reason) return
     await api.patch(`/admin/verifications/${itemId}/reject`, { reason })
     toast.success('Product verification rejected')
+    load()
+  }
+    const approveWKyc = async (userId: string) => {
+    await api.patch('/admin/wholesaler-kyc/' + userId + '/approve')
+    toast.success('Wholesaler KYC approved')
+    load()
+  }
+  const rejectWKyc = async (userId: string) => {
+    const reason = window.prompt('Rejection reason:')
+    if (!reason) return
+    await api.patch('/admin/wholesaler-kyc/' + userId + '/reject', { reason })
+    toast.success('Wholesaler KYC rejected')
     load()
   }
   const approveKyc = async (userId: string) => {
