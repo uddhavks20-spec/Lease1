@@ -168,7 +168,9 @@ export default function ItemDetailPage() {
         {/* Right: Info & Checkout */}
         <div className="lg:col-span-5 space-y-6">
           <div>
-            <Badge className="mb-2" variant="secondary">Verified Student Listing</Badge>
+            <Badge className={`mb-2 ${item.verified_status === 'verified' ? 'bg-green-500 hover:bg-green-600 text-white border-none' : item.verified_status === 'pending' ? 'bg-amber-500 hover:bg-amber-600 text-white border-none' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-none'}`}>
+              {item.verified_status === 'verified' ? '✓ Product Verified' : item.verified_status === 'pending' ? '⏳ Verification Pending' : '○ Unverified'}
+            </Badge>
             <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{item.title}</h1>
             <div className="flex flex-wrap items-center gap-4 text-gray-500 text-sm mb-4">
               <div className="flex items-center gap-2">
