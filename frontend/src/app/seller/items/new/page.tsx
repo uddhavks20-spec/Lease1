@@ -352,6 +352,174 @@ export default function NewItemPage() {
           </Card>
         </div>
 
+        {/* Media: Images & Video */}
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+              <svg className="w-5 h-5 text-primary-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+              Images & Video
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              {['Front', 'Rear', 'Left', 'Right'].map((view) => (
+                <div key={view} className="space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{view} View *</label>
+                  <label className={`relative aspect-square rounded-2xl border-2 border-dashed cursor-pointer overflow-hidden flex items-center justify-center transition-all ${
+                    imageViews[view]
+                      ? 'border-primary-600 bg-primary-50/50 dark:bg-primary-950/20'
+                      : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:border-primary-500'
+                  }`}>
+                    {imageViews[view] ? (
+                      <>
+                        <img src={imageViews[view]} alt={view} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <span className="text-white text-[10px] font-black uppercase tracking-widest">Tap to Replace</span>
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center p-4">
+                        <svg className="w-8 h-8 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                        <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Click to Upload</span>
+                      </div>
+                    )}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleImageUpload(view, e.target.files?.[0] || null)}
+                    />
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Working Condition Video (Optional)</label>
+              <div className="flex gap-2">
+                <div className="flex-1 relative">
+                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                  <input
+                    type="url"
+                    placeholder="Paste YouTube or Google Drive link..."
+                    className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all"
+                    value={videoUrl}
+                    onChange={(e) => setVideoUrl(e.target.value)}
+                  />
+                </div>
+              </div>
+              {videoUrl && (
+                <div className="aspect-video bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
+                  <iframe
+                    src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
+                    className="w-full h-full"
+                    allowFullScreen
+                    title="Product Video"
+                  />
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Product KYC / Verification */}
+        <Card className="border-none shadow-sm bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-lg font-black uppercase tracking-tight flex items-center gap-2">
+              <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+              Product Verification
+            </CardTitle>
+            <p className="text-[10px] font-medium text-amber-600 dark:text-amber-400">Upload proof of purchase & ownership to get a Verified badge on your listing</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Serial Number</label>
+              <input
+                type="text"
+                placeholder="e.g. SN-12345-ABCDE"
+                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3.5 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all"
+                value={verification.serialNumber}
+                onChange={(e) => setVerification(prev => ({ ...prev, serialNumber: e.target.value }))}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Purchase Receipt</label>
+                <label className={`relative aspect-[4/3] rounded-2xl border-2 border-dashed cursor-pointer overflow-hidden flex items-center justify-center transition-all ${
+                  verification.purchaseReceiptUrl
+                    ? 'border-green-500 bg-green-50/50'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:border-green-500'
+                }`}>
+                  {verification.purchaseReceiptUrl ? (
+                    <>
+                      <img src={verification.purchaseReceiptUrl} alt="Receipt" className="w-full h-full object-contain p-2" />
+                      <div className="absolute bottom-2 left-2 right-2 bg-green-600 text-white text-[8px] font-black uppercase tracking-widest py-1 rounded-lg text-center">Uploaded</div>
+                    </>
+                  ) : (
+                    <div className="text-center p-3">
+                      <svg className="w-6 h-6 mx-auto text-gray-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                      <span className="text-[8px] font-bold text-gray-400">Receipt Image</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleVerificationImage('purchaseReceiptUrl', e.target.files?.[0] || null)} />
+                </label>
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Original Box Photo</label>
+                <label className={`relative aspect-[4/3] rounded-2xl border-2 border-dashed cursor-pointer overflow-hidden flex items-center justify-center transition-all ${
+                  verification.originalBoxPhotoUrl
+                    ? 'border-green-500 bg-green-50/50'
+                    : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:border-green-500'
+                }`}>
+                  {verification.originalBoxPhotoUrl ? (
+                    <>
+                      <img src={verification.originalBoxPhotoUrl} alt="Box" className="w-full h-full object-contain p-2" />
+                      <div className="absolute bottom-2 left-2 right-2 bg-green-600 text-white text-[8px] font-black uppercase tracking-widest py-1 rounded-lg text-center">Uploaded</div>
+                    </>
+                  ) : (
+                    <div className="text-center p-3">
+                      <svg className="w-6 h-6 mx-auto text-gray-300 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                      <span className="text-[8px] font-bold text-gray-400">Box Photo</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleVerificationImage('originalBoxPhotoUrl', e.target.files?.[0] || null)} />
+                </label>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Damage / Wear Photos (Optional)</label>
+              <label className={`relative aspect-[3/1] rounded-2xl border-2 border-dashed cursor-pointer overflow-hidden flex items-center justify-center transition-all ${
+                verification.damagePhotoUrl
+                  ? 'border-amber-500 bg-amber-50/50'
+                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:border-amber-500'
+              }`}>
+                {verification.damagePhotoUrl ? (
+                  <>
+                    <img src={verification.damagePhotoUrl} alt="Damage" className="w-full h-full object-contain p-2" />
+                    <div className="absolute bottom-2 left-2 right-2 bg-amber-600 text-white text-[8px] font-black uppercase tracking-widest py-1 rounded-lg text-center">Uploaded</div>
+                  </>
+                ) : (
+                  <div className="text-center">
+                    <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">+ Add Damage/Scratch Photos (Transparency)</span>
+                  </div>
+                )}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => handleVerificationImage('damagePhotoUrl', e.target.files?.[0] || null)} />
+              </label>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Additional Notes (Optional)</label>
+              <textarea
+                placeholder="Any additional details you'd like to share about the product's condition or history..."
+                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3.5 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all resize-none h-20"
+                value={verification.notes}
+                onChange={(e) => setVerification(prev => ({ ...prev, notes: e.target.value }))}
+              />
+            </div>
+          </CardContent>
+        </Card>
         {/* Right Column: Pricing Engine */}
         <div className="lg:col-span-5 space-y-6">
           <Card className="border-none shadow-2xl shadow-gray-200/50 dark:shadow-none bg-white dark:bg-gray-800 rounded-[40px] overflow-hidden sticky top-24">
