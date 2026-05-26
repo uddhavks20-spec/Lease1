@@ -124,7 +124,7 @@ export default function CartPage() {
                   </div>
                   <div>
                     <h4 className="font-bold text-gray-900 dark:text-white">Have a Referral Code?</h4>
-                    <p className="text-sm text-gray-500">You and your friend get ?100 off each</p>
+                    <p className="text-sm text-gray-500">You and your friend get ₹100 off each</p>
                   </div>
                 </div>
                 <Button onClick={() => setShowReferralInput(!showReferralInput)} variant="outline" className="w-full sm:w-auto font-bold border-primary-600 text-primary-600 rounded-xl">
@@ -151,7 +151,7 @@ export default function CartPage() {
                     <Gift className="h-5 w-5 text-green-600" />
                     <div>
                       <p className="text-sm font-bold text-green-800 dark:text-green-400">Referral Applied!</p>
-                      <p className="text-xs text-green-600 dark:text-green-500">Code: {appliedReferral} - ?100 off for you and your friend</p>
+                      <p className="text-xs text-green-600 dark:text-green-500">Code: {appliedReferral} - ₹100 off for you and your friend</p>
                     </div>
                   </div>
                   <button onClick={removeReferral} className="p-1 text-green-600 hover:text-red-500 transition-colors">
