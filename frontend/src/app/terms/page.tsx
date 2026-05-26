@@ -7,9 +7,9 @@ export default function TermsPage() {
         <p>By using Lease, you agree to these terms. Lease is a student-only rental marketplace.</p>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white pt-4">1. Eligibility</h2>
         <p>Only verified students with valid institutional emails may use Lease.</p>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white pt-4">2. Rentals &amp; Payments</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white pt-4">2. Rentals & Payments</h2>
         <p>Payments are processed through Razorpay escrow. Deposits are refundable upon item return.</p>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white pt-4">3. Damage &amp; Liability</h2>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white pt-4">3. Damage & Liability</h2>
         <p>Renters are responsible for items during the rental period.</p>
         <h2 className="text-xl font-bold text-gray-900 dark:text-white pt-4">4. Disputes</h2>
         <p>Disputes are resolved through our internal process with evidence review.</p>
