@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { formatCurrency } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useCart } from '@/lib/cart-context'
-import { LeaseBot } from '@/components/LeaseBot'
+import { LeaseGuru } from '@/components/LeaseGuru'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -112,7 +112,7 @@ export default function ItemDetailPage() {
 
   return (
     <div className="container py-10">
-      <LeaseBot role="buyer" />
+      <LeaseGuru role="buyer" />
       <div className="grid lg:grid-cols-12 gap-10">
         {/* Left: Images */}
         <div className="lg:col-span-7 space-y-4">
