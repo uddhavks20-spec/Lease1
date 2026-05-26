@@ -11,7 +11,7 @@ import Link from 'next/link';
 
 export default function VisionStatusPage() {
   const params = useParams();
-  const rentalId = params.rentalId as string;
+  const rentalId = (params?.rentalId as string) ?? '';
 
   const [data, setData] = useState<any>(null);
   const [loading, setLoading] = useState(true);

@@ -33,6 +33,7 @@ interface Item {
     firstName: string
     lastName: string
   }
+  verified_status?: string
 }
 
 export default function ItemDetailPage() {

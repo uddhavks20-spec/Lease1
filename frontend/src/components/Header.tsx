@@ -15,8 +15,8 @@ export function Header() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [cities, setCities] = useState<Array<{ id: string; name: string }>>([]);
-  const [selectedCity, setSelectedCity] = useState(searchParams.get('city') || '');
-  const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
+  const [selectedCity, setSelectedCity] = useState(searchParams?.get('city') || '');
+  const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '');
 
   useEffect(() => {
     api.get('/cities').then(res => setCities(res.data.cities || []));
@@ -24,7 +24,7 @@ export function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString());
     if (searchQuery) params.set('q', searchQuery);
     else params.delete('q');
     if (selectedCity) params.set('city', selectedCity);
@@ -34,7 +34,7 @@ export function Header() {
 
   const handleCityChange = (cityId: string) => {
     setSelectedCity(cityId);
-    const params = new URLSearchParams(searchParams.toString());
+    const params = new URLSearchParams(searchParams?.toString());
     if (cityId) params.set('city', cityId);
     else params.delete('city');
     router.push(`/browse?${params.toString()}`);

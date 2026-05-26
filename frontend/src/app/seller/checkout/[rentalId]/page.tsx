@@ -12,7 +12,7 @@ import Link from 'next/link';
 export default function CheckoutPage() {
   const params = useParams();
   const router = useRouter();
-  const rentalId = params.rentalId as string;
+  const rentalId = (params?.rentalId as string) ?? '';
 
   const [images, setImages] = useState<{ dataUrl: string; view: string }[]>([]);
   const [uploading, setUploading] = useState(false);

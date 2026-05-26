@@ -85,7 +85,7 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
       setCurrentIntent(data.intent);
 
       if (data.table && data.table.length > 0) {
-        setTimeout(() => addBotMsg(data.reply, data.table, null, data.escalationTicket), 200);
+        setTimeout(() => addBotMsg(data.reply, data.table, undefined, data.escalationTicket), 200);
       } else {
         setTimeout(() => addBotMsg(data.reply, undefined, undefined, data.escalationTicket), 200);
       }
