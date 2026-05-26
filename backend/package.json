@@ -23,6 +23,7 @@
     "morgan": "^1.10.0",
     "pg": "^8.11.3",
     "pg-format": "^1.0.4",
+    "@google/generative-ai": "^0.21.0",
     "razorpay": "^2.9.5",
     "uuid": "^9.0.1"
   },

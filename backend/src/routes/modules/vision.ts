@@ -1,6 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from 'express'
 import { auth, requireRoles } from '../../middleware/auth'
 import { db, withTransaction } from '../../utils/db'
+import { analyzeImages, isGeminiAvailable } from '../../services/gemini'
 
 const router = Router()
 
@@ -32,14 +33,10 @@ interface VisionResult {
   }
 }
 
-// Placeholder vision engine — in production, replace this with:
-// const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-// Then call GPT-4o with the system prompt from your blueprint
 async function runVisionAnalysis(
   checkoutImages: string[],
   checkinImages: string[],
 ): Promise<VisionResult> {
-  // Check if images exist
   if (checkoutImages.length === 0 || checkinImages.length === 0) {
     return {
       integrity_valid: false,
@@ -49,27 +46,13 @@ async function runVisionAnalysis(
     }
   }
 
-  // INTEGRATION HOOK: To use GPT-4o Vision, uncomment and configure:
-  //
-  // const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-  // const response = await openai.chat.completions.create({
-  //   model: "gpt-4o",
-  //   messages: [
-  //     { role: "system", content: VISION_ANALYTICS_PROMPT },
-  //     {
-  //       role: "user",
-  //       content: [
-  //         { type: "text", text: "Compare these checkout baselines against the check-in return images." },
-  //         ...checkoutImages.map(url => ({ type: "image_url", image_url: { url } })),
-  //         ...checkinImages.map(url => ({ type: "image_url", image_url: { url } })),
-  //       ],
-  //     },
-  //   ],
-  //   response_format: { type: "json_object" }
-  // });
-  // return JSON.parse(response.choices[0].message.content!);
+  // Use Gemini 1.5 Flash Vision if API key is configured
+  if (isGeminiAvailable()) {
+    const result = await analyzeImages(checkoutImages, checkinImages)
+    return result
+  }
 
-  // Mock analysis: returns clean result unless a specific trigger word is found
+  // Fallback mock — keyword-based
   const combinedUrl = [...checkoutImages, ...checkinImages].join(' ').toLowerCase()
   const hasDamageKeywords = ['crack', 'broken', 'damage', 'scratch', 'dent', 'missing'].some(k => combinedUrl.includes(k))
 

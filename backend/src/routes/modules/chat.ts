@@ -1,6 +1,7 @@
 import { Router, type Request, type Response, type NextFunction } from 'express'
 import { auth } from '../../middleware/auth'
 import { db } from '../../utils/db'
+import { generateChatResponse, classifyIntentWithLLM, isGeminiAvailable } from '../../services/gemini'
 
 const router = Router()
 
@@ -412,6 +413,17 @@ function generateOpsResponse(message: string): { reply: string; sections?: { tit
 }
 
 // ─── CHAT ENDPOINT ───────────────────────────────────────────────────
+// ─── STATUS ENDPOINT ───────────────────────────────────────────────
+router.get('/status', (_req: Request, res: Response) => {
+  res.json({
+    ai: isGeminiAvailable() ? 'gemini-1.5-flash' : 'rule-based',
+    geminiConfigured: isGeminiAvailable(),
+    message: isGeminiAvailable()
+      ? 'Gemini 1.5 Flash is active — natural responses + vision analysis enabled'
+      : 'Rule-based mode — set GEMINI_API_KEY for AI-powered responses',
+  })
+})
+
 router.post('/', auth(false), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { message, role, activeTxId } = req.body
@@ -422,30 +434,86 @@ router.post('/', auth(false), async (req: Request, res: Response, next: NextFunc
     }
 
     // STEP 1: Orchestrator classifies intent
-    const orchestration = classifyIntent(message, role)
+    let orchestration: OrchestrationResult
+    if (isGeminiAvailable()) {
+      try {
+        const llmOrch = await classifyIntentWithLLM(message, role)
+        orchestration = {
+          intent: llmOrch.target_routing,
+          entities: {
+            itemCategory: llmOrch.entities_extracted.item_category,
+            locationAnchor: llmOrch.entities_extracted.location_anchor,
+            targetUserId: llmOrch.entities_extracted.target_user_id,
+          },
+          dbQueryRequired: true,
+        }
+      } catch {
+        orchestration = classifyIntent(message, role)
+      }
+    } else {
+      orchestration = classifyIntent(message, role)
+    }
 
     // STEP 2: Fetch real data based on routing
     let dbContext: any = {}
     let specialistResponse: { reply: string; table?: any[]; ticket?: string } = { reply: '' }
 
     if (orchestration.intent === 'TRANSACTIONAL_SALES') {
-      // Fetch real listings and user stats
       const [listings, sellerStats, renterStats] = await Promise.all([
         fetchTransactionalData(orchestration.entities.itemCategory),
         userId !== 'anonymous' ? fetchSellerStats(userId).catch(() => null) : null,
         userId !== 'anonymous' ? fetchRenterStats(userId).catch(() => null) : null,
       ])
       dbContext = { listings, sellerStats, renterStats }
-      specialistResponse = generateSalesResponse(message, listings, orchestration.entities, role, userId, sellerStats, renterStats)
+
+      if (isGeminiAvailable()) {
+        const dbStr = `Listings: ${JSON.stringify(listings)}\nSellerStats: ${JSON.stringify(sellerStats)}\nRenterStats: ${JSON.stringify(renterStats)}`
+        const systemPrompt = `You are a sharp, analytical marketplace sales strategist for Lease. Your objective is to drive transaction velocity.
+- NEVER invent listings or prices. Use ONLY the attached database context.
+- If no matching listings exist, politely say so and offer a waitlist.
+- For renters: highlight cash-flow advantage of renting vs buying. Use real numbers.
+- For owners: frame idle items as losing money daily.
+- For wholesalers: focus on volume metrics and utilization.
+- Use bold for numbers: **₹X,XXX**
+- Be concise (2-4 sentences). End with a question to keep conversation going.`
+        const reply = await generateChatResponse(systemPrompt, dbStr, message)
+        specialistResponse = { reply, table: listings.length > 0 ? listings.slice(0, 5).map((l: any, i: number) => ({
+          '#': i + 1, 'Item': l.title, 'Rate': '₹' + Number(l.monthly_rent).toLocaleString('en-IN') + '/mo',
+          'Deposit': '₹' + Number(l.deposit_amount).toLocaleString('en-IN'), 'Seller': l.seller_name,
+        })) : undefined }
+      } else {
+        specialistResponse = generateSalesResponse(message, listings, orchestration.entities, role, userId, sellerStats, renterStats)
+      }
 
     } else if (orchestration.intent === 'ESCROW_SUPPORT') {
       const escrowData = userId !== 'anonymous' ? await fetchEscrowData(userId).catch(() => null) : null
       dbContext = { escrowData }
-      specialistResponse = generateSupportResponse(message, escrowData, userId)
+
+      if (isGeminiAvailable()) {
+        const dbStr = `EscrowData: ${JSON.stringify(escrowData)}`
+        const systemPrompt = `You are a calm, analytical escrow and dispute specialist for Lease.
+- Security deposits are held in escrow, fully locked until both parties sign off.
+- You cannot issue refunds, override penalties, or lift holds directly.
+- If a dispute can't be resolved, generate a ticket ID and route to human admin.
+- Be transparent, professional, and grounded in platform rules.
+- Use bold for key numbers. Be concise.`
+        const reply = await generateChatResponse(systemPrompt, dbStr, message)
+        specialistResponse = { reply }
+      } else {
+        specialistResponse = generateSupportResponse(message, escrowData, userId)
+      }
 
     } else {
-      // INTERFACE_OPS — no DB data needed
-      specialistResponse = generateOpsResponse(message)
+      if (isGeminiAvailable()) {
+        const systemPrompt = `You are the Lease product operations guide. Transform operational processes into scannable step-by-step instructions.
+- Use bullet points and numbered lists.
+- Cover: platform workflow, creating listings, account management, handover/return process.
+- Be friendly and clear. Never dump walls of prose.`
+        const reply = await generateChatResponse(systemPrompt, '[SYSTEM NOTE]: Provide structural navigation guides only.', message)
+        specialistResponse = { reply }
+      } else {
+        specialistResponse = generateOpsResponse(message)
+      }
     }
 
     // STEP 3: Return structured response
