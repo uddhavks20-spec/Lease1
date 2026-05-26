@@ -45,7 +45,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const finalLimit = limit ? parseInt(limit as string) : 50
     const result = await db.query(
-      `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.category_id, i.city_id, i.status, i.retail_price, i.sub_attributes,
+      `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.category_id, i.city_id, i.status, i.retail_price, i.sub_attributes, i.condition,
               (SELECT image_url FROM item_images WHERE item_id = i.id AND is_primary = true LIMIT 1) as image_url
        FROM items i ${where} ${orderClause} LIMIT $${params.length + 1}`,
       [...params, finalLimit]
