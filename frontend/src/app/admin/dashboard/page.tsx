@@ -382,7 +382,7 @@ export default function AdminDashboard() {
                         <div className="space-y-1">
                           <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Receipt</p>
                           <a href={v.purchase_receipt_url} target="_blank" rel="noopener noreferrer" className="block aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:opacity-80 transition-opacity">
-                            <img src={v.purchase_receipt_url} alt="Receipt" className="w-full h-full object-cover" onError={(e) => { (e.target).style.display = 'none' }} />
+                            <img src={v.purchase_receipt_url} alt="Receipt" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                           </a>
                         </div>
                       )}
@@ -390,7 +390,7 @@ export default function AdminDashboard() {
                         <div className="space-y-1">
                           <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Box Photo</p>
                           <a href={v.original_box_photo_url} target="_blank" rel="noopener noreferrer" className="block aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:opacity-80 transition-opacity">
-                            <img src={v.original_box_photo_url} alt="Box" className="w-full h-full object-cover" onError={(e) => { (e.target).style.display = 'none' }} />
+                            <img src={v.original_box_photo_url} alt="Box" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                           </a>
                         </div>
                       )}
@@ -398,7 +398,7 @@ export default function AdminDashboard() {
                         <div className="space-y-1">
                           <p className="text-[8px] font-black text-gray-400 uppercase tracking-widest">Damage</p>
                           <a href={v.damage_photo_url} target="_blank" rel="noopener noreferrer" className="block aspect-[4/3] bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700 hover:opacity-80 transition-opacity">
-                            <img src={v.damage_photo_url} alt="Damage" className="w-full h-full object-cover" onError={(e) => { (e.target).style.display = 'none' }} />
+                            <img src={v.damage_photo_url} alt="Damage" className="w-full h-full object-cover" onError={(e) => (e.target as HTMLImageElement).style.display = 'none'} />
                           </a>
                         </div>
                       )}
