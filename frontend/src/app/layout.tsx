@@ -48,11 +48,11 @@ export default function RootLayout({
         >
           <AuthProvider>
             <CartProvider>
-              <Suspense>
+              <Suspense fallback={<div className="min-h-screen" />}>
                 <Header />
               </Suspense>
               <main className="flex-1">
-                <Suspense>
+                <Suspense fallback={<div className="min-h-screen" />}>
                   {children}
                 </Suspense>
               </main>
