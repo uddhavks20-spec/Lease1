@@ -56,7 +56,7 @@ export default function CartPage() {
   return (
     <div className="container py-12 max-w-7xl">
       <div className="flex flex-col md:flex-row justify-between items-baseline mb-10 gap-4">
-        <h1 className="text-4xl font-black tracking-tight text-gray-900 dark:text-white">Your Cart</h1>
+        <h1 className="text-3xl md:text-4xl font-black tracking-tight text-gray-900 dark:text-white">Your Cart</h1>
         <div className="flex items-center gap-2 text-sm font-bold text-gray-500">
           <span className="text-primary-600">Cart</span>
           <ArrowRight className="h-4 w-4" />
@@ -223,7 +223,7 @@ export default function CartPage() {
                 <div className="pt-4 border-t border-gray-100 dark:border-gray-700">
                   <div className="flex justify-between items-center mb-1">
                     <div className="text-xs font-black text-gray-400 uppercase tracking-[0.2em]">Payable Now</div>
-                    <div className="text-4xl font-black text-primary-600">{formatCurrency(totalPayableNow)}</div>
+                    <div className="text-3xl md:text-4xl font-black text-primary-600">{formatCurrency(totalPayableNow)}</div>
                   </div>
                   <p className="text-[10px] text-gray-400 font-bold">GST inclusive where applicable</p>
                 </div>
