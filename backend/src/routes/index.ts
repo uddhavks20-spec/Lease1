@@ -13,6 +13,7 @@ import categoriesRouter from './modules/categories'
 import citiesRouter from './modules/cities'
 import kycRouter from './modules/kyc'
 import creditRouter from './modules/credit'
+import wholesalerRouter from './modules/wholesaler'
 
 export const apiRouter = Router()
 
@@ -30,3 +31,4 @@ apiRouter.use('/categories', categoriesRouter)
 apiRouter.use('/cities', citiesRouter)
 apiRouter.use('/kyc', kycRouter)
 apiRouter.use('/credit', creditRouter)
+apiRouter.use('/wholesaler', wholesalerRouter)
