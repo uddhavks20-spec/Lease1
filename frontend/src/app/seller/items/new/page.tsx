@@ -350,7 +350,6 @@ export default function NewItemPage() {
               </div>
             </CardContent>
           </Card>
-        </div>
 
         {/* Media: Images & Video */}
         <Card className="border-none shadow-sm bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden">
@@ -520,6 +519,7 @@ export default function NewItemPage() {
             </div>
           </CardContent>
         </Card>
+        </div>
         {/* Right Column: Pricing Engine */}
         <div className="lg:col-span-5 space-y-6">
           <Card className="border-none shadow-2xl shadow-gray-200/50 dark:shadow-none bg-white dark:bg-gray-800 rounded-[40px] overflow-hidden sticky top-24">
