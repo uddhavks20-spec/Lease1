@@ -231,8 +231,7 @@ function calc() {
     document.getElementById('condWarn').textContent = ''
   }
   condIds.forEach((id, i) => {
-    const pct = condMix[i]
-    document.getElementById('l_' + id.replace('cond','cond')).textContent = Math.round(pct * 100 / condSum) + '%'
+    document.getElementById('l_' + id).textContent = condMix[i] + '%'
   })
 
   // Normalize category mix
@@ -264,6 +263,29 @@ function calc() {
   const seasonal = getVal('seasonal') / 100
   const depYield = getVal('depYield') / 100
   const churn = getVal('churn') / 100
+
+  // Update all slider value labels
+  document.getElementById('l_users').textContent = users.toLocaleString('en-IN')
+  document.getElementById('l_mrv').textContent = '₹' + mrv.toLocaleString('en-IN')
+  document.getElementById('l_tenure').textContent = tenure + 'mo'
+  document.getElementById('l_itemsPerUser').textContent = itemsPerUser.toFixed(1)
+  document.getElementById('l_takeRate').textContent = Math.round(takeRate * 100) + '%'
+  document.getElementById('l_cac').textContent = '₹' + cac.toLocaleString('en-IN')
+  document.getElementById('l_fixedOps').textContent = '₹' + fixedOps.toLocaleString('en-IN')
+  document.getElementById('l_pgFee').textContent = (pgFee * 100).toFixed(1) + '%'
+  document.getElementById('l_damageRate').textContent = damageRate * 100 + '%'
+  document.getElementById('l_damageAmt').textContent = damageAmt * 100 + '%'
+  document.getElementById('l_lateRate').textContent = lateRate * 100 + '%'
+  document.getElementById('l_theftRate').textContent = theftRate * 100 + '%'
+  document.getElementById('l_payFail').textContent = payFail * 100 + '%'
+  document.getElementById('l_dispCost').textContent = '₹' + dispCost.toLocaleString('en-IN')
+  document.getElementById('l_seasonal').textContent = '\u2212' + seasonal * 100 + '%'
+  document.getElementById('l_depYield').textContent = depYield * 100 + '%'
+  document.getElementById('l_churn').textContent = churn * 100 + '%'
+  // Category mix labels
+  catIds.forEach((id, i) => {
+    document.getElementById('l_' + id).textContent = (catSum > 0 ? Math.round(catMix[i] * 100 / catSum) : 25) + '%'
+  })
 
   // Categorize
   const catNames = ['Electronics','Appliance','Furniture','Lifestyle']
