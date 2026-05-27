@@ -58,6 +58,7 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
   const [isTyping, setIsTyping] = useState(false);
   const [currentIntent, setCurrentIntent] = useState<string | null>(null);
   const [sessionState, setSessionState] = useState<SessionState | null>(null);
+  const [suggestions, setSuggestions] = useState<string[] | null>(null);
   const [error, setError] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [identifying, setIdentifying] = useState(false);
@@ -73,16 +74,87 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
         wholesaler: "Hey wholesaler! Lease Guru here. I can help you optimize your inventory turnover, suggest volume-friendly pricing, and analyze utilization rates. What products are you moving?",
       };
       setMessages([{ role: 'bot', text: greetings[role] || greetings.buyer }]);
+      setSuggestions([
+        'I want to rent something',
+        'I want to list/sell something',
+        'I have a complaint',
+        'How does Lease work?',
+        'Pricing help',
+      ]);
     }
   }, []);
 
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-  }, [messages, isTyping]);
+  }, [messages, isTyping, suggestions]);
 
   const addBotMsg = useCallback((text: string, table?: any[], highlight?: string, ticket?: string) => {
     setMessages(prev => [...prev, { role: 'bot', text, table, highlight, ticket }]);
   }, []);
+
+  const sendMessage = useCallback(async (text: string) => {
+    setMessages(prev => [...prev, { role: 'user', text }]);
+    setInput('');
+    setSuggestions(null);
+    setIsTyping(true);
+    setError(false);
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const res = await fetch(`${API_BASE}/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({
+          message: text,
+          role: role === 'buyer' ? 'renter' : role,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const data = await res.json();
+
+      setIsTyping(false);
+      setCurrentIntent(data.intent);
+      if (data.sessionState) setSessionState(data.sessionState);
+      if (data.suggestions) setSuggestions(data.suggestions);
+
+      const delay = data.table && data.table.length > 0 ? 200 : 200;
+      setTimeout(() => addBotMsg(data.reply, data.table || undefined, undefined, data.escalationTicket), delay);
+    } catch (e) {
+      setIsTyping(false);
+      setError(true);
+      const lower = text.toLowerCase();
+      let fb = '';
+      if (lower.includes('hi') || lower.includes('hey') || lower.includes('hello')) {
+        fb = "Hey! What can I help you with? Try asking about listings, pricing, or how the platform works.";
+      } else if (lower.includes('price') || lower.includes('sell') || lower.includes('list')) {
+        fb = "For pricing help, try asking something like 'what should I charge for my laptop worth ₹50,000?'";
+      } else if (lower.includes('deposit') || lower.includes('refund') || lower.includes('escrow')) {
+        fb = "Security deposits are held in escrow and refunded within 24 hours after both parties sign off on return.";
+      } else if (lower.includes('how') || lower.includes('help') || lower.includes('guide')) {
+        fb = "I can guide you through listing items, making bookings, or managing your account. Just ask!";
+      } else if (lower.includes('ma') || lower.includes('hai') || lower.includes('kya') || lower.includes('chahiye') || lower.includes('bhai')) {
+        fb = "Kya chahiye? Item batao aur kitne mahine ke liye chahiye — main price batata hoon!";
+      } else {
+        fb = "I'm having trouble connecting to my brain right now. Try again in a moment, or ask something simple like 'how do I list an item?'";
+      }
+      setTimeout(() => addBotMsg(fb), 200);
+    }
+  }, [role, addBotMsg]);
+
+  const handleSend = useCallback(() => {
+    const q = input.trim();
+    if (!q || isTyping) return;
+    sendMessage(q);
+  }, [input, isTyping, sendMessage]);
+
+  const handleSuggestionClick = useCallback((text: string) => {
+    sendMessage(text);
+  }, [sendMessage]);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -115,7 +187,7 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
           const desc = `**${data.itemName}** (${data.category}) — estimated ₹${(data.estimatedRetailPrice || 0).toLocaleString('en-IN')}, condition: ${data.condition}`;
           const msg = `I can see a ${desc}. How long do you need it for?`;
           addBotMsg(msg, undefined, undefined, undefined);
-          setInput(`I want to rent ${data.itemName}`);
+          sendMessage(`I want to rent ${data.itemName}`);
         } else {
           addBotMsg("Couldn't identify that clearly — can you describe the item? What is it and what's it worth?");
         }
@@ -127,63 +199,6 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
     };
     reader.readAsDataURL(file);
   };
-
-  const handleSend = useCallback(async () => {
-    const q = input.trim();
-    if (!q || isTyping) return;
-    setMessages(prev => [...prev, { role: 'user', text: q }]);
-    setInput('');
-    setIsTyping(true);
-    setError(false);
-
-    try {
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
-      const res = await fetch(`${API_BASE}/chat`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({
-          message: q,
-          role: role === 'buyer' ? 'renter' : role,
-        }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-      const data = await res.json();
-
-      setIsTyping(false);
-      setCurrentIntent(data.intent);
-      if (data.sessionState) setSessionState(data.sessionState);
-
-      if (data.table && data.table.length > 0) {
-        setTimeout(() => addBotMsg(data.reply, data.table, undefined, data.escalationTicket), 200);
-      } else {
-        setTimeout(() => addBotMsg(data.reply, undefined, undefined, data.escalationTicket), 200);
-      }
-    } catch (e) {
-      setIsTyping(false);
-      setError(true);
-      const lower = q.toLowerCase();
-      let fb = '';
-      if (lower.includes('hi') || lower.includes('hey') || lower.includes('hello')) {
-        fb = "Hey! What can I help you with? Try asking about listings, pricing, or how the platform works.";
-      } else if (lower.includes('price') || lower.includes('sell') || lower.includes('list')) {
-        fb = "For pricing help, try asking something like 'what should I charge for my laptop worth ₹50,000?'";
-      } else if (lower.includes('deposit') || lower.includes('refund') || lower.includes('escrow')) {
-        fb = "Security deposits are held in escrow and refunded within 24 hours after both parties sign off on return.";
-      } else if (lower.includes('how') || lower.includes('help') || lower.includes('guide')) {
-        fb = "I can guide you through listing items, making bookings, or managing your account. Just ask!";
-      } else if (lower.includes('ma') || lower.includes('hai') || lower.includes('kya') || lower.includes('chahiye') || lower.includes('bhai')) {
-        fb = "Kya chahiye? Item batao aur kitne mahine ke liye chahiye — main price batata hoon!";
-      } else {
-        fb = "I'm having trouble connecting to my brain right now. Try again in a moment, or ask something simple like 'how do I list an item?'";
-      }
-      setTimeout(() => addBotMsg(fb), 200);
-    }
-  }, [input, isTyping, role, addBotMsg]);
 
   const intentInfo = currentIntent ? INTENT_LABELS[currentIntent] : null;
   const tenureBadge = sessionState?.tenure ? getTenureBadge(sessionState.tenure) : null;
@@ -319,6 +334,20 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
                 )}
               </div>
             ))}
+            {/* Suggestion chips after last bot message */}
+            {!isTyping && suggestions && suggestions.length > 0 && messages.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {suggestions.map((s, i) => (
+                  <button
+                    key={i}
+                    onClick={() => handleSuggestionClick(s)}
+                    className="text-[10px] font-bold px-3 py-1.5 rounded-full bg-white dark:bg-gray-800 text-primary-700 dark:text-primary-300 border border-primary-200 dark:border-primary-800 hover:bg-primary-50 dark:hover:bg-primary-900/20 hover:border-primary-400 transition-all shadow-sm active:scale-95"
+                  >
+                    {s}
+                  </button>
+                ))}
+              </div>
+            )}
             {isTyping && (
               <div className="flex justify-start">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3.5 shadow-sm border border-gray-100 dark:border-gray-700">

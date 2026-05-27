@@ -531,6 +531,74 @@ router.get('/status', (_req: Request, res: Response) => {
   })
 })
 
+// ─── SUGGESTION CHIPS ────────────────────────────────────────────
+function getSuggestions(session: SessionState): string[] | null {
+  // After 4+ exchanges with clear intent, free chat — no suggestions
+  if (session.messagesInSession >= 5 && session.role && session.tenureMonths) return null
+  if (session.messagesInSession >= 8) return null
+
+  // Level 0: First message, no intent yet
+  if (!session.role) {
+    return [
+      'I want to rent something',
+      'I want to list/sell something',
+      'I have a complaint',
+      'How does Lease work?',
+      'Pricing help',
+    ]
+  }
+
+  // Seller branch
+  if (session.role === 'seller') {
+    if (!session.itemOfInterest) {
+      return [
+        'I want to sell a laptop',
+        'I want to sell furniture',
+        'I want to sell a phone',
+        'I want to sell books',
+        'What should I charge?',
+      ]
+    }
+    return [
+      'What rent should I set?',
+      'How much deposit?',
+      'Compare with competition',
+      'Damage protection?',
+      'How to optimize earnings',
+    ]
+  }
+
+  // Renter branch
+  if (!session.itemOfInterest) {
+    return [
+      'I need a laptop',
+      'I need an AC',
+      'I need a fridge',
+      'I need furniture',
+      'I need a cycle',
+      'Show me popular items',
+    ]
+  }
+
+  if (!session.tenureMonths) {
+    return [
+      'For 1 month / Flash',
+      'For 6 months / Semester',
+      'For 12 months / Annual',
+      'For 18+ months',
+      'What are the pricing bands?',
+    ]
+  }
+
+  return [
+    'Show pricing breakdown',
+    'Compare rent vs EMI',
+    'Show available listings',
+    'Tell me about deposit',
+    'Negotiate price',
+  ]
+}
+
 // ─── CHAT ENDPOINT ────────────────────────────────────────────────
 router.post('/', auth(false), async (req: Request, res: Response, next: NextFunction) => {
   try {
@@ -564,6 +632,7 @@ router.post('/', auth(false), async (req: Request, res: Response, next: NextFunc
         budgetSignal: session.budgetSignal,
         hinglishMode: session.hinglishMode,
       },
+      suggestions: getSuggestions(session),
     })
   } catch (e) {
     next(e)
