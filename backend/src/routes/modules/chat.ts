@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { auth } from '../../middleware/auth'
 import { db } from '../../utils/db'
-import { generateChatResponse, classifyIntentWithLLM, isGeminiAvailable } from '../../services/gemini'
+import { generateChatResponse, isGeminiAvailable } from '../../services/gemini'
 
 const router = Router()
 
@@ -44,6 +44,7 @@ interface SessionState {
   unresolvedQuestions: string[]
   monthsAlreadyPaid: number
   suggestionPath: string[]
+  conversationHistory: { role: 'user' | 'assistant'; text: string }[]
 }
 
 const sessions = new Map<string, SessionState>()
@@ -55,7 +56,7 @@ function getSession(userId: string): SessionState {
       budgetSignal: null, campus: null, urgency: null,
       emiTemptation: false, hinglishMode: false,
       messagesInSession: 0, unresolvedQuestions: [],
-      monthsAlreadyPaid: 0, suggestionPath: [],
+      monthsAlreadyPaid: 0, suggestionPath: [], conversationHistory: [],
     })
   }
   return sessions.get(userId)!
@@ -315,76 +316,6 @@ function computePricing(
   }
 }
 
-// ─── EMI SWITCHER ────────────────────────────────────────────────
-function getEmiSwitcherStep(pricing: PricingResult, session: SessionState): { step: number; response: string } {
-  const band = getTenureBand(session.tenureMonths || 12)
-
-  // Step determination based on spec
-  if (band.id === 'flash') {
-    return {
-      step: 1,
-      response: `You want this for ${pricing.months} months. EMI over ${band.emiHorizon}mo = ₹${Math.round(pricing.emiTotal / band.emiHorizon).toLocaleString('en-IN')}/mo × ${band.emiHorizon} = ₹${pricing.emiTotal.toLocaleString('en-IN')} total. Renting = ₹${pricing.leaseRent.toLocaleString('en-IN')}/mo × ${pricing.months} = ₹${pricing.renterTotal.toLocaleString('en-IN')}. There's literally no world where EMI makes sense here. You'd be paying for ${band.emiHorizon - pricing.months} months of something you returned after ${pricing.months}.`,
-    }
-  }
-
-  if (band.id === 'semester') {
-    if (session.budgetSignal === 'tight') {
-      return {
-        step: 2,
-        response: `Renting ${pricing.months}mo = ₹${pricing.renterTotal.toLocaleString('en-IN')} total. EMI ${band.emiHorizon}mo = ₹${Math.round(pricing.emiTotal / band.emiHorizon).toLocaleString('en-IN')}/mo = ₹${pricing.emiTotal.toLocaleString('en-IN')} total. Renting saves ₹${pricing.savingVsEmi.toLocaleString('en-IN')} and you walk away with no asset to depreciate. BUT — if you think you'll keep using this after ${pricing.months} months, tell me. There's a way to apply your rent toward a refurb purchase.`,
-      }
-    }
-    return {
-      step: 2,
-      response: `Renting ${pricing.months}mo = ₹${pricing.renterTotal.toLocaleString('en-IN')}. EMI ${band.emiHorizon}mo = ₹${pricing.emiTotal.toLocaleString('en-IN')}. Renting saves ₹${pricing.savingVsEmi.toLocaleString('en-IN')} and zero ownership risk. Want me to run both scenarios side by side?`,
-    }
-  }
-
-  if (band.id === 'annual') {
-    return {
-      step: 3,
-      response: `Honest take: at ${pricing.months} months, EMI and renting are within ₹${Math.abs(pricing.savingVsEmi).toLocaleString('en-IN')}/mo of each other. What renting gives you: zero ownership risk, ₹${pricing.deposit.toLocaleString('en-IN')} less locked up (vs down payment), and your Lease Credit Score gets you zero-deposit for future rentals. If you KNOW you'll want to keep this after a year — EMI might actually win. Want me to run both scenarios side by side?`,
-    }
-  }
-
-  // Extended / Lifecycle
-  if (pricing.savingVsEmi < 5000 && session.budgetSignal !== 'tight') {
-    return {
-      step: 5,
-      response: `At ${pricing.months} months, you're in near-ownership territory. Total rent = ₹${pricing.renterTotal.toLocaleString('en-IN')}. Total EMI = ₹${pricing.emiTotal.toLocaleString('en-IN')}. Gap = ₹${Math.abs(pricing.savingVsEmi).toLocaleString('en-IN')}. If you WANT to own it — EMI makes sense. I'll refer you to our partner and you still keep your Lease Credit Score.`,
-    }
-  }
-
-  // Tight budget override
-  if (session.budgetSignal === 'tight') {
-    return {
-      step: 1,
-      response: `EMI locks you in for ${band.emiHorizon} months. Miss two payments and your credit score takes a hit. Renting = no commitment, cancel anytime. For where you're at right now, renting is the safer call.`,
-    }
-  }
-
-  return {
-    step: 4,
-    response: `At ${pricing.months}mo, renting = ₹${pricing.renterTotal.toLocaleString('en-IN')}, EMI = ₹${pricing.emiTotal.toLocaleString('en-IN')}. You save ₹${pricing.savingVsEmi.toLocaleString('en-IN')}. Want to explore Rent-to-Own?`,
-  }
-}
-
-// ─── PROACTIVE NUDGES (based on SESSION_STATE) ───────────────────
-function getProactiveNudge(session: SessionState, pricing?: PricingResult): string | null {
-  if (!session.tenureMonths || !pricing) return null
-
-  if (session.tenureMonths >= 12) {
-    return `By the way, at ${session.tenureMonths}+ months you qualify for our Annual Lease discount — 9% off total if you prepay. Want me to calculate that?`
-  }
-  if (session.budgetSignal === 'tight') {
-    return `Quick tip: Fair condition items are 4.5% cheaper and functionally the same for study use. Want me to show only Fair/Good listings?`
-  }
-  if (session.campus && (session.campus === 'hostel' || session.campus === 'pg')) {
-    return `Your deposit is refunded in full when you return items — so even if you move out early, you get it back. Just flag it 2 weeks in advance.`
-  }
-  return null
-}
-
 // ─── DATA FETCHER ─────────────────────────────────────────────────
 async function fetchTransactionalData(itemCategory?: string | null) {
   let query = `
@@ -403,21 +334,6 @@ async function fetchTransactionalData(itemCategory?: string | null) {
   return result.rows
 }
 
-async function fetchEscrowData(userId: string) {
-  const [deposits, disputes] = await Promise.all([
-    db.query(`SELECT d.id, d.amount, d.status, d.deduction_amount, d.deduction_reason, r.id as rental_id, r.status as rental_status
-      FROM deposits d JOIN rentals r ON r.id = d.rental_id
-      WHERE r.renter_id = $1 OR r.seller_id = $1 ORDER BY d.created_at DESC LIMIT 5`, [userId]),
-    db.query(`SELECT id, type, status, description, created_at FROM disputes WHERE raised_by = $1 ORDER BY created_at DESC LIMIT 5`, [userId]),
-  ])
-  return {
-    deposits: deposits.rows,
-    disputes: disputes.rows,
-    hasActiveDeposits: deposits.rows.some((d: any) => d.status === 'held'),
-    openDisputes: disputes.rows.filter((d: any) => d.status === 'open' || d.status === 'under_review'),
-  }
-}
-
 // ─── GENERATE LEASE GURU RESPONSE ────────────────────────────────
 async function generateLeaseGuruResponse(
   message: string,
@@ -428,52 +344,55 @@ async function generateLeaseGuruResponse(
   const normalized = normalizeHinglish(message)
   updateSession(session, message, normalized)
 
-  // If Gemini is available, use it with the full system prompt
+  // Try Gemini first
   if (isGeminiAvailable()) {
-    const dbStr = `Listings: ${JSON.stringify(listings)}\nSession State: ${JSON.stringify(session)}`
     const tenureInfo = session.tenureMonths
       ? computePricing(50000, 'Good', 'Electronics', session.tenureMonths)
       : null
-    const proactiveNudge = getProactiveNudge(session, tenureInfo || undefined)
 
-    const systemPrompt = `You are Lease Guru — the conversational AI for Lease, a peer-to-peer student rental marketplace.
+    // Build conversation history text (last 6 exchanges)
+    const historyText = session.conversationHistory.slice(-6).map(ex =>
+      ex.role === 'user' ? `User: ${ex.text}` : `Lease Guru: ${ex.text}`
+    ).join('\n')
 
-Your vibe: the financially sharp friend in the hostel who always knows the smarter move. You think in ROI. You speak like a real person, not a chatbot.
+    const pricingContext = tenureInfo
+      ? `User tenure: ${session.tenureMonths}mo (${tenureInfo.band} band)
+  Lease rent: ₹${tenureInfo.leaseRent.toLocaleString('en-IN')}/mo
+  Deposit: ₹${tenureInfo.deposit.toLocaleString('en-IN')}
+  Competitor: ₹${Math.round(tenureInfo.competitorTotal / session.tenureMonths!).toLocaleString('en-IN')}/mo
+  EMI (${getTenureBand(session.tenureMonths!).emiHorizon}mo): ₹${Math.round(tenureInfo.emiTotal / getTenureBand(session.tenureMonths!).emiHorizon).toLocaleString('en-IN')}/mo`
+      : 'Tenure not yet established'
 
-## SESSION STATE
-${JSON.stringify(session, null, 2)}
+    const systemPrompt = `You are Lease Guru, the conversational AI for Lease — a peer-to-peer student rental marketplace.
 
-## PRICING CONTEXT
-${tenureInfo ? `Current tenure: ${session.tenureMonths}mo (${tenureInfo.band} band)
-Lease rent: ₹${tenureInfo.leaseRent.toLocaleString('en-IN')}/mo
-Deposit: ₹${tenureInfo.deposit.toLocaleString('en-IN')}
-Competitor: ₹${Math.round(tenureInfo.competitorTotal / session.tenureMonths!).toLocaleString('en-IN')}/mo
-EMI (${getTenureBand(session.tenureMonths!).emiHorizon}mo): ₹${Math.round(tenureInfo.emiTotal / getTenureBand(session.tenureMonths!).emiHorizon).toLocaleString('en-IN')}/mo` : 'No tenure established yet'}
+You are the financially sharp friend in the hostel who always knows the smarter move. You speak naturally, use student slang naturally, and never sound like a customer support bot. You think in ROI and value.
 
-## RULES
-- Determine the user's intent from their CURRENT message: are they looking to rent (renter) or list/sell (seller)? Do NOT rely on session role — use the current message.
-- If they want to list/sell → give seller advice (pricing, deposit, daily rate)
-- If they want to rent → give renter advice (pricing breakdown by tenure, EMI comparison)
-- If unsure, ask ONE clarifying question
-- NEVER ask more than one question per message
-- NEVER start with "Great question!" or "Certainly!"
-- NEVER repeat what the user just said back to them
-- Keep responses under 150 words unless showing math
-- If the user is in Hinglish mode (${session.hinglishMode}), respond in the same mix
-- Bold key numbers: **₹X,XXX**
-- For math-heavy responses, use a table
-- Lead with the insight/recommendation, then show numbers
-${proactiveNudge ? `\n## PROACTIVE NUDGE (optional)\n${proactiveNudge}` : ''}
-${session.emiTemptation ? `\n## EMI TEMPTATION DETECTED\nUse the EMI switcher logic based on tenure band and budget signal.` : ''}
+## Your knowledge
+- You know everything about the Lease platform: renting items, listing items, pricing, deposits, escrow, EMI vs rent decisions, tenure bands, and competitor pricing.
+- You have access to live Google Search for current competitor rates, EMI plans, and product prices.
+- You can calculate pricing, compare rent vs EMI, and suggest optimal pricing for sellers.
+- If the user speaks in Hinglish, respond in the same natural mix.
 
-## CONVERSATION FLOW
-1. If tenure unknown → ask ONE question: "How long do you need it?"
-2. If item + price known → show pricing breakdown by tenure band
-3. If EMI mentioned → use EMI switcher based on tenure + budget
-4. Never ask what you can infer from session state`
+## Current session context
+- Session state: ${JSON.stringify(session, null, 2)}
+- Recent conversation (last few exchanges):
+${historyText || '  (new conversation)'}
+
+## Pricing context
+${pricingContext}
+
+## Available listings from DB
+${listings.length > 0 ? JSON.stringify(listings.slice(0, 3).map(l => ({ title: l.title, rent: l.monthly_rent, deposit: l.deposit_amount, seller: l.seller_name }))) : 'No matching listings found'}
+
+## Guidelines
+- Be concise and direct. Students have short attention spans.
+- Use **bold** for key numbers (₹ amounts, months, percentages).
+- If showing numbers, a short table is better than a paragraph.
+- Never invent policies or prices. Use the session context and pricing info above.
+- If you don't know something, say so — don't make it up.`
 
     try {
-      const reply = await generateChatResponse(systemPrompt, dbStr, message)
+      const reply = await generateChatResponse(systemPrompt, '', message)
       return {
         reply,
         table: listings.length > 0 ? listings.slice(0, 5).map((l: any, i: number) => ({
@@ -484,103 +403,13 @@ ${session.emiTemptation ? `\n## EMI TEMPTATION DETECTED\nUse the EMI switcher lo
         })) : undefined,
       }
     } catch {
-      // fall through to rule-based
+      // Gemini failed — minimal fallback, no templates
+      return { reply: 'Sorry, my brain is buffering. Can you say that again?' }
     }
   }
 
-  // ─── RULE-BASED FALLBACK ──────────────────────────────────────
-  const lower = message.toLowerCase()
-
-  // Hinglish greeting
-  if (session.hinglishMode) {
-    if (normalized.intent === 'rent') {
-      const item = normalized.itemHint || 'item'
-      return { reply: `${item} chahiye? Batao kitne mahine ke liye chahiye — usi hisaab se price bataunga.` }
-    }
-    if (normalized.intent === 'list') {
-      return { reply: 'Apna item list karna chahte ho? Batao kaunsa item hai aur kitne ka kharida tha — main suggest karunga kitna rent lena chahiye.' }
-    }
-  }
-
-  // Buy vs rent
-  if ((lower.includes('buy') || lower.includes('purchase')) && (lower.includes('rent') || lower.includes('lease'))) {
-    const buyPrice = 120000
-    const days = 60
-    const rentTotal = 250 * days
-    const diff = buyPrice - rentTotal
-    return {
-      reply: `Buying new = **₹${buyPrice.toLocaleString('en-IN')}**. You need it **${days} days**. Renting = **₹${rentTotal.toLocaleString('en-IN')}** total. You save **₹${diff.toLocaleString('en-IN')}** (${Math.round(diff / buyPrice * 100)}%). For ${days} days usage, renting is the obvious play.`,
-      table: [
-        { 'Metric': 'Buy Price', 'Value': '₹' + buyPrice.toLocaleString('en-IN') },
-        { 'Metric': 'Rent Total', 'Value': '₹' + rentTotal.toLocaleString('en-IN') },
-        { 'Metric': 'You Save', 'Value': '₹' + diff.toLocaleString('en-IN') },
-      ],
-    }
-  }
-
-  // Seller pricing advice — check BEFORE listings so seller intent isn't hijacked
-  if (normalized.intent === 'list' || session.role === 'seller' || lower.includes('list') || lower.includes('sell') || lower.includes('charge')) {
-    const itemValue = 50000
-    const dailyRate = Math.round(itemValue * 0.015)
-    const deposit = Math.round(itemValue * 0.3)
-    return {
-      reply: `For **₹${itemValue.toLocaleString('en-IN')}** item: suggest **₹${dailyRate}/day** (~1.5% of value). Deposit **₹${deposit.toLocaleString('en-IN')}**. At 15 days/mo = **₹${(dailyRate * 15).toLocaleString('en-IN')}/mo** passive income. Semester = **₹${(dailyRate * 60).toLocaleString('en-IN')}**. Quick tip: keep pickup radius under 1km for better trust scores.`,
-      table: [
-        { 'Metric': 'Daily Rate', 'Value': '₹' + dailyRate + '/day' },
-        { 'Metric': 'Deposit', 'Value': '₹' + deposit.toLocaleString('en-IN') },
-        { 'Metric': 'Monthly (15 days)', 'Value': '₹' + (dailyRate * 15).toLocaleString('en-IN') },
-      ],
-    }
-  }
-
-  // Pricing inquiry (renter-side)
-  if (normalized.intent === 'pricing_query' || lower.includes('price') || lower.includes('cost') || lower.includes('rate')) {
-    if (!normalized.itemHint) return { reply: 'Kaunse item ki price chahiye? Batao item ka naam aur kitne der ke liye chahiye.' }
-    if (!session.tenureMonths) return { reply: `${normalized.itemHint} ke liye price batane se pehle — kitne mahine ke liye chahiye? Usi hisaab se rent change hota hai.` }
-
-    const pricing = computePricing(50000, 'Good', 'Electronics', session.tenureMonths)
-    const emiStep = session.emiTemptation ? getEmiSwitcherStep(pricing, session) : null
-    return {
-      reply: `${normalized.itemHint} ke liye ${session.tenureMonths}mo ka breakdown:
-• Lease: **₹${pricing.leaseRent.toLocaleString('en-IN')}/mo** (${pricing.band} band)
-• Deposit: **₹${pricing.deposit.toLocaleString('en-IN')}** (refundable)
-• Competitor: ₹${Math.round(pricing.competitorTotal / pricing.months).toLocaleString('en-IN')}/mo
-• Total rent: ₹${pricing.renterTotal.toLocaleString('en-IN')}
-${emiStep ? `\n${emiStep.response}` : ''}`,
-    }
-  }
-
-  // Live listings available — only for renter intent, not seller
-  if (listings.length > 0 && !lower.includes('list') && !lower.includes('sell')) {
-    const cheapest = listings.reduce((a: any, b: any) => Number(a.monthly_rent) < Number(b.monthly_rent) ? a : b)
-    return {
-      reply: `Found **${listings.length} active listings**. Cheapest: **${cheapest.title}** at **₹${Number(cheapest.monthly_rent).toLocaleString('en-IN')}/mo** from **${cheapest.seller_name}**. Want to compare or want pricing advice?`,
-      table: listings.map((l: any, i: number) => ({
-        '#': i + 1, 'Item': l.title,
-        'Rate': '₹' + Number(l.monthly_rent).toLocaleString('en-IN') + '/mo',
-        'Deposit': '₹' + Number(l.deposit_amount).toLocaleString('en-IN'),
-        'Seller': l.seller_name,
-      })),
-    }
-  }
-
-  // Session-based follow-up (renter)
-  if (!session.tenureMonths && session.itemOfInterest && session.role !== 'seller') {
-    return { reply: `So you're looking at **${session.itemOfInterest}** — how long do you need it? A few weeks, a semester, or the full year? The price changes a lot based on that.` }
-  }
-
-  // Escrow / deposit
-  if (lower.includes('deposit') || lower.includes('escrow') || lower.includes('refund') || lower.includes('security')) {
-    return { reply: `Security deposits are held in **escrow** — fully protected and locked until both parties sign off on return. Refunds processed within 24 hours after checkout. No one can touch the deposit without your digital sign-off.` }
-  }
-
-  // How platform works
-  if (lower.includes('how') || lower.includes('help') || lower.includes('guide') || lower.includes('what')) {
-    return { reply: `Lease lets you rent or list items within campus. **For renters:** browse items, book for the time you need, pay monthly — no long-term commitment. **For sellers:** list your idle items, earn passive income, deposit protects you. Everything is secured by escrow. What do you want to do — rent something or list something?` }
-  }
-
-  // Default
-  return { reply: `I'm Lease Guru. I can help with pricing, finding items, or understanding how the platform works. What do you need?` }
+  // No API key — dead simple fallback
+  return { reply: 'Hi! My AI brain isn\'t connected right now (GEMINI_API_KEY not set). Ask about pricing, listings, or how the platform works.' }
 }
 
 // ─── IDENTIFY ITEM FROM IMAGE ─────────────────────────────────────
@@ -653,7 +482,6 @@ router.post('/', auth(false), async (req: Request, res: Response, next: NextFunc
     }
 
     const session = getSession(userId)
-    const lower = message.toLowerCase()
 
     // Fetch listings for transactional context
     const itemCategory = session.itemOfInterest
@@ -661,6 +489,13 @@ router.post('/', auth(false), async (req: Request, res: Response, next: NextFunc
 
     // Generate response
     const { reply, table } = await generateLeaseGuruResponse(message, session, listings, role)
+
+    // Save to conversation history (keep last 10 exchanges)
+    session.conversationHistory.push({ role: 'user', text: message })
+    session.conversationHistory.push({ role: 'assistant', text: reply })
+    if (session.conversationHistory.length > 20) {
+      session.conversationHistory = session.conversationHistory.slice(-20)
+    }
 
     return res.json({
       reply,
