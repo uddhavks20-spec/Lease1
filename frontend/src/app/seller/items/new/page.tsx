@@ -24,29 +24,23 @@ function matchCompRate(category: string): number {
   return 0.060
 }
 
-// Smooth interpolation: 3mo → 1.50x, 48mo → 0.75x
-function calcTierMult(months: number): number {
-  const m = Math.max(3, Math.min(48, months))
-  return 1.55 - m * (0.75 / 45)
+const EMI_ANNUAL_RATE = 0.15
+
+// EMI monthly payment for N months on MRV (including interest)
+function calcEmiMonthly(mrv: number, months: number): number {
+  const n = Math.max(3, Math.min(48, months))
+  const totalPayable = mrv + mrv * EMI_ANNUAL_RATE * n / 12
+  return Math.round(totalPayable / n)
 }
 
-// Smooth interpolation: 3mo → 12mo horizon, 48mo → 48mo horizon
-function calcEmiHorizon(months: number): number {
-  const m = Math.max(3, Math.min(48, months))
-  return Math.round(12 + (m - 3) * (36 / 45))
-}
-
-const COND_DISC_3MO: Record<string, number> = { New: 0.03, Mint: 0.04, Good: 0.05, Fair: 0.07, Poor: 0.09 }
-const COND_DISC_48MO: Record<string, number> = { New: 0.0, Mint: 0.003, Good: 0.005, Fair: 0.01, Poor: 0.015 }
-
-function calcCondDisc(months: number, condition: string): number {
-  const m = Math.max(3, Math.min(48, months))
-  const start = COND_DISC_3MO[condition] ?? 0.05
-  const end = COND_DISC_48MO[condition] ?? 0.005
-  return start + (m - 3) * (end - start) / 45
+// Competitor monthly cost for N months (flat rate, considering all charges)
+function calcCompMonthly(mrv: number, months: number, compRate: number): number {
+  const n = Math.max(3, Math.min(48, months))
+  return Math.round(mrv * compRate)
 }
 
 const CONDITION_OPTIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']
+const FINAL_UNDERCUT = 0.065
 
 export default function NewItemPage() {
   const router = useRouter()
@@ -142,14 +136,12 @@ export default function NewItemPage() {
 
     const mo = Math.max(3, Math.min(48, form.minRentDuration || 3))
     const compRate = matchCompRate(selectedProduct.category)
-    const compMonthly = Math.round(form.originalPrice * compRate * calcTierMult(mo))
-    const emiHorizon = calcEmiHorizon(mo)
-    const minEmi = Math.round(form.originalPrice / emiHorizon)
-    // P2P: beat both competitor and EMI. B2B2C: match competitor.
-    const baseTarget = pricingMode === 'b2b2c' ? compMonthly : Math.min(compMonthly, minEmi)
-    const condDiscValue = calcCondDisc(mo, form.condition)
-    const suggestedRent = Math.round(baseTarget * (1 - condDiscValue))
-    const deposit = suggestedRent  // 1 month rent
+    const compMonthly = calcCompMonthly(form.originalPrice, mo, compRate)
+    const emiMonthly = calcEmiMonthly(form.originalPrice, mo)
+    // P2P: min of EMI & competitor, then 6.5% undercut. B2B2C: match competitor.
+    const baseTarget = pricingMode === 'b2b2c' ? compMonthly : Math.min(compMonthly, emiMonthly)
+    const suggestedRent = Math.round(baseTarget * (1 - FINAL_UNDERCUT))
+    const deposit = suggestedRent
 
     let dynamicImage = selectedProduct.imageUrl
     selectedProduct.attributes.forEach(attr => {
@@ -164,7 +156,7 @@ export default function NewItemPage() {
       monthlyRent: manualRentOverride || pricingEstimate ? prev.monthlyRent : suggestedRent,
       imageUrl: dynamicImage,
     }))
-  }, [form.originalPrice, form.condition, form.minRentDuration, form.subAttributes, selectedProduct, manualRentOverride, customAttributes, pricingEstimate, pricingMode])
+  }, [form.originalPrice, form.minRentDuration, form.subAttributes, selectedProduct, manualRentOverride, customAttributes, pricingEstimate, pricingMode])
 
   // Pricing estimate via API
   useEffect(() => {
@@ -574,7 +566,7 @@ export default function NewItemPage() {
                 <Calculator className="w-6 h-6 text-primary-500" />
                 Pricing Engine
               </CardTitle>
-              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Platform Fundamentals v3.0 • 3–48mo</p>
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Platform Fundamentals v4.0 • 6.5% Undercut</p>
             </CardHeader>
             <CardContent className="p-10 space-y-8">
               {/* P2P / B2B2C Toggle */}
@@ -644,28 +636,26 @@ export default function NewItemPage() {
               {/* Market Comparison (P2P mode) */}
               {pricingEstimate && pricingMode === 'p2p' && (() => {
                 const mo = Math.max(3, Math.min(48, form.minRentDuration || 3))
-                const emiH = calcEmiHorizon(mo)
-                const emiVal = pricingEstimate.emiOptions?.[String(emiH)] || pricingEstimate.emiOptions?.['12']
+                const emiThis = pricingEstimate.emiOptions?.[String(mo)]
+                const emiNearest = emiThis || Object.entries(pricingEstimate.emiOptions||{}).reduce((a, [k,v]) => Math.abs(Number(k)-mo) < Math.abs(Number(a[0])-mo) ? [k,v] : a, ['0',0])[1]
                 return (
                 <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-3xl border border-green-200 dark:border-green-900/30 space-y-2">
                   <div className="flex items-center gap-2 text-[10px] font-black text-green-700 dark:text-green-400 uppercase tracking-widest">
-                    <Sparkles className="w-3 h-3" /> Market-Beating P2P Price — {mo}mo
+                    <Sparkles className="w-3 h-3" /> Market-Beating P2P — {mo}mo rental
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[10px]">
                     <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
-                      <span className="text-gray-400 font-bold uppercase tracking-wider">Competitor Rent</span>
+                      <span className="text-gray-400 font-bold uppercase tracking-wider">Competitor ({mo}mo)</span>
                       <p className="font-black text-gray-800 dark:text-white">₹{pricingEstimate.competitorRentRange?.low?.toLocaleString('en-IN')} – ₹{pricingEstimate.competitorRentRange?.high?.toLocaleString('en-IN')}/mo</p>
                     </div>
                     <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
-                      <span className="text-gray-400 font-bold uppercase tracking-wider">{emiH}mo EMI (est.)</span>
-                      <p className="font-black text-gray-800 dark:text-white">{emiVal ? '₹' + emiVal.toLocaleString('en-IN') + '/mo' : 'N/A'}</p>
+                      <span className="text-gray-400 font-bold uppercase tracking-wider">{mo}mo EMI (incl. interest)</span>
+                      <p className="font-black text-gray-800 dark:text-white">₹{Math.round(emiNearest).toLocaleString('en-IN')}/mo</p>
                     </div>
                   </div>
-                  {pricingEstimate.conditionAdjustment !== 0 && (
-                    <div className="text-[9px] text-green-600 dark:text-green-400 font-bold">
-                      {form.condition} condition: {Math.abs(pricingEstimate.conditionAdjustment * 100).toFixed(0)}% below base rate
-                    </div>
-                  )}
+                  <div className="text-[9px] text-green-600 dark:text-green-400 font-bold">
+                    6.5% below min of both — always the smarter choice
+                  </div>
                   <div className="text-[8px] text-gray-500 italic">{pricingEstimate.marketSummary}</div>
                 </div>
                 )
@@ -674,13 +664,13 @@ export default function NewItemPage() {
               {/* EMI Comparison */}
               {pricingEstimate && (() => {
                 const mo = Math.max(3, Math.min(48, form.minRentDuration || 3))
-                const emiH = calcEmiHorizon(mo)
-                const emiVal = pricingEstimate.emiOptions?.[String(emiH)] || pricingEstimate.emiOptions?.['12']
-                if (!emiVal) return null
+                const emiThis = pricingEstimate.emiOptions?.[String(mo)]
+                const emiNearest = emiThis || Object.entries(pricingEstimate.emiOptions||{}).reduce((a, [k,v]) => Math.abs(Number(k)-mo) < Math.abs(Number(a[0])-mo) ? [k,v] : a, ['0',0])[1]
+                if (!emiNearest) return null
                 return (
                 <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-3xl border border-amber-200 dark:border-amber-900/30">
                   <div className="flex items-center gap-2 text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-2">
-                    <Calculator className="w-3 h-3" /> Rent vs {emiH}mo EMI — Smart Choice
+                    <Calculator className="w-3 h-3" /> Rent vs {mo}mo EMI — Smart Choice
                   </div>
                   <div className="space-y-1 text-[10px]">
                     <div className="flex justify-between">
@@ -688,15 +678,15 @@ export default function NewItemPage() {
                       <span className="font-black text-green-600">₹{form.monthlyRent?.toLocaleString('en-IN')}/mo</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">{emiH}mo EMI</span>
-                      <span className="font-black text-amber-600">₹{emiVal?.toLocaleString('en-IN')}/mo</span>
+                      <span className="text-gray-500">{mo}mo EMI (incl. 15% APR)</span>
+                      <span className="font-black text-amber-600">₹{Math.round(emiNearest).toLocaleString('en-IN')}/mo</span>
                     </div>
-                    {form.monthlyRent < emiVal && (
+                    {form.monthlyRent < emiNearest && (
                       <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800 text-[9px] font-bold text-green-600">
-                        ✓ Rent is {(100 - Math.round(form.monthlyRent / emiVal * 100))}% cheaper than {emiH}mo EMI
+                        ✓ Rent is {(100 - Math.round(form.monthlyRent / emiNearest * 100))}% cheaper than {mo}mo EMI
                       </div>
                     )}
-                    {form.monthlyRent >= emiVal && (
+                    {form.monthlyRent >= emiNearest && (
                       <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800 text-[9px] font-bold text-amber-600">
                         ⚠ EMI is cheaper — suggest buyer considers ownership
                       </div>
