@@ -11,15 +11,33 @@ import { Info, Calculator, ChevronDown, PackageCheck, Shield, TrendingUp, Zap, S
 import { LeaseGuru } from '@/components/LeaseGuru'
 import { mockProductsData, MockProduct } from '@/data/mockProductsData'
 
-// Constants for Pricing Logic
-const CONDITION_MULTIPLIERS: Record<string, number> = {
-  'Brand New': 1.0,
-  'Like New': 0.85,
-  'Good': 0.70,
-  'Fair': 0.55,
+// ─── Tenure Bands ──────────────────────────────────────────────────
+const TENURE_BANDS = [
+  { name: 'Flash', range: [1, 3], tierMult: 1.50, condDisc: { New: 0.03, Mint: 0.04, Good: 0.05, Fair: 0.07, Poor: 0.09 }, depositPct: 0.35, emiHorizon: 12 },
+  { name: 'Semester', range: [4, 11], tierMult: 1.10, condDisc: { New: 0.015, Mint: 0.020, Good: 0.030, Fair: 0.045, Poor: 0.065 }, depositPct: 0.30, emiHorizon: 18 },
+  { name: 'Annual', range: [12, 18], tierMult: 1.00, condDisc: { New: 0.010, Mint: 0.015, Good: 0.020, Fair: 0.030, Poor: 0.045 }, depositPct: 0.25, emiHorizon: 24 },
+  { name: 'Extended', range: [19, 24], tierMult: 0.85, condDisc: { New: 0.005, Mint: 0.008, Good: 0.012, Fair: 0.020, Poor: 0.030 }, depositPct: 0.20, emiHorizon: 36 },
+  { name: 'Lifecycle', range: [25, 999], tierMult: 0.75, condDisc: { New: 0.000, Mint: 0.003, Good: 0.005, Fair: 0.010, Poor: 0.015 }, depositPct: 0.15, emiHorizon: 48 },
+]
+
+const COMPETITOR_RATES: Record<string, number> = {
+  'Electronics': 0.060, 'Appliance': 0.055, 'Furniture': 0.040, 'Lifestyle': 0.075,
 }
 
-const CONDITION_OPTIONS = ['Brand New', 'Like New', 'Good', 'Fair']
+function getTenureBand(months: number) {
+  return TENURE_BANDS.find(b => months >= b.range[0] && months <= b.range[1]) || TENURE_BANDS[1]
+}
+
+function matchCompRate(category: string): number {
+  const cat = category.toLowerCase()
+  if (cat.includes('electronics')) return COMPETITOR_RATES['Electronics']
+  if (cat.includes('appliance')) return COMPETITOR_RATES['Appliance']
+  if (cat.includes('furniture')) return COMPETITOR_RATES['Furniture']
+  if (cat.includes('lifestyle')) return COMPETITOR_RATES['Lifestyle']
+  return 0.060
+}
+
+const CONDITION_OPTIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']
 
 export default function NewItemPage() {
   const router = useRouter()
@@ -109,52 +127,33 @@ export default function NewItemPage() {
     }
   }, [selectedProduct, categories])
 
-  // Background Pricing Logic (RentoMojo Model)
+  // Background Pricing Logic (Tenure-Aware Model)
   useEffect(() => {
     if (!form.originalPrice || !selectedProduct) return
 
-    // 1. Base Value = Original Price * Condition Modifier
-    const conditionMult = CONDITION_MULTIPLIERS[form.condition] || 0.85
-    const baseValue = form.originalPrice * conditionMult
+    const band = getTenureBand(form.minRentDuration || 3)
+    const compRate = matchCompRate(selectedProduct.category)
+    const compMonthly = Math.round(form.originalPrice * compRate * band.tierMult)
+    const minEmi = Math.round(form.originalPrice / band.emiHorizon)
+    const baseTarget = Math.min(compMonthly, minEmi)
+    const condDiscValue = band.condDisc[form.condition as keyof typeof band.condDisc] ?? 0.03
+    const suggestedRent = Math.round(baseTarget * (1 - condDiscValue))
+    const deposit = Math.round(form.originalPrice * band.depositPct)
 
-    // 2. True Market Value (V_true) = Base Value * Product of weights
-    let attrWeight = 1.0
     let dynamicImage = selectedProduct.imageUrl
-
     selectedProduct.attributes.forEach(attr => {
       const selectedLabel = form.subAttributes[attr.name]
       const option = attr.options.find(o => o.label === selectedLabel)
-      if (option) {
-        attrWeight *= option.weight
-        if (option.imageUrl) dynamicImage = option.imageUrl
-      } else if (selectedLabel === 'Other') {
-        // Behavioral analysis of custom input
-        const customVal = (customAttributes[attr.name] || '').toLowerCase()
-        if (customVal.includes('pro') || customVal.includes('premium') || customVal.includes('ultra') || customVal.includes('max')) {
-          attrWeight *= 1.25 // Premium tier bonus
-        } else if (customVal.includes('lite') || customVal.includes('basic') || customVal.includes('mini') || customVal.includes('standard')) {
-          attrWeight *= 0.85 // Economy tier reduction
-        } else {
-          attrWeight *= 1.0 // Neutral weight for unknown custom values
-        }
-      }
+      if (option && option.imageUrl) dynamicImage = option.imageUrl
     })
-    const vTrue = baseValue * attrWeight
-
-    // 3. Base Rent (12-Month Anchor) = V_true / 12
-    const suggestedRent = Math.round(vTrue / 12)
-
-    // 4. Dynamic Security Deposit = Exactly 100% of 1 Month's Rent
-    const currentRent = manualRentOverride ? form.monthlyRent : suggestedRent
-    const dynamicDeposit = currentRent
 
     setForm(prev => ({
       ...prev,
-      depositAmount: dynamicDeposit,
+      depositAmount: deposit,
       monthlyRent: manualRentOverride || pricingEstimate ? prev.monthlyRent : suggestedRent,
-      imageUrl: dynamicImage
+      imageUrl: dynamicImage,
     }))
-  }, [form.originalPrice, form.condition, form.monthlyRent, form.subAttributes, selectedProduct, manualRentOverride, customAttributes])
+  }, [form.originalPrice, form.condition, form.minRentDuration, form.subAttributes, selectedProduct, manualRentOverride, customAttributes, pricingEstimate])
 
   // Pricing estimate via API
   useEffect(() => {
@@ -168,13 +167,16 @@ export default function NewItemPage() {
           condition: form.condition,
           category: selectedProduct.category,
           isB2B2C: pricingMode === 'b2b2c',
+          tenureMonths: form.minRentDuration || 3,
         })
         setPricingEstimate(res.data)
         if (!manualRentOverride && res.data.suggestedRent) {
+          const band = getTenureBand(form.minRentDuration || 3)
+          const deposit = Math.round(form.originalPrice * band.depositPct)
           setForm(prev => ({
             ...prev,
             monthlyRent: res.data.suggestedRent,
-            depositAmount: res.data.suggestedRent,
+            depositAmount: deposit,
           }))
         }
       } catch (e) {
@@ -183,7 +185,7 @@ export default function NewItemPage() {
       setPricingLoading(false)
     }, 800)
     return () => clearTimeout(timer)
-  }, [form.originalPrice, form.condition, selectedProduct, pricingMode])
+  }, [form.originalPrice, form.condition, selectedProduct, pricingMode, form.minRentDuration])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -370,14 +372,19 @@ export default function NewItemPage() {
                 </div>
                 <div>
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">Duration Policy</label>
-                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-2xl">
-                    <input 
-                      type="number" 
-                      className="w-12 bg-white dark:bg-gray-800 border-none rounded-xl py-1.5 text-center text-xs font-black" 
-                      value={form.minRentDuration} 
-                      onChange={(e) => setForm({ ...form, minRentDuration: Number(e.target.value) })}
-                    />
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Min Months</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-2xl">
+                      <input 
+                        type="number" 
+                        className="w-12 bg-white dark:bg-gray-800 border-none rounded-xl py-1.5 text-center text-xs font-black" 
+                        value={form.minRentDuration} 
+                        onChange={(e) => setForm({ ...form, minRentDuration: Number(e.target.value) })}
+                      />
+                      <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Min Months</span>
+                    </div>
+                    <div className="flex items-center justify-center bg-primary-50 dark:bg-primary-950/30 p-1.5 rounded-2xl border border-primary-200 dark:border-primary-900/30">
+                      <span className="text-[9px] font-black text-primary-600 uppercase tracking-wider">{getTenureBand(form.minRentDuration || 3).name} Band</span>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -561,7 +568,7 @@ export default function NewItemPage() {
                 <Calculator className="w-6 h-6 text-primary-500" />
                 Pricing Engine
               </CardTitle>
-              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Asset Valuation Model v3.0</p>
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Platform Fundamentals v3.0 • Tenure-Aware</p>
             </CardHeader>
             <CardContent className="p-10 space-y-8">
               {/* P2P / B2B2C Toggle */}
@@ -629,10 +636,15 @@ export default function NewItemPage() {
               </div>
 
               {/* Market Comparison (P2P mode) */}
-              {pricingEstimate && pricingMode === 'p2p' && (
+              {pricingEstimate && pricingMode === 'p2p' && (() => {
+                const band = getTenureBand(form.minRentDuration || 3)
+                const emiKey = String(band.emiHorizon)
+                const bandEmi = pricingEstimate.emiOptions?.[emiKey]
+                const emiVal = bandEmi || pricingEstimate.emiOptions?.['12']
+                return (
                 <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-3xl border border-green-200 dark:border-green-900/30 space-y-2">
                   <div className="flex items-center gap-2 text-[10px] font-black text-green-700 dark:text-green-400 uppercase tracking-widest">
-                    <Sparkles className="w-3 h-3" /> Market-Beating P2P Price
+                    <Sparkles className="w-3 h-3" /> Market-Beating P2P Price — {band.name} Band
                   </div>
                   <div className="grid grid-cols-2 gap-2 text-[10px]">
                     <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
@@ -640,8 +652,8 @@ export default function NewItemPage() {
                       <p className="font-black text-gray-800 dark:text-white">₹{pricingEstimate.competitorRentRange?.low?.toLocaleString('en-IN')} – ₹{pricingEstimate.competitorRentRange?.high?.toLocaleString('en-IN')}/mo</p>
                     </div>
                     <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
-                      <span className="text-gray-400 font-bold uppercase tracking-wider">12mo EMI (est.)</span>
-                      <p className="font-black text-gray-800 dark:text-white">₹{pricingEstimate.emiOptions?.['12']?.toLocaleString('en-IN')}/mo</p>
+                      <span className="text-gray-400 font-bold uppercase tracking-wider">{band.emiHorizon}mo EMI (est.)</span>
+                      <p className="font-black text-gray-800 dark:text-white">{emiVal ? '₹' + emiVal.toLocaleString('en-IN') + '/mo' : 'N/A'}</p>
                     </div>
                   </div>
                   {pricingEstimate.conditionAdjustment !== 0 && (
@@ -651,36 +663,45 @@ export default function NewItemPage() {
                   )}
                   <div className="text-[8px] text-gray-500 italic">{pricingEstimate.marketSummary}</div>
                 </div>
-              )}
+                )
+              })()}
 
               {/* EMI Comparison */}
-              {pricingEstimate && pricingEstimate.emiOptions?.['12'] > 0 && (
+              {pricingEstimate && (() => {
+                const band = getTenureBand(form.minRentDuration || 3)
+                const emiKey = String(band.emiHorizon)
+                const bandEmi = pricingEstimate.emiOptions?.[emiKey]
+                const show = bandEmi > 0 || (pricingEstimate.emiOptions?.['12'] > 0 && !bandEmi)
+                const emiVal = bandEmi || pricingEstimate.emiOptions?.['12']
+                if (!show) return null
+                return (
                 <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-3xl border border-amber-200 dark:border-amber-900/30">
                   <div className="flex items-center gap-2 text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-2">
-                    <Calculator className="w-3 h-3" /> Rent vs EMI — Smart Choice
+                    <Calculator className="w-3 h-3" /> Rent vs {band.emiHorizon}mo EMI — Smart Choice
                   </div>
                   <div className="space-y-1 text-[10px]">
                     <div className="flex justify-between">
-                      <span className="text-gray-500">Your Rent</span>
+                      <span className="text-gray-500">Your Rent ({band.name})</span>
                       <span className="font-black text-green-600">₹{form.monthlyRent?.toLocaleString('en-IN')}/mo</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-500">12mo EMI</span>
-                      <span className="font-black text-amber-600">₹{pricingEstimate.emiOptions['12']?.toLocaleString('en-IN')}/mo</span>
+                      <span className="text-gray-500">{band.emiHorizon}mo EMI</span>
+                      <span className="font-black text-amber-600">₹{emiVal?.toLocaleString('en-IN')}/mo</span>
                     </div>
-                    {form.monthlyRent < pricingEstimate.emiOptions['12'] && (
+                    {form.monthlyRent < emiVal && (
                       <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800 text-[9px] font-bold text-green-600">
-                        ✓ Rent is {(100 - Math.round(form.monthlyRent / pricingEstimate.emiOptions['12'] * 100))}% cheaper than EMI — great for short-term needs
+                        ✓ Rent is {(100 - Math.round(form.monthlyRent / emiVal * 100))}% cheaper than {band.emiHorizon}mo EMI — great for short-term needs
                       </div>
                     )}
-                    {form.monthlyRent >= pricingEstimate.emiOptions['12'] && (
+                    {form.monthlyRent >= emiVal && (
                       <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800 text-[9px] font-bold text-amber-600">
-                        ⚠ EMI is cheaper beyond {Math.ceil(form.originalPrice / form.monthlyRent / 12)} years — suggest buyer considers buying
+                        ⚠ EMI is cheaper — at {band.name} tenure, suggest buyer considers ownership
                       </div>
                     )}
                   </div>
                 </div>
-              )}
+                )
+              })()}
 
               <div className="pt-8 border-t border-gray-100 dark:border-gray-700 space-y-6">
                 <div className="flex justify-between items-center">
@@ -705,7 +726,7 @@ export default function NewItemPage() {
                 <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/10 p-5 rounded-3xl border border-blue-100 dark:border-blue-900/30">
                   <div>
                     <label className="text-[10px] font-black text-blue-900 dark:text-blue-300 uppercase tracking-[0.2em] block">Security Deposit (₹)</label>
-                    <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400/70 uppercase mt-0.5 italic">1:1 Rental Match</p>
+                    <p className="text-[10px] font-bold text-blue-600 dark:text-blue-400/70 uppercase mt-0.5 italic">{Math.round(100 * (() => { const b = getTenureBand(form.minRentDuration || 3); return b.depositPct })())}% of MRV</p>
                   </div>
                   <input 
                     className="w-36 bg-white/50 dark:bg-black/20 border-none rounded-2xl px-5 py-3 text-right font-black text-2xl text-blue-900 dark:text-blue-200 outline-none cursor-not-allowed"

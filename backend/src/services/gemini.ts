@@ -150,6 +150,19 @@ Message: ${userMessage}`,
   }
 }
 
+// ─── Tenure Bands ──────────────────────────────────────────────────
+const TENURE_BANDS_PRICING = [
+  { name: 'Flash', range: [1, 3], tierMult: 1.50, condDisc: { New: 0.03, Mint: 0.04, Good: 0.05, Fair: 0.07, Poor: 0.09 }, depositPct: 0.35, emiHorizon: 12 },
+  { name: 'Semester', range: [4, 11], tierMult: 1.10, condDisc: { New: 0.015, Mint: 0.020, Good: 0.030, Fair: 0.045, Poor: 0.065 }, depositPct: 0.30, emiHorizon: 18 },
+  { name: 'Annual', range: [12, 18], tierMult: 1.00, condDisc: { New: 0.010, Mint: 0.015, Good: 0.020, Fair: 0.030, Poor: 0.045 }, depositPct: 0.25, emiHorizon: 24 },
+  { name: 'Extended', range: [19, 24], tierMult: 0.85, condDisc: { New: 0.005, Mint: 0.008, Good: 0.012, Fair: 0.020, Poor: 0.030 }, depositPct: 0.20, emiHorizon: 36 },
+  { name: 'Lifecycle', range: [25, 999], tierMult: 0.75, condDisc: { New: 0.000, Mint: 0.003, Good: 0.005, Fair: 0.010, Poor: 0.015 }, depositPct: 0.15, emiHorizon: 48 },
+]
+
+function getTenureBandP(months: number) {
+  return TENURE_BANDS_PRICING.find(b => months >= b.range[0] && months <= b.range[1]) || TENURE_BANDS_PRICING[1]
+}
+
 // ─── PRICING RESEARCH (for seller pricing engine) ────────────────
 export async function generatePricingResearch(
   title: string,
@@ -157,6 +170,7 @@ export async function generatePricingResearch(
   condition: string,
   category: string,
   isB2B2C: boolean,
+  tenureMonths?: number,
 ): Promise<{
   suggestedRent: number
   competitorRentRange: { low: number; high: number }
@@ -168,35 +182,31 @@ export async function generatePricingResearch(
     throw new Error('GEMINI_API_KEY not set')
   }
 
+  const band = getTenureBandP(tenureMonths || 3)
+  const mode = isB2B2C ? 'B2B2C (match competitor rates)' : `P2P (beat competitor rates and ${band.emiHorizon}mo EMI)`
+
   const genAI = getClient()
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
-  const mode = isB2B2C ? 'B2B2C (business-to-business-to-consumer — match competitor rates)' : 'P2P (peer-to-peer — must beat competitor rates and EMI)'
-
-  const prompt = `You are a pricing research analyst for a P2P rental marketplace in India.
+  const prompt = `You are a pricing analyst for a P2P rental marketplace in India.
   
-Product: "${title}"
-Original Retail Price: ₹${originalPrice}
-Condition: ${condition}
-Category: ${category}
+Product: "${title}" | Price: ₹${originalPrice} | Condition: ${condition} | Category: ${category}
+Tenure Band: ${band.name} (${band.range[0]}-${band.range[1]} months)
 Mode: ${mode}
-
-Research and return realistic market data for this product in the Indian market (2025-2026). Consider known platforms like RentoMojo, Furlenco, Amazon, Flipkart.
 
 Return ONLY valid JSON (no markdown, no code fences):
 {
-  "suggestedRent": <monthly rent in INR — for P2P this must be LESS than both competitor rental rates and EMI; for B2B2C match competitor rates>,
-  "competitorRentRange": { "low": <lowest monthly rent found on other platforms>, "high": <highest monthly rent found on other platforms> },
-  "emiOptions": { "3": <3-month EMI>, "6": <6-month EMI>, "12": <12-month EMI> },
-  "marketSummary": "<1-2 sentence market insight>"
+  "baseRent": <monthly rent BEFORE condition discount>,
+  "competitorRentRange": { "low": <lowest competitor monthly>, "high": <highest competitor monthly> },
+  "emiOptions": { "12": <12mo EMI>, "18": <18mo EMI>, "24": <24mo EMI>, "36": <36mo EMI>, "48": <48mo EMI> },
+  "marketSummary": "<1-2 sentence insight>"
 }
 
 Rules:
-- For P2P: suggestedRent must be AT LEAST 5-10% below the lowest competitor rent
-- For P2P: suggestedRent must be AT LEAST 5-10% below the 12-month EMI
-- For P2P: suggestedRent should be approximately ${isB2B2C ? 4.5 : 3.5}-${isB2B2C ? 6 : 4.5}% of originalPrice
-- For B2B2C: suggestedRent should match competitor rates (±5%)
-- EMI: use typical Indian credit card EMI rates (12-15% annual)`
+- For P2P: baseRent = min(lowest competitor rent, ${band.emiHorizon}mo EMI) — before condition discount
+- For B2B2C: baseRent = low competitor rent — match, don't undercut
+- Competitor rent: what RentoMojo/Furlenco charge for this item`
+  const condDiscValue = band.condDisc[condition as keyof typeof band.condDisc] ?? 0.03
 
   const result = await model.generateContent([{ text: prompt }])
   const text = result.response.text()
@@ -204,24 +214,20 @@ Rules:
 
   if (jsonMatch) {
     const data = JSON.parse(jsonMatch[0])
+    const baseRent = data.baseRent || Math.round(originalPrice * 0.045)
+    const suggestedRent = Math.round(baseRent * (1 - condDiscValue))
 
-    const condAdjustments: Record<string, number> = {
-      'Brand New': 0,
-      'Like New': 0,
-      'Good': -0.015,
-      'Fair': -0.045,
-    }
-    const adj = condAdjustments[condition] || 0
-    if (adj !== 0) {
-      data.suggestedRent = Math.round(data.suggestedRent * (1 + adj))
+    const emiOptions: Record<string, number> = {}
+    for (const b of TENURE_BANDS_PRICING) {
+      emiOptions[String(b.emiHorizon)] = data.emiOptions?.[String(b.emiHorizon)] || Math.round(originalPrice / b.emiHorizon)
     }
 
     return {
-      suggestedRent: data.suggestedRent,
+      suggestedRent,
       competitorRentRange: data.competitorRentRange || { low: 0, high: 0 },
-      emiOptions: data.emiOptions || { '3': 0, '6': 0, '12': 0 },
-      conditionAdjustment: adj,
-      marketSummary: data.marketSummary || '',
+      emiOptions,
+      conditionAdjustment: -condDiscValue,
+      marketSummary: data.marketSummary || `[${band.name}] ${condition} discount: ${(condDiscValue * 100).toFixed(1)}% applied.`,
     }
   }
 
