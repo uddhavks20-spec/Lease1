@@ -43,6 +43,7 @@ interface SessionState {
   messagesInSession: number
   unresolvedQuestions: string[]
   monthsAlreadyPaid: number
+  suggestionPath: string[]
 }
 
 const sessions = new Map<string, SessionState>()
@@ -54,7 +55,7 @@ function getSession(userId: string): SessionState {
       budgetSignal: null, campus: null, urgency: null,
       emiTemptation: false, hinglishMode: false,
       messagesInSession: 0, unresolvedQuestions: [],
-      monthsAlreadyPaid: 0,
+      monthsAlreadyPaid: 0, suggestionPath: [],
     })
   }
   return sessions.get(userId)!
@@ -113,6 +114,110 @@ function normalizeHinglish(message: string): NormalizedInput {
   return { intent, itemHint, tenureHint, budgetSignal }
 }
 
+// ─── SUGGESTION TREE ─────────────────────────────────────────────
+const SUGGESTION_TREE: Record<string, string[]> = {
+  entry: [
+    'I want to rent something',
+    'I want to list/sell something',
+    'I have a complaint',
+    'How does Lease work?',
+    'Pricing help',
+  ],
+  rent_categories: [
+    '📱 Laptop / Electronics',
+    '❄️ AC / Appliance',
+    '🪑 Furniture (sofa, table, bed)',
+    '🚲 Cycle / Sports',
+    '📚 Books / Study',
+    '🎧 Lifestyle (speaker, camera)',
+  ],
+  sell_categories: [
+    '📱 Sell Electronics',
+    '❄️ Sell Appliance',
+    '🪑 Sell Furniture',
+    '📚 Sell Books',
+    '🎧 Sell Lifestyle',
+    '❓ What should I charge?',
+  ],
+  complaint: [
+    '💰 Deposit not refunded',
+    '🔧 Item is damaged',
+    '⚖️ Dispute with buyer/seller',
+    '👤 Account issue',
+    '🎧 Talk to a human agent',
+  ],
+  guide: [
+    '📖 How renting works',
+    '📋 How listing works',
+    '🔒 Deposit & escrow explained',
+    '🛡️ Trust & safety',
+    '🚀 Getting started guide',
+  ],
+  rent_tenure: [
+    '⚡ Flash — 1 to 3 months',
+    '📅 Semester — 4 to 11 months',
+    '📆 Annual — 12 to 18 months',
+    '🔄 Extended — 19+ months',
+    '🤔 Not sure — what\'s best for me?',
+  ],
+  sell_value: [
+    '₹ 1,000 – 5,000 range',
+    '₹ 5,000 – 20,000 range',
+    '₹ 20,000 – 50,000 range',
+    '₹ 50,000+ range',
+    '❓ Help me estimate',
+  ],
+  rent_budget: [
+    '💰 Tight budget — lowest rent',
+    '⚖️ Balanced — good value',
+    '💎 Premium — best quality',
+    '📊 Compare rent vs buying/EMI',
+    '📋 Show me available listings',
+    '🔒 Tell me about deposit',
+  ],
+  sell_actions: [
+    '📊 Calculate my earnings',
+    '📋 List this item now',
+    '🏆 Compare with competitors',
+    '💡 Tips to rent faster',
+    '🔒 Damage protection?',
+  ],
+  rent_solution: [
+    '📊 Show pricing breakdown',
+    '✅ Start booking process',
+    '❓ Any hidden charges?',
+    '🎯 How to get zero deposit?',
+    '🎧 Talk to a human',
+    '🔄 Start over',
+  ],
+  sell_solution: [
+    '📋 Finalize my listing',
+    '📈 How to get more bookings',
+    '🛡️ Damage protection details',
+    '💰 Payout & payment terms',
+    '🎧 Talk to a human',
+    '🔄 Start over',
+  ],
+}
+
+function getSuggestions(session: SessionState): string[] | null {
+  if (session.messagesInSession >= 10) return null
+
+  if (!session.role) return SUGGESTION_TREE.entry
+  if (session.role === 'complaint') return SUGGESTION_TREE.complaint
+  if (session.role === 'guide') return SUGGESTION_TREE.guide
+  if (session.role === 'seller') {
+    if (!session.itemOfInterest) return SUGGESTION_TREE.sell_categories
+    if (session.suggestionPath.includes('sell_solution')) return null
+    return SUGGESTION_TREE.sell_actions
+  }
+  // renter
+  if (!session.itemOfInterest) return SUGGESTION_TREE.rent_categories
+  if (!session.tenureMonths) return SUGGESTION_TREE.rent_tenure
+  if (session.suggestionPath.includes('rent_solution')) return null
+  return SUGGESTION_TREE.rent_budget
+}
+
 // ─── UPDATE SESSION FROM MESSAGE ─────────────────────────────────
 function updateSession(session: SessionState, message: string, normalized: NormalizedInput) {
   session.messagesInSession++
@@ -156,6 +261,12 @@ function updateSession(session: SessionState, message: string, normalized: Norma
   // Urgency
   if (message.toLowerCase().includes('asap') || message.toLowerCase().includes('urgent') || message.toLowerCase().includes('jaldi') || message.toLowerCase().includes('today')) session.urgency = 'asap'
   else if (message.toLowerCase().includes('planning') || message.toLowerCase().includes('thinking') || message.toLowerCase().includes('sometime')) session.urgency = 'planning'
+
+  // Suggestion path — advance when user completes a stage
+  if (normalized.intent === 'rent' && !session.suggestionPath.includes('intent_rent')) session.suggestionPath.push('intent_rent')
+  if (normalized.intent === 'list' && !session.suggestionPath.includes('intent_sell')) session.suggestionPath.push('intent_sell')
+  if (normalized.itemHint && !session.suggestionPath.includes('item_chosen')) session.suggestionPath.push('item_chosen')
+  if (normalized.tenureHint && !session.suggestionPath.includes('tenure_chosen')) session.suggestionPath.push('tenure_chosen')
 }
 
 // ─── TENURE-AWARE PRICING ENGINE ──────────────────────────────────
@@ -530,74 +641,6 @@ router.get('/status', (_req: Request, res: Response) => {
       : 'Rule-based mode — set GEMINI_API_KEY for AI-powered responses',
   })
 })
-
-// ─── SUGGESTION CHIPS ────────────────────────────────────────────
-function getSuggestions(session: SessionState): string[] | null {
-  // After 4+ exchanges with clear intent, free chat — no suggestions
-  if (session.messagesInSession >= 5 && session.role && session.tenureMonths) return null
-  if (session.messagesInSession >= 8) return null
-
-  // Level 0: First message, no intent yet
-  if (!session.role) {
-    return [
-      'I want to rent something',
-      'I want to list/sell something',
-      'I have a complaint',
-      'How does Lease work?',
-      'Pricing help',
-    ]
-  }
-
-  // Seller branch
-  if (session.role === 'seller') {
-    if (!session.itemOfInterest) {
-      return [
-        'I want to sell a laptop',
-        'I want to sell furniture',
-        'I want to sell a phone',
-        'I want to sell books',
-        'What should I charge?',
-      ]
-    }
-    return [
-      'What rent should I set?',
-      'How much deposit?',
-      'Compare with competition',
-      'Damage protection?',
-      'How to optimize earnings',
-    ]
-  }
-
-  // Renter branch
-  if (!session.itemOfInterest) {
-    return [
-      'I need a laptop',
-      'I need an AC',
-      'I need a fridge',
-      'I need furniture',
-      'I need a cycle',
-      'Show me popular items',
-    ]
-  }
-
-  if (!session.tenureMonths) {
-    return [
-      'For 1 month / Flash',
-      'For 6 months / Semester',
-      'For 12 months / Annual',
-      'For 18+ months',
-      'What are the pricing bands?',
-    ]
-  }
-
-  return [
-    'Show pricing breakdown',
-    'Compare rent vs EMI',
-    'Show available listings',
-    'Tell me about deposit',
-    'Negotiate price',
-  ]
-}
 
 // ─── CHAT ENDPOINT ────────────────────────────────────────────────
 router.post('/', auth(false), async (req: Request, res: Response, next: NextFunction) => {
