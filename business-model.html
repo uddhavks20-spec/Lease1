@@ -72,7 +72,7 @@ tr.total td { font-weight: 700; border-top: 2px solid #475569; background: #0f17
 <body>
 
 <h1>Lease Business Model — v3 Pricing P&L</h1>
-<p class="sub">Pricing: min(comp, EMI) × (1 − condUndercut) × condRentFactor · Undercut: New 2%, Mint 3%, Good/Fair/Poor 0% · Score-based take (18-22%) · 18% GST · Damage waiver revenue · Late fee: 10%/wk</p>
+<p class="sub">Pricing: min(comp, EMI) × (1 − condUndercut) × condRentFactor · Undercut: New 2%, Mint 3%, Good/Fair/Poor 0% · Deposit = rent × MRVmult (1.0x + 0.065/₹10K) · Score-based take (18-22%) · 18% GST · Damage waiver · Late fee 10%/wk</p>
 
 <div class="grid">
   <div>
@@ -184,7 +184,6 @@ tr.total td { font-weight: 700; border-top: 2px solid #475569; background: #0f17
 <script>
 // ─── PRICING ENGINE (final v3) ────────────────────────────────────
 const CONDITION_RENT_FACTOR = { 'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65 }
-const CONDITION_DEPOSIT_ADJ = { 'New': 1.00, 'Mint': 1.025, 'Good': 1.05, 'Fair': 1.075, 'Poor': 1.10 }
 const COMPETITOR_RATES = { Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075 }
 const TENURE_BANDS = [
   { id: 'flash', label: 'Flash', min: 1, max: 3, emiHorizon: 12 },
@@ -206,6 +205,10 @@ function calcEffectiveTakeRate() {
   return PLATFORM_TAKE
 }
 
+function calcDepositMultiplier(mrv) {
+  return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
+}
+
 function calcLeaseRent(mrv, condition, category, months) {
   const band = getBand(months)
   const compRate = COMPETITOR_RATES[category] || 0.060
@@ -218,8 +221,7 @@ function calcLeaseRent(mrv, condition, category, months) {
   const takeRate = calcEffectiveTakeRate()
   const sellerPayout = Math.round(leaseRent * (1 - takeRate))
   const platformTake = leaseRent - sellerPayout
-  const condDepAdj = CONDITION_DEPOSIT_ADJ[condition] || 1.00
-  const deposit = Math.round(leaseRent * condDepAdj)
+  const deposit = Math.round(leaseRent * calcDepositMultiplier(mrv))
   return { leaseRent, deposit, compMonthly, emiMonthly, baselineNew, sellerPayout, platformTake, takeRate, band: band.label }
 }
 

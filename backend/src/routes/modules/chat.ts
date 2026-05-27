@@ -21,10 +21,6 @@ const TENURE_BANDS = [
 const CONDITION_RENT_FACTOR: Record<string, number> = {
   'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65,
 }
-// Deposit adjustment per condition: New = 1x rent, worse = 2-3% more per step
-const CONDITION_DEPOSIT_ADJ: Record<string, number> = {
-  'New': 1.00, 'Mint': 1.025, 'Good': 1.05, 'Fair': 1.075, 'Poor': 1.10,
-}
 // Competitor monthly rate as % of MRV per category
 const COMPETITOR_RATES: Record<string, number> = {
   Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
@@ -63,6 +59,11 @@ function getTenureBand(months: number) {
 
 function calcEmiTotal(mrv: number, months: number): number {
   return mrv + mrv * EMI_ANNUAL_RATE * months / 12
+}
+
+// MRV-based deposit multiplier: 1.0x for ≤₹10K, +0.065 per each additional ₹10K
+function calcDepositMultiplier(mrv: number): number {
+  return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
 }
 
 // ─── SESSION STORE ────────────────────────────────────────────────
@@ -350,8 +351,8 @@ function computePricing(
   const band = getTenureBand(months)
   const compRate = COMPETITOR_RATES[category] || 0.060
   const condRentFactor = CONDITION_RENT_FACTOR[condition] || 1.00
-  const condDepAdj = CONDITION_DEPOSIT_ADJ[condition] || 1.00
   const itemUndercut = CONDITION_UNDERCUT[condition] ?? 0.02
+  const depositMultiplier = calcDepositMultiplier(mrv)
 
   // Step 1: Calculate competitor monthly
   const compMonthly = Math.round(mrv * compRate)
@@ -366,8 +367,8 @@ function computePricing(
   // Step 4: Apply condition factor to get final rent
   const leaseRent = Math.round(baselineNew * condRentFactor)
 
-  // Step 5: Deposit = monthly rent × condition deposit adjustment
-  const deposit = Math.round(leaseRent * condDepAdj)
+  // Step 5: Deposit = monthly rent × MRV-based multiplier (1.0x + 0.065 per ₹10K above ₹10K)
+  const deposit = Math.round(leaseRent * depositMultiplier)
 
   // Step 6: Platform commission based on seller score (18-22%)
   const takeRate = calcEffectiveTakeRate(sellerScore)
@@ -503,7 +504,7 @@ Lease is an IIT Kanpur-founded peer-to-peer rental marketplace. Here is everythi
 - Longer tenure = cheaper monthly rate because EMI comparison gets worse for short tenures.
 - Rent is set relative to min(competitor rate, EMI monthly). New-condition items are priced ~3% below that baseline (varies by item type).
 - Worse condition = proportionally cheaper: Mint (95% of New rent), Good (88%), Fair (78%), Poor (65%).
-- Deposit = the monthly rent × condition adjustment. New items: deposit = 1 month rent. Worse condition adds 2-3% per level.
+- Deposit = monthly rent × MRV-based multiplier. Multiplier: 1.0x for items ≤₹10K, increasing by 0.065 per each additional ₹10K of retail value (e.g., ₹50K item = 1.26x, ₹1L item = 1.585x). Not condition-dependent.
 - Condition is assessed by Gemini Vision (photos) + seller questionnaire, final result is non-editable.
 - Competitors charge roughly 6% of retail value per month. EMI spreads cost over 12-48 months at ~15% annual interest.
 - For short tenures, EMI is financially worse (you pay interest on months you don't use). For long tenures, rent and EMI are closer — but renting has zero ownership risk.
@@ -537,7 +538,7 @@ When asked about pricing, use these exact formulas. Never make up numbers.
 - EMI monthly = (MRV + MRV × 15% × EMI_horizon / 12) / EMI_horizon. EMI horizon varies by band.
 - Lease baseline = min(competitor monthly, EMI monthly) × (1 − undercut_by_condition). Undercut: New −2%, Mint −3%, Good/Fair/Poor −0%.
 - Other conditions scale from New baseline: Mint = 95% of New rent, Good = 88%, Fair = 78%, Poor = 65%.
-- Deposit = 1 month's rent × condition adjustment: New ×1.00, Mint ×1.025, Good ×1.05, Fair ×1.075, Poor ×1.10
+- Deposit = monthly rent × MRV-based multiplier. Base 1.0x (≤₹10K), +0.065 per additional ₹10K. E.g., ₹10K=1.0x, ₹50K=1.26x, ₹1L=1.585x, ₹2L=2.235x. Not condition-dependent.
 - Platform take is variable by seller score: high-score sellers pay 18% (keep 82%), medium/unknown pay 20% (keep 80%), low-score pay 22% (keep 78%). Not negotiable on a per-session basis.
 - Seller payout = monthly rent × (1 − takeRate). Always less than competitor AND EMI rates.
 - Late fee: 10% of monthly rent per week overdue. 3-day grace period. Capped at 2× monthly rent. Non-return beyond 30 days triggers full MRV charge.
