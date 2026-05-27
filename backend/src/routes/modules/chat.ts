@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { auth } from '../../middleware/auth'
 import { db } from '../../utils/db'
-import { generateChatResponse, generateGeminiPricing, isGeminiAvailable } from '../../services/gemini'
+import { generateChatResponse, generateGeminiPricing, assessItemCondition, isGeminiAvailable } from '../../services/gemini'
 import { checkInput, guardOutput } from '../../services/guardrails'
 
 const router = Router()
@@ -16,18 +16,22 @@ const TENURE_BANDS = [
   { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, tier: 0.75, depositPct: 0.15, emiHorizon: 48 },
 ]
 
-// Condition premium/discount: New items cost more to rent (more value), Poor costs less
-const CONDITION_FACTOR: Record<string, number> = {
-  'New': 1.10, 'Mint': 1.05, 'Good': 1.00, 'Fair': 0.85, 'Poor': 0.70,
+// Condition rent factor: New is baseline (best condition = highest rent)
+// Other conditions are relative to New — worse condition = cheaper rent
+const CONDITION_RENT_FACTOR: Record<string, number> = {
+  'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65,
+}
+// Deposit adjustment per condition: New = 1x rent, worse = 2-3% more per step
+const CONDITION_DEPOSIT_ADJ: Record<string, number> = {
+  'New': 1.00, 'Mint': 1.025, 'Good': 1.05, 'Fair': 1.075, 'Poor': 1.10,
 }
 // Competitor monthly rate as % of MRV per category
 const COMPETITOR_RATES: Record<string, number> = {
   Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
 }
-// Savings vs competitor per tenure band (longer = more savings)
-const TIER_SAVINGS: Record<string, number> = {
-  flash: 0.02, semester: 0.08, annual: 0.15, extended: 0.22, lifecycle: 0.30,
-}
+// Default undercut % below min(competitor, EMI) for New condition baseline
+// Gemini can override this per item (range 5-7%)
+const DEFAULT_UNDERCUT = 0.06
 // Item retail value lookup for common items (used when user doesn't specify price)
 const ITEM_MRV: Record<string, number> = {
   laptop: 50000, macbook: 120000, 'macbook air': 90000, 'macbook pro': 150000,
@@ -307,7 +311,31 @@ interface PricingResult {
   band: string
   sellerPayout: number
   platformTake: number
+  platformTakePct: number
+  insurancePool: number
   months: number
+}
+
+function calcEffectiveTakeRate(condition: string, bandId: string, sellerScore?: string): number {
+  // Base take: 15%
+  let rate = PLATFORM_TAKE
+
+  // Condition adjustment: worse condition = higher platform risk = higher take
+  const condAdj: Record<string, number> = {
+    'New': -0.02, 'Mint': -0.01, 'Good': 0, 'Fair': 0.03, 'Poor': 0.05,
+  }
+  rate += condAdj[condition] || 0
+
+  // Tenure adjustment: longer commitments = better for platform = lower take for sellers
+  if (bandId === 'extended' || bandId === 'lifecycle') rate -= 0.02
+  if (bandId === 'flash') rate += 0.02
+
+  // Seller score adjustment: trusted sellers earn better payout
+  if (sellerScore === 'high') rate -= 0.02
+  if (sellerScore === 'low') rate += 0.05
+
+  // Clamp between 8% and 25%
+  return Math.max(0.08, Math.min(0.25, rate))
 }
 
 // Estimate retail value from item name via lookup
@@ -324,37 +352,47 @@ function estimateItemMRV(itemHint: string | null): number {
 }
 
 function computePricing(
-  mrv: number, condition: string, category: string, months: number, source: 'P2P' | 'B2B2C' = 'P2P'
+  mrv: number, condition: string, category: string, months: number,
+  sellerScore?: string, undercut?: number,
 ): PricingResult {
   const band = getTenureBand(months)
   const compRate = COMPETITOR_RATES[category] || 0.060
-  const condFactor = CONDITION_FACTOR[condition] || 1.00
+  const condRentFactor = CONDITION_RENT_FACTOR[condition] || 1.00
+  const condDepAdj = CONDITION_DEPOSIT_ADJ[condition] || 1.00
+  const itemUndercut = undercut ?? DEFAULT_UNDERCUT
 
+  // Step 1: Calculate competitor monthly
   const compMonthly = Math.round(mrv * compRate)
-  const savings = TIER_SAVINGS[band.id] || 0.02
 
-  // Ensure lease rent never exceeds competitor rate:
-  // totalFactor = min((1 - savings) * condFactor, 1.0) capped at 1.0
-  const totalFactor = Math.min((1 - savings) * condFactor, 1.0)
-  const leaseRent = Math.round(compMonthly * totalFactor)
-  const deposit = Math.round(mrv * band.depositPct)
-
-  const competitorTotal = compMonthly * months
-
+  // Step 2: Calculate EMI monthly for this band's horizon
   const emiTotal = Math.round(calcEmiTotal(mrv, band.emiHorizon))
   const emiMonthly = Math.round(emiTotal / band.emiHorizon)
-  const emiTotalForTenure = emiMonthly * months
 
+  // Step 3: Baseline New rent = min(comp, emi) × (1 - undercut)
+  const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - itemUndercut))
+
+  // Step 4: Apply condition factor to get final rent
+  const leaseRent = Math.round(baselineNew * condRentFactor)
+
+  // Step 5: Deposit = monthly rent × condition deposit adjustment
+  const deposit = Math.round(leaseRent * condDepAdj)
+
+  // Step 6: Dynamic platform take rate
+  const takeRate = calcEffectiveTakeRate(condition, band.id, sellerScore)
+  const platformTakeCalc = Math.round(leaseRent * takeRate)
+  const sellerPayout = leaseRent - platformTakeCalc
+
+  const competitorTotal = compMonthly * months
+  const emiTotalForTenure = emiMonthly * months
   const renterTotal = leaseRent * months
-  const savingVsEmi = emiTotalForTenure - renterTotal
   const savingVsComp = competitorTotal - renterTotal
-  const sellerPayout = Math.round(leaseRent * (1 - PLATFORM_TAKE))
-  const platformTakeCalc = leaseRent - sellerPayout
+  const savingVsEmi = emiTotalForTenure - renterTotal
 
   return {
     leaseRent, deposit, renterTotal, competitorTotal,
     emiTotal: emiTotalForTenure, savingVsEmi, savingVsComp,
-    band: band.label, sellerPayout, platformTake: platformTakeCalc, months,
+    band: band.label, sellerPayout, platformTake: platformTakeCalc, platformTakePct: takeRate,
+    insurancePool: 0, months,
   }
 }
 
@@ -420,6 +458,8 @@ async function generateLeaseGuruResponse(
       band: tenureInfo?.band || '—',
       sellerPayout: Math.round(geminiPricing.leaseRent * (1 - PLATFORM_TAKE)),
       platformTake: Math.round(geminiPricing.leaseRent * PLATFORM_TAKE),
+      platformTakePct: PLATFORM_TAKE,
+      insurancePool: 0,
       months: session.tenureMonths!,
       renterTotal: geminiPricing.leaseRent * session.tenureMonths!,
     } : tenureInfo
@@ -463,28 +503,28 @@ Lease is an IIT Kanpur-founded peer-to-peer rental marketplace. Here is everythi
 - Rent is paid monthly. Deposit is refundable and held in escrow.
 - Items available: electronics (laptops, phones, speakers), appliances (AC, fridge, washing machine), furniture (sofa, table, bed, mattress), cycles, books, lifestyle items.
 - Tenure bands:
-  * Flash (1-3 months): shortest, highest rate (1.15x tier, ~2% savings vs competitor)
-  * Semester (4-11 months): standard student term (1.05x tier, ~8% savings vs competitor)
-  * Annual (12-18 months): best value (1.00x tier, baseline, ~15% savings vs competitor)
-  * Extended (19-24 months): longer commitment discount (0.90x tier, ~22% savings)
-  * Lifecycle (25+ months): maximum savings (0.80x tier, ~30% savings)
-- Longer tenure = cheaper monthly rate. Annual is the sweet spot.
-- Deposit = percentage of item's retail value, varies by tenure band (35% Flash, 30% Semester, 25% Annual, 20% Extended, 15% Lifecycle).
-- Deposit is fully refundable within 24 hours of return (minus any verified damage).
-- Condition affects price meaningfully: New items cost ~10% MORE to rent (they're more valuable), Mint ~5% more, Good is baseline (0%), Fair ~15% LESS, Poor ~30% LESS.
-- Lease adjusts pricing based on item specifications and condition — higher-spec items (more RAM, better processor, newer model) affect the retail value and thus the rental price.
-- Lease undercuts competitors on every tier. Savings range from 2% (Flash) to 30% (Lifecycle) depending on tenure.
-- Competitors charge roughly 6% of retail value per month. Lease beats them on every tenure band with bigger savings on longer commitments.
-- EMI comparison: EMI spreads cost over 12-48 months with ~15% annual interest. For short tenures (Flash, Semester), EMI is financially worse because you pay interest on months you don't use the item. For long tenures (Annual+), EMI and rent are closer — but renting has zero ownership risk and no credit impact.
+  * Flash (1-3 months): shortest rental period
+  * Semester (4-11 months): standard student term
+  * Annual (12-18 months): best value, longest common tenure
+  * Extended (19-24 months): longer commitment, bigger savings
+  * Lifecycle (25+ months): maximum savings
+- Longer tenure = cheaper monthly rate because EMI comparison gets worse for short tenures.
+- Rent is set relative to min(competitor rate, EMI monthly). New-condition items are priced 5-7% below that baseline (varies by item type).
+- Worse condition = proportionally cheaper: Mint (95% of New rent), Good (88%), Fair (78%), Poor (65%).
+- Deposit = the monthly rent × condition adjustment. New items: deposit = 1 month rent. Worse condition adds 2-3% per level.
+- Condition is assessed by Gemini Vision (photos) + seller questionnaire, final result is non-editable.
+- Competitors charge roughly 6% of retail value per month. EMI spreads cost over 12-48 months at ~15% annual interest.
+- For short tenures, EMI is financially worse (you pay interest on months you don't use). For long tenures, rent and EMI are closer — but renting has zero ownership risk.
+- Lease always beats both competitor and EMI on monthly rate.
 
 ### For Sellers (people who want to list items):
 - Sellers list idle items and earn passive monthly income.
-- Platform takes 15% commission. Seller keeps 85% of monthly rent.
-- Pricing formula: daily rate ≈ 1.5% of item's retail value. Monthly (15 days) = daily rate × 15.
-- Deposit protects the seller against damage or non-return.
-- Sellers set their own price but Lease Guru suggests optimal pricing based on market data.
-- Tips: keep pickup radius under 1km for better trust scores, upload clear photos, respond to booking requests within 2 hours.
-- Damage protection: escrow holds the deposit. If item is returned damaged, both parties go through dispute resolution. Lease arbitrates based on check-in/checkout photos.
+- Platform take rate is dynamic: base 15%, adjusted by condition (New -2%, Mint -1%, Good 0%, Fair +3%, Poor +5%), tenure (long -2%, short +2%), seller score (high -2%, low +5%).
+- Effective take rate ranges from 8% (best case) to 25% (worst case).
+- Seller payout = monthly rent × (1 - effectiveTakeRate). Always less than competitor/EMI rates.
+- Seller must complete condition assessment (upload photos + answer 5 questions) before item can be listed.
+- Tips: upload clear photos, be honest about condition, respond to booking requests within 2 hours.
+- Damage protection: escrow holds the deposit.
 
 ### For Complaints & Support:
 - Deposit disputes: deposits are held in escrow. Both parties must sign off for release. If disputed, Lease reviews check-in vs check-out photos.
@@ -502,17 +542,15 @@ Lease is an IIT Kanpur-founded peer-to-peer rental marketplace. Here is everythi
 ## PRICING ENGINE (USE THESE NUMBERS)
 When asked about pricing, use these exact formulas. Never make up numbers.
 - Competitor baseline: ~6% of retail value per month (varies by item category)
-- Lease rent = competitor monthly × tenure savings factor × condition factor (capped to never exceed competitor)
-- Tenure savings factor (savings vs competitor): Flash 2%, Semester 8%, Annual 15%, Extended 22%, Lifecycle 30%
-- Example: For Annual, Good item: Lease = competitor rate × (1 - 0.15) × 1.00 = 85% of competitor price (15% cheaper)
-- Condition factor: New 1.10x (item worth more), Mint 1.05x, Good 1.00x (baseline), Fair 0.85x, Poor 0.70x
-- The final Lease rent is ALWAYS cheaper than the competitor rate (capped at competitor price for premium combinations like Flash + New)
-- Longer tenure always gives bigger savings. Annual is ~15% cheaper, Lifecycle is ~30% cheaper.
-- Better condition items (New, Mint) cost more to rent because they're worth more; Poor condition items cost less.
+- EMI monthly = (MRV + MRV × 15% × EMI_horizon / 12) / EMI_horizon. EMI horizon varies by band.
+- Lease baseline (New condition) = min(competitor monthly, EMI monthly) × (1 − undercut). Undercut is 5-7% depending on item type.
+- Other conditions scale from New baseline: Mint = 95% of New rent, Good = 88%, Fair = 78%, Poor = 65%.
+- Deposit = 1 month's rent × condition adjustment: New ×1.00, Mint ×1.025, Good ×1.05, Fair ×1.075, Poor ×1.10
+- Platform take rate is dynamic: base 15%. Adjustments: New −2%, Mint −1%, Good 0%, Fair +3%, Poor +5%. Long tenure −2%, short tenure +2%. High score −2%, low score +5%. Range: 8% to 25%.
+- Seller payout = monthly rent × (1 − takeRate). Always less than competitor AND EMI rates.
+- Longer tenure = cheaper monthly because EMI comparison favors longer horizons.
 - Item specifications (model, RAM, storage, brand) affect the retail value, which determines the base pricing.
-- Deposit: Flash 35% of MRV, Semester 30%, Annual 25%, Extended 20%, Lifecycle 15%
-- EMI annual interest rate: 15%
-- Platform commission: 15% of monthly rent (seller keeps 85%)
+- Condition is assessed by Gemini Vision (uploaded photos) + 5-question seller questionnaire, final grade is non-editable. Without condition, no pricing is shown.
 
 ## CURRENT SESSION CONTEXT
 Session state: ${JSON.stringify(session, null, 2)}
@@ -836,6 +874,30 @@ router.post('/', auth(false), async (req: Request, res: Response, next: NextFunc
       },
       suggestions: getSuggestions(session),
     })
+  } catch (e) {
+    next(e)
+  }
+})
+
+// ─── CONDITION ASSESSMENT ──────────────────────────────────────────
+router.post('/assess-condition', auth(false), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { images, answers } = req.body
+
+    if (!answers || typeof answers !== 'object') {
+      return res.status(400).json({ error: 'Questionnaire answers required' })
+    }
+
+    const result = await assessItemCondition(images || [], answers)
+
+    // Also compute pricing for this condition
+    const { estimatedMRV, category } = req.body
+    const mrv = estimatedMRV || 50000
+    const cat = category || 'Electronics'
+    const months = req.body.tenureMonths || 6
+    const pricing = computePricing(mrv, result.condition, cat, months, 'medium')
+
+    res.json({ condition: result, pricing })
   } catch (e) {
     next(e)
   }

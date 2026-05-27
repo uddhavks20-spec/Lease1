@@ -381,6 +381,86 @@ Rules:
   }
 }
 
+// ─── CONDITION ASSESSMENT (Vision + questionnaire) ────────────────
+export async function assessItemCondition(
+  images: string[],
+  answers: Record<string, string>,
+): Promise<{ condition: 'New' | 'Mint' | 'Good' | 'Fair' | 'Poor'; reasoning: string; confidence: 'high' | 'medium' | 'low' }> {
+  if (!API_KEY || images.length === 0) {
+    return assessFromQuestionnaireOnly(answers)
+  }
+
+  const genAI = getClient()
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+
+  const qText = Object.entries(answers)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join('\n')
+
+  const prompt = `You are a product condition assessment expert for a P2P rental marketplace.
+
+You have PHOTOS of the item and SELLER ANSWERS:
+${qText}
+
+Return ONLY valid JSON:
+{"condition":"New"|"Mint"|"Good"|"Fair"|"Poor","reasoning":"<why>","confidence":"high"|"medium"|"low"}
+
+Rules:
+- New: factory sealed or used <1 week, zero scratches/dents, all accessories work
+- Mint: 0-2 micro scratches (invisible at arm's length), no dents, all features work
+- Good: 1-3 visible scratches, no/minor dents, all major features work
+- Fair: 4-10 scratches, 1-2 dents, 1-2 non-critical features not working
+- Poor: heavy scratches, 3+ dents, critical features not working, heavy wear
+- Cross-check images vs answers. Downgrade if images show more damage. Upgrade if better.`
+
+  const imageParts = images.map(img => ({
+    inlineData: { data: img.includes(',') ? img.split(',')[1] : img, mimeType: 'image/jpeg' },
+  }))
+
+  const result = await model.generateContent([{ text: prompt }, ...imageParts])
+  const text = result.response.text()
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+
+  if (jsonMatch) {
+    const data = JSON.parse(jsonMatch[0])
+    const valid = ['New', 'Mint', 'Good', 'Fair', 'Poor']
+    return {
+      condition: valid.includes(data.condition) ? data.condition : 'Good',
+      reasoning: data.reasoning || 'Assessed from images and answers',
+      confidence: data.confidence || 'medium',
+    }
+  }
+
+  return assessFromQuestionnaireOnly(answers)
+}
+
+function assessFromQuestionnaireOnly(
+  answers: Record<string, string>,
+): { condition: 'New' | 'Mint' | 'Good' | 'Fair' | 'Poor'; reasoning: string; confidence: 'low' } {
+  const scratchMap: Record<string, number> = { '0': 4, '1-3': 2, '4-10': 1, '10+': 0 }
+  const dentMap: Record<string, number> = { '0': 4, '1-2': 2, '3-5': 1, '5+': 0 }
+  const featureMap: Record<string, number> = { 'All': 4, 'Minor issues': 2, 'Major issues': 1, 'Not working': 0 }
+  const accessoryMap: Record<string, number> = { 'All': 4, 'Some': 2, 'None': 0 }
+  const appearMap: Record<string, number> = { 'Mint': 4, 'Good': 3, 'Fair': 1, 'Poor': 0 }
+
+  const score = (scratchMap[answers.scratches] ?? 2) + (dentMap[answers.dents] ?? 2)
+    + (featureMap[answers.features] ?? 2) + (accessoryMap[answers.accessories] ?? 2)
+    + (appearMap[answers.appearance] ?? 2)
+
+  const conditions: Array<{ min: number; label: 'New' | 'Mint' | 'Good' | 'Fair' | 'Poor' }> = [
+    { min: 18, label: 'New' }, { min: 14, label: 'Mint' },
+    { min: 9, label: 'Good' }, { min: 4, label: 'Fair' }, { min: 0, label: 'Poor' },
+  ]
+
+  const result = conditions.find(c => score >= c.min) || conditions[conditions.length - 1]
+
+  return {
+    condition: result.label,
+    reasoning: `Questionnaire score ${score}/20`,
+    confidence: 'low',
+  }
+}
+
 export function isGeminiAvailable(): boolean {
   return !!API_KEY
 }
