@@ -20,10 +20,9 @@ export async function generateChatResponse(
   const genAI = getClient()
   const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
-  const result = await model.generateContent({
-    contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${dbContext}\n\nUser message: ${userMessage}` }] }],
-    tools: [{ googleSearch: {} }],
-  } as any)
+  const result = await model.generateContent([
+    { text: `${systemPrompt}\n\n${dbContext}\n\nUser message: ${userMessage}` },
+  ])
 
   return result.response.text()
 }
