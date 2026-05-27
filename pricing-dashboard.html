@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lease Pricing Engine — Dry Run (300 combos)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
+h1 { font-size: 1.5rem; margin-bottom: 4px; color: #f8fafc; }
+.subtitle { color: #94a3b8; font-size: 0.85rem; margin-bottom: 20px; }
+.stats { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; }
+.stat { background: #1e293b; border-radius: 10px; padding: 12px 18px; min-width: 140px; }
+.stat-label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.stat-value { font-size: 1.4rem; font-weight: 700; margin-top: 2px; }
+.stat-value.green { color: #4ade80; }
+.stat-value.yellow { color: #facc15; }
+.stat-value.red { color: #f87171; }
+.controls { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 20px; align-items: end; }
+.control-group { display: flex; flex-direction: column; gap: 3px; }
+.control-group label { font-size: 0.7rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+.control-group select, .control-group input {
+  background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px;
+  padding: 6px 10px; font-size: 0.85rem;
+}
+.table-wrap { overflow-x: auto; border-radius: 10px; border: 1px solid #1e293b; }
+table { width: 100%; border-collapse: collapse; font-size: 0.75rem; }
+th { background: #1e293b; padding: 8px 10px; text-align: center; font-weight: 600; color: #94a3b8;
+  position: sticky; top: 0; z-index: 2; white-space: nowrap; border-bottom: 2px solid #334155; }
+th.item-col { text-align: left; min-width: 120px; left: 0; z-index: 3; background: #1e293b; }
+td { padding: 6px 8px; text-align: center; border-bottom: 1px solid #1e293b; white-space: nowrap; }
+td.item-col { text-align: left; font-weight: 500; position: sticky; left: 0; background: #0f172a; z-index: 1; }
+td .mrv { font-size: 0.65rem; color: #64748b; display: block; }
+.cell { cursor: pointer; border-radius: 4px; padding: 2px 6px; transition: all 0.15s; display: inline-block; }
+.cell:hover { transform: scale(1.05); outline: 2px solid #60a5fa; }
+.cell .rent { font-weight: 700; }
+.cell .saving { font-size: 0.65rem; }
+tr:hover td { background: #1e293b; }
+tr:hover td.item-col { background: #1e293b; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+  z-index: 100; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #1e293b; border-radius: 14px; padding: 28px; max-width: 500px; width: 90%; }
+.modal h2 { margin-bottom: 16px; font-size: 1.1rem; }
+.modal .row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #334155; }
+.modal .row:last-child { border-bottom: none; }
+.modal .row .label { color: #94a3b8; }
+.modal .row .val { font-weight: 600; }
+.close-btn { background: #334155; border: none; color: #e2e8f0; padding: 8px 20px;
+  border-radius: 8px; cursor: pointer; margin-top: 16px; font-size: 0.85rem; }
+.close-btn:hover { background: #475569; }
+.green-bg { background: #064e3b22; }
+.yellow-bg { background: #713f1222; }
+.red-bg { background: #7f1d1d22; }
+@media (max-width: 768px) {
+  body { padding: 10px; }
+  .stat { min-width: 100px; padding: 8px 12px; }
+  .stat-value { font-size: 1.1rem; }
+  td, th { font-size: 0.65rem; padding: 4px 6px; }
+}
+</style>
+</head>
+<body>
+
+<h1>Lease Pricing Engine</h1>
+<p class="subtitle">Dry run across items, conditions &amp; tenures — verifying no tier exceeds competitor, condition spreads, and tenure savings</p>
+
+<div class="stats" id="stats"></div>
+
+<div class="controls">
+  <div class="control-group">
+    <label>Category</label>
+    <select id="filterCategory" onchange="render()">
+      <option value="all">All Categories</option>
+      <option value="Electronics">Electronics</option>
+      <option value="Appliance">Appliance</option>
+      <option value="Furniture">Furniture</option>
+      <option value="Lifestyle">Lifestyle</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Tenure Band</label>
+    <select id="filterTenure" onchange="render()">
+      <option value="all">All Tenures</option>
+      <option value="Flash">Flash (3mo)</option>
+      <option value="Semester">Semester (6mo)</option>
+      <option value="Annual">Annual (12mo)</option>
+      <option value="Extended">Extended (24mo)</option>
+      <option value="Lifecycle">Lifecycle (36mo)</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Condition</label>
+    <select id="filterCondition" onchange="render()">
+      <option value="all">All Conditions</option>
+      <option value="New">New</option>
+      <option value="Mint">Mint</option>
+      <option value="Good">Good</option>
+      <option value="Fair">Fair</option>
+      <option value="Poor">Poor</option>
+    </select>
+  </div>
+  <div class="control-group">
+    <label>Min Savings (%)</label>
+    <input id="minSavings" type="range" min="0" max="50" value="0" oninput="render(); document.getElementById('savingsLabel').textContent=this.value+'%'" style="width:100px">
+    <span id="savingsLabel" style="font-size:0.75rem;color:#94a3b8">0%</span>
+  </div>
+  <div class="control-group">
+    <label>Sort by</label>
+    <select id="sortBy" onchange="render()">
+      <option value="name">Item Name</option>
+      <option value="mrv">Price (high first)</option>
+      <option value="savings">Savings (least first)</option>
+    </select>
+  </div>
+</div>
+
+<div class="table-wrap" id="tableWrap"></div>
+
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h2 id="modalTitle">Details</h2>
+    <div id="modalBody"></div>
+    <button class="close-btn" onclick="closeModal()">Close</button>
+  </div>
+</div>
+
+<script>
+// ─── PRICING ENGINE (exact copy from chat.ts) ──────────────────────
+const TENURE_BANDS = [
+  { id: 'flash', label: 'Flash', min: 1, max: 3, tier: 1.15, depositPct: 0.35, emiHorizon: 12 },
+  { id: 'semester', label: 'Semester', min: 4, max: 11, tier: 1.05, depositPct: 0.30, emiHorizon: 18 },
+  { id: 'annual', label: 'Annual', min: 12, max: 18, tier: 1.00, depositPct: 0.25, emiHorizon: 24 },
+  { id: 'extended', label: 'Extended', min: 19, max: 24, tier: 0.90, depositPct: 0.20, emiHorizon: 36 },
+  { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, tier: 0.80, depositPct: 0.15, emiHorizon: 48 },
+]
+
+const CONDITION_FACTOR = { 'New': 1.10, 'Mint': 1.05, 'Good': 1.00, 'Fair': 0.85, 'Poor': 0.70 }
+const COMPETITOR_RATES = { Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075 }
+const TIER_SAVINGS = { flash: 0.02, semester: 0.08, annual: 0.15, extended: 0.22, lifecycle: 0.30 }
+const PLATFORM_TAKE = 0.20
+
+const CONDITIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']
+const BAND_MONTHS = { flash: 3, semester: 6, annual: 12, extended: 24, lifecycle: 36 }
+const BAND_LABELS = { flash: 'Flash', semester: 'Semester', annual: 'Annual', extended: 'Extended', lifecycle: 'Lifecycle' }
+
+function getTenureBand(months) {
+  return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[0]
+}
+
+function computePricing(mrv, condition, category, months) {
+  const band = getTenureBand(months)
+  const compRate = COMPETITOR_RATES[category] || 0.060
+  const condFactor = CONDITION_FACTOR[condition] || 1.00
+  const compMonthly = Math.round(mrv * compRate)
+  const savings = TIER_SAVINGS[band.id] || 0.02
+  const totalFactor = Math.min((1 - savings) * condFactor, 1.0)
+  const leaseRent = Math.round(compMonthly * totalFactor)
+  const deposit = Math.round(mrv * band.depositPct)
+  const competitorTotal = compMonthly * months
+  const renterTotal = leaseRent * months
+  const savingVsComp = competitorTotal - renterTotal
+  const savingVsCompPct = compMonthly > 0 ? Math.round((1 - leaseRent / compMonthly) * 100) : 0
+  const sellerPayout = Math.round(leaseRent * (1 - PLATFORM_TAKE))
+  const platformTake = leaseRent - sellerPayout
+  return { leaseRent, deposit, renterTotal, competitorTotal, savingVsComp, savingVsCompPct, sellerPayout, platformTake, band: band.label, months, compMonthly }
+}
+
+// ─── ITEMS ─────────────────────────────────────────────────────────
+const ITEMS = [
+  { name: 'MacBook Pro 16"', mrv: 199000, cat: 'Electronics' },
+  { name: 'iPhone 15 Pro Max', mrv: 120000, cat: 'Electronics' },
+  { name: 'MacBook Air M3', mrv: 114900, cat: 'Electronics' },
+  { name: 'PS5', mrv: 55000, cat: 'Electronics' },
+  { name: 'iPad Air', mrv: 59900, cat: 'Electronics' },
+  { name: 'Gaming Laptop', mrv: 85000, cat: 'Electronics' },
+  { name: '4K Monitor 27"', mrv: 35000, cat: 'Electronics' },
+  { name: 'Noise-Cancelling Headphones', mrv: 12000, cat: 'Electronics' },
+  { name: 'Bluetooth Speaker', mrv: 5000, cat: 'Electronics' },
+  { name: 'AirPods Pro', mrv: 25000, cat: 'Electronics' },
+  { name: 'Split AC 1.5T', mrv: 42000, cat: 'Appliance' },
+  { name: 'Refrigerator 210L', mrv: 28000, cat: 'Appliance' },
+  { name: 'Washing Machine 7kg', mrv: 28000, cat: 'Appliance' },
+  { name: 'Microwave Oven', mrv: 8000, cat: 'Appliance' },
+  { name: 'Room Heater', mrv: 3500, cat: 'Appliance' },
+  { name: 'Air Cooler', mrv: 12000, cat: 'Appliance' },
+  { name: '3-Seater Sofa', mrv: 35000, cat: 'Furniture' },
+  { name: 'Queen Bed with Mattress', mrv: 30000, cat: 'Furniture' },
+  { name: 'Study Table', mrv: 12000, cat: 'Furniture' },
+  { name: 'Ergonomic Chair', mrv: 15000, cat: 'Furniture' },
+  { name: 'Bookshelf 5-tier', mrv: 8000, cat: 'Furniture' },
+  { name: 'Mattress 6" Queen', mrv: 15000, cat: 'Furniture' },
+  { name: 'Mountain Cycle', mrv: 18000, cat: 'Lifestyle' },
+  { name: 'DSLR Camera', mrv: 55000, cat: 'Lifestyle' },
+  { name: 'Acoustic Guitar', mrv: 10000, cat: 'Lifestyle' },
+  { name: 'Tent 4-person', mrv: 6000, cat: 'Lifestyle' },
+  { name: 'Textbook Set (Sem 3)', mrv: 3000, cat: 'Lifestyle' },
+  { name: 'Novels Bundle (5)', mrv: 1500, cat: 'Lifestyle' },
+]
+
+// ─── RENDER ────────────────────────────────────────────────────────
+let resultsCache = []
+let modalData = null
+
+function buildData() {
+  const catFilter = document.getElementById('filterCategory').value
+  const tenFilter = document.getElementById('filterTenure').value
+  const condFilter = document.getElementById('filterCondition').value
+  const minSav = parseInt(document.getElementById('minSavings').value) / 100
+  const sort = document.getElementById('sortBy').value
+
+  const bands = tenFilter === 'all'
+    ? Object.keys(BAND_MONTHS)
+    : Object.keys(BAND_MONTHS).filter(k => BAND_LABELS[k] === tenFilter)
+
+  const conds = condFilter === 'all' ? CONDITIONS : [condFilter]
+
+  let data = []
+  for (const item of ITEMS) {
+    if (catFilter !== 'all' && item.cat !== catFilter) continue
+    for (const cond of conds) {
+      for (const bandId of bands) {
+        const months = BAND_MONTHS[bandId]
+        const p = computePricing(item.mrv, cond, item.cat, months)
+        data.push({ item, condition: cond, bandId, band: BAND_LABELS[bandId], months, ...p })
+      }
+    }
+  }
+
+  data = data.filter(d => d.savingVsCompPct / 100 >= minSav)
+
+  if (sort === 'mrv') data.sort((a, b) => b.item.mrv - a.item.mrv)
+  else if (sort === 'savings') data.sort((a, b) => a.savingVsCompPct - b.savingVsCompPct)
+  else data.sort((a, b) => a.item.name.localeCompare(b.item.name))
+
+  resultsCache = data
+  return data
+}
+
+function render() {
+  const data = buildData()
+  const bands = [...new Set(data.map(d => d.band))]
+  const conds = [...new Set(data.map(d => d.condition))]
+  const items = [...new Set(data.map(d => d.item.name))]
+  const itemsOrder = []
+  for (const d of data) { if (!itemsOrder.find(i => i.name === d.item.name)) itemsOrder.push(d.item) }
+
+  const totalCombos = data.length
+  const avgSavings = data.length ? Math.round(data.reduce((s, d) => s + d.savingVsCompPct, 0) / data.length) : 0
+  const minSav = data.length ? Math.min(...data.map(d => d.savingVsCompPct)) : 0
+  const maxSav = data.length ? Math.max(...data.map(d => d.savingVsCompPct)) : 0
+  const noViolations = minSav >= 0
+
+  document.getElementById('stats').innerHTML = `
+    <div class="stat"><div class="stat-label">Combinations</div><div class="stat-value">${totalCombos}</div></div>
+    <div class="stat"><div class="stat-label">Avg Savings</div><div class="stat-value ${avgSavings > 10 ? 'green' : avgSavings > 3 ? 'yellow' : 'red'}">${avgSavings}%</div></div>
+    <div class="stat"><div class="stat-label">Savings Range</div><div class="stat-value">${minSav}% – ${maxSav}%</div></div>
+    <div class="stat"><div class="stat-label">Competitor Violations</div><div class="stat-value ${noViolations ? 'green' : 'red'}">${noViolations ? 'NONE ✓' : 'FOUND ✗'}</div></div>
+  `
+
+  // Column layout: [Item] + [Condition columns for each Band]
+  // Group: (Band, Condition)
+  const colHeaders = []
+  for (const band of bands) {
+    for (const cond of conds) {
+      colHeaders.push({ band, cond })
+    }
+  }
+
+  let html = '<table><thead><tr>'
+  html += '<th class="item-col">Item</th>'
+  for (const ch of colHeaders) {
+    html += `<th>${ch.band}<br><span style="font-weight:400;color:#64748b;font-size:0.65rem">${ch.cond}</span></th>`
+  }
+  html += '</tr></thead><tbody>'
+
+  for (const item of itemsOrder) {
+    html += '<tr>'
+    html += `<td class="item-col">${item.name} <span class="mrv">₹${item.mrv.toLocaleString('en-IN')} · ${item.cat}</span></td>`
+    for (const ch of colHeaders) {
+      const match = data.find(d => d.item.name === item.name && d.condition === ch.cond && d.band === ch.band)
+      if (match) {
+        const cls = match.savingVsCompPct > 15 ? 'green-bg' : match.savingVsCompPct > 3 ? 'yellow-bg' : 'red-bg'
+        const rent = match.leaseRent.toLocaleString('en-IN')
+        const saving = match.savingVsCompPct
+        html += `<td class="${cls}"><span class="cell" onclick="showModal('${item.name}', '${ch.cond}', '${ch.band}')">`
+        html += `<span class="rent">₹${rent}</span><br><span class="saving" style="color:${saving > 15 ? '#4ade80' : saving > 3 ? '#facc15' : '#f87171'}">${saving > 0 ? '−' + saving + '%' : '0%'}</span>`
+        html += '</span></td>'
+      } else {
+        html += '<td>—</td>'
+      }
+    }
+    html += '</tr>'
+  }
+
+  html += '</tbody></table>'
+  document.getElementById('tableWrap').innerHTML = html
+}
+
+// ─── MODAL ─────────────────────────────────────────────────────────
+function showModal(itemName, condition, band) {
+  const match = resultsCache.find(d => d.item.name === itemName && d.condition === condition && d.band === band)
+  if (!match) return
+
+  document.getElementById('modalTitle').textContent = `${itemName} · ${condition} · ${band} (${match.months}mo)`
+
+  document.getElementById('modalBody').innerHTML = `
+    <div class="row"><span class="label">Retail Price (MRV)</span><span class="val">₹${match.item.mrv.toLocaleString('en-IN')}</span></div>
+    <div class="row"><span class="label">Category</span><span class="val">${match.item.cat}</span></div>
+    <div class="row"><span class="label">Comp. Monthly Rate</span><span class="val">${match.compRate != null ? match.compRate * 100 + '%' : '—'}</span></div>
+    <div class="row"><span class="label">Condition Factor</span><span class="val">${CONDITION_FACTOR[match.condition]}x</span></div>
+    <div class="row"><span class="label">Tenure Savings</span><span class="val">${TIER_SAVINGS[Object.keys(BAND_MONTHS).find(k => BAND_LABELS[k] === match.band)] * 100}%</span></div>
+    <div class="row" style="border-top:2px solid #475569;margin-top:6px;padding-top:10px">
+      <span class="label">Competitor Monthly</span>
+      <span class="val">₹${match.compMonthly.toLocaleString('en-IN')}/mo</span>
+    </div>
+    <div class="row">
+      <span class="label">Lease Monthly</span>
+      <span class="val" style="color:#4ade80;font-size:1.1rem">₹${match.leaseRent.toLocaleString('en-IN')}/mo</span>
+    </div>
+    <div class="row">
+      <span class="label">You Save</span>
+      <span class="val" style="color:#4ade80">₹${match.savingVsComp.toLocaleString('en-IN')} (${match.savingVsCompPct}%)</span>
+    </div>
+    <div class="row" style="border-top:2px solid #475569;margin-top:6px;padding-top:10px">
+      <span class="label">Deposit (${Math.round(match.deposit / match.item.mrv * 100)}%)</span>
+      <span class="val">₹${match.deposit.toLocaleString('en-IN')}</span>
+    </div>
+    <div class="row">
+      <span class="label">Total Lease (${match.months}mo)</span>
+      <span class="val">₹${match.renterTotal.toLocaleString('en-IN')}</span>
+    </div>
+    <div class="row">
+      <span class="label">Total Competitor</span>
+      <span class="val">₹${match.competitorTotal.toLocaleString('en-IN')}</span>
+    </div>
+    <div class="row" style="border-top:2px solid #475569;margin-top:6px;padding-top:10px">
+      <span class="label">Seller Payout (${Math.round((1 - PLATFORM_TAKE) * 100)}%)</span>
+      <span class="val">₹${match.sellerPayout.toLocaleString('en-IN')}/mo</span>
+    </div>
+    <div class="row">
+      <span class="label">Platform Fee (${Math.round(PLATFORM_TAKE * 100)}%)</span>
+      <span class="val">₹${match.platformTake.toLocaleString('en-IN')}/mo</span>
+    </div>
+  `
+  document.getElementById('modal').classList.add('show')
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('show')
+}
+document.getElementById('modal').addEventListener('click', e => { if (e.target === e.currentTarget) closeModal() })
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal() })
+
+// ─── INIT ──────────────────────────────────────────────────────────
+render()
+</script>
+</body>
+</html>

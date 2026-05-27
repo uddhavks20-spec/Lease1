@@ -49,7 +49,7 @@ const ITEM_MRV: Record<string, number> = {
 }
 
 const EMI_ANNUAL_RATE = 0.15
-const PLATFORM_TAKE = 0.15
+const PLATFORM_TAKE = 0.20
 
 function getTenureBand(months: number) {
   return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[0]
@@ -316,26 +316,8 @@ interface PricingResult {
   months: number
 }
 
-function calcEffectiveTakeRate(condition: string, bandId: string, sellerScore?: string): number {
-  // Base take: 15%
-  let rate = PLATFORM_TAKE
-
-  // Condition adjustment: worse condition = higher platform risk = higher take
-  const condAdj: Record<string, number> = {
-    'New': -0.02, 'Mint': -0.01, 'Good': 0, 'Fair': 0.03, 'Poor': 0.05,
-  }
-  rate += condAdj[condition] || 0
-
-  // Tenure adjustment: longer commitments = better for platform = lower take for sellers
-  if (bandId === 'extended' || bandId === 'lifecycle') rate -= 0.02
-  if (bandId === 'flash') rate += 0.02
-
-  // Seller score adjustment: trusted sellers earn better payout
-  if (sellerScore === 'high') rate -= 0.02
-  if (sellerScore === 'low') rate += 0.05
-
-  // Clamp between 8% and 25%
-  return Math.max(0.08, Math.min(0.25, rate))
+function calcEffectiveTakeRate(): number {
+  return PLATFORM_TAKE
 }
 
 // Estimate retail value from item name via lookup
@@ -377,8 +359,8 @@ function computePricing(
   // Step 5: Deposit = monthly rent × condition deposit adjustment
   const deposit = Math.round(leaseRent * condDepAdj)
 
-  // Step 6: Dynamic platform take rate
-  const takeRate = calcEffectiveTakeRate(condition, band.id, sellerScore)
+  // Step 6: Fixed 20% platform commission
+  const takeRate = PLATFORM_TAKE
   const platformTakeCalc = Math.round(leaseRent * takeRate)
   const sellerPayout = leaseRent - platformTakeCalc
 
@@ -519,7 +501,7 @@ Lease is an IIT Kanpur-founded peer-to-peer rental marketplace. Here is everythi
 
 ### For Sellers (people who want to list items):
 - Sellers list idle items and earn passive monthly income.
-- Platform take rate is dynamic: base 15%, adjusted by condition (New -2%, Mint -1%, Good 0%, Fair +3%, Poor +5%), tenure (long -2%, short +2%), seller score (high -2%, low +5%).
+- Platform take is fixed at 20% of monthly rent (seller keeps 80%). This is not negotiable.
 - Effective take rate ranges from 8% (best case) to 25% (worst case).
 - Seller payout = monthly rent × (1 - effectiveTakeRate). Always less than competitor/EMI rates.
 - Seller must complete condition assessment (upload photos + answer 5 questions) before item can be listed.
@@ -546,8 +528,8 @@ When asked about pricing, use these exact formulas. Never make up numbers.
 - Lease baseline (New condition) = min(competitor monthly, EMI monthly) × (1 − undercut). Undercut is ~3% depending on item type.
 - Other conditions scale from New baseline: Mint = 95% of New rent, Good = 88%, Fair = 78%, Poor = 65%.
 - Deposit = 1 month's rent × condition adjustment: New ×1.00, Mint ×1.025, Good ×1.05, Fair ×1.075, Poor ×1.10
-- Platform take rate is dynamic: base 15%. Adjustments: New −2%, Mint −1%, Good 0%, Fair +3%, Poor +5%. Long tenure −2%, short tenure +2%. High score −2%, low score +5%. Range: 8% to 25%.
-- Seller payout = monthly rent × (1 − takeRate). Always less than competitor AND EMI rates.
+- Platform take is fixed at 20% of monthly rent (seller keeps 80%). Not negotiable.
+- Seller payout = monthly rent × 0.80. Always less than competitor AND EMI rates.
 - Longer tenure = cheaper monthly because EMI comparison favors longer horizons.
 - Item specifications (model, RAM, storage, brand) affect the retail value, which determines the base pricing.
 - Condition is assessed by Gemini Vision (uploaded photos) + 5-question seller questionnaire, final grade is non-editable. Without condition, no pricing is shown.

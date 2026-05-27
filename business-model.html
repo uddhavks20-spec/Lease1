@@ -177,7 +177,7 @@ const TENURE_BANDS = [
   { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, emiHorizon: 48 },
 ]
 const CONDITIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']
-const PLATFORM_TAKE = 0.15
+const PLATFORM_TAKE = 0.20
 
 function getBand(months) { return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[0] }
 
@@ -185,13 +185,8 @@ function calcEmiMonthly(mrv, horizon) {
   return Math.round((mrv + mrv * 0.15 * horizon / 12) / horizon)
 }
 
-function calcEffectiveTakeRate(condition, bandId) {
-  let rate = PLATFORM_TAKE
-  const condAdj = { 'New': -0.02, 'Mint': -0.01, 'Good': 0, 'Fair': 0.03, 'Poor': 0.05 }
-  rate += condAdj[condition] || 0
-  if (bandId === 'extended' || bandId === 'lifecycle') rate -= 0.02
-  if (bandId === 'flash') rate += 0.02
-  return Math.max(0.08, Math.min(0.25, rate))
+function calcEffectiveTakeRate() {
+  return PLATFORM_TAKE
 }
 
 function calcLeaseRent(mrv, condition, category, months) {
@@ -202,7 +197,7 @@ function calcLeaseRent(mrv, condition, category, months) {
   const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * 0.97) // 3% undercut
   const condRentFactor = CONDITION_RENT_FACTOR[condition] || 1.00
   const leaseRent = Math.round(baselineNew * condRentFactor)
-  const takeRate = calcEffectiveTakeRate(condition, band.id)
+  const takeRate = calcEffectiveTakeRate()
   const sellerPayout = Math.round(leaseRent * (1 - takeRate))
   const platformTake = leaseRent - sellerPayout
   const condDepAdj = CONDITION_DEPOSIT_ADJ[condition] || 1.00
