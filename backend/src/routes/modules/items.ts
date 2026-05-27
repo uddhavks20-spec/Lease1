@@ -34,7 +34,7 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       params.push(status)
       conditions.push(`status = $${params.length}`)
     } else {
-      conditions.push(`status='active' AND is_available=true`)
+      conditions.push(`status IN ('approved','active') AND is_available=true`)
     }
 
     let orderClause = 'ORDER BY created_at DESC'
