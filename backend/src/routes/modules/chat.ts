@@ -3,6 +3,7 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 import { auth } from '../../middleware/auth'
 import { db } from '../../utils/db'
 import { generateChatResponse, isGeminiAvailable } from '../../services/gemini'
+import { checkInput, guardOutput } from '../../services/guardrails'
 
 const router = Router()
 
@@ -613,10 +614,31 @@ For completion-level chips (like "Start over" or "Talk to a human"), follow the 
 - If the user is clearly in a hurry, be extra brief`
 
 
+    // Input guardrail
+    const inputCheck = checkInput(message)
+    if (!inputCheck.valid) {
+      return { reply: "I didn't get that. Can you rephrase?" }
+    }
+
     try {
       const reply = await generateChatResponse(systemPrompt, '', message)
+
+      // Output guardrail — validate and sanitize Gemini's response
+      const pricingCtx = tenureInfo ? {
+        leaseRent: tenureInfo.leaseRent,
+        deposit: tenureInfo.deposit,
+        competitorTotal: tenureInfo.competitorTotal,
+        months: tenureInfo.months,
+      } : undefined
+      const { sanitized, issues } = guardOutput(reply, pricingCtx)
+
+      // Log guardrail issues for debugging (invisible to user)
+      if (issues.length > 0) {
+        console.log(`[Guardrails] ${issues.join(' | ')}`)
+      }
+
       return {
-        reply,
+        reply: sanitized,
         table: listings.length > 0 ? listings.slice(0, 5).map((l: any, i: number) => ({
           '#': i + 1, 'Item': l.title,
           'Rate': '₹' + Number(l.monthly_rent).toLocaleString('en-IN') + '/mo',
