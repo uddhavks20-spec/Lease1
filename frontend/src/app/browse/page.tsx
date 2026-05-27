@@ -11,6 +11,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
 
+const FALLBACK_IMG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f3f4f6" width="200" height="200"/><text fill="#9ca3af" font-family="Arial" font-size="14" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">No Image</text></svg>')
+
 type Item = {
   id: string
   title: string
@@ -217,7 +219,7 @@ export default function BrowsePage() {
             <Card className="border-none bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group-hover:-translate-y-2 transform-gpu">
               <div className="relative aspect-square bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-10 overflow-hidden">
                 <Image 
-                  src={it.image_url || '/images/placeholder.png'} 
+                  src={it.image_url?.startsWith('http') ? it.image_url : FALLBACK_IMG} 
                   alt={it.title}
                   fill
                   className="object-contain p-8 transition-transform duration-500 ease-out group-hover:scale-110 transform-gpu"

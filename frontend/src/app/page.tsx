@@ -11,19 +11,12 @@ import api from '@/lib/api'
 import { formatCurrency } from "@/lib/utils";
 import { useAuth } from '@/lib/auth-context'
 
-const popularItemsMock = [
-  { name: "Split AC 1.5 Ton", slug: "air-conditioners", img: "https://images.unsplash.com/photo-1604636559893-a748bfecfa0e?auto=format&fit=crop&q=80&w=800", price: "₹1200/mo", badge: "5-Star Inverter" },
-  { name: "Smart TV 43\"", slug: "televisions", img: "https://images.unsplash.com/photo-1536494126589-29fadf0d7e3c?auto=format&fit=crop&q=80&w=800", price: "₹800/mo", badge: "4K UHD" },
-  { name: "3-Seater Sofa", slug: "study-furniture", img: "https://images.unsplash.com/photo-1763565909003-46e9dfb68a00?auto=format&fit=crop&q=80&w=800", price: "₹600/mo", badge: "Solid Wood" },
-  { name: "MacBook Pro M2", slug: "laptops-electronics", img: "https://images.unsplash.com/photo-1591900256859-f96fc8097a7e?auto=format&fit=crop&q=80&w=800", price: "₹2500/mo", badge: "Mint Condition" },
-]
+const FALLBACK_IMG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f3f4f6" width="200" height="200"/><text fill="#9ca3af" font-family="Arial" font-size="14" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">No Image</text></svg>')
 
-const categoryTiles = [
-  { name: "Air Conditioners", slug: "air-conditioners", img: "https://images.unsplash.com/photo-1604636559893-a748bfecfa0e?auto=format&fit=crop&q=80&w=800" },
-  { name: "Televisions", slug: "televisions", img: "https://images.unsplash.com/photo-1536494126589-29fadf0d7e3c?auto=format&fit=crop&q=80&w=800" },
-  { name: "Laptops & Electronics", slug: "laptops-electronics", img: "https://images.unsplash.com/photo-1591900256859-f96fc8097a7e?auto=format&fit=crop&q=80&w=800" },
-  { name: "Study & Furniture", slug: "study-furniture", img: "https://images.unsplash.com/photo-1763565909003-46e9dfb68a00?auto=format&fit=crop&q=80&w=800" },
-  { name: "Clothing", slug: "clothing-accessories", img: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?auto=format&fit=crop&q=80&w=800" },
+const advertisement = [
+  { title: "iPhone 15 Pro", desc: "Rent at ₹1999/mo", img: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-black" },
+  { title: "Gaming Laptop", desc: "Next-gen Performance", img: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-blue-900" },
+  { title: "Noise Cancel Headphones", desc: "Pure Sound", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-purple-900" },
 ]
 
 const advertisements = [
@@ -34,15 +27,9 @@ const advertisements = [
 
 export default function HomePage() {
   const [latestItems, setLatestItems] = useState<any[]>([]);
+  const [popularItems, setPopularItems] = useState<any[]>([]);
+  const [categories, setCategories] = useState<any[]>([]);
   const [creditData, setCreditData] = useState<any>(null);
-  
-
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      api.get('/credit/me').then(r => setCreditData(r.data)).catch(() => {});
-    }
-  }, []);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const { user } = useAuth();
@@ -59,14 +46,23 @@ export default function HomePage() {
     });
   };
 
+  const imgSrc = (url: string | null | undefined) => url && url.startsWith('http') ? url : FALLBACK_IMG
 
   useEffect(() => {
-    api.get('/items?limit=4').then(res => {
-      setLatestItems(res.data.items || []);
+    const token = localStorage.getItem('token');
+    if (token) {
+      api.get('/credit/me').then(r => setCreditData(r.data)).catch(() => {});
+    }
+    Promise.all([
+      api.get('/items?limit=10'),
+      api.get('/items?limit=8&sortBy=popular'),
+      api.get('/categories'),
+    ]).then(([itemsRes, popularRes, catRes]) => {
+      setLatestItems(itemsRes.data.items || []);
+      setPopularItems(popularRes.data.items || []);
+      setCategories(catRes.data.categories || []);
       setLoading(false);
-    }).catch((err) => {
-      setLoading(false);
-    });
+    }).catch(() => setLoading(false));
   }, []);
 
   return (
@@ -112,25 +108,22 @@ export default function HomePage() {
                 <div className="w-20 h-1.5 bg-primary-600 mx-auto rounded-full" />
               </div>
 
-              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 md:gap-6">
-                {categoryTiles.map((cat) => (
-                  <Link key={cat.slug} href={`/browse?category=${cat.slug}`}>
-                    <div className="group cursor-pointer flex flex-col items-center">
-                      <div className="w-full aspect-square mb-4 relative overflow-hidden rounded-[32px] bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center p-8 transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-primary-100 dark:group-hover:shadow-none transform-gpu">
-                        <Image
-                          src={cat.img}
-                          alt={cat.name}
-                          width={200}
-                          height={200}
-                          className="object-contain transition-transform duration-300 ease-out group-hover:scale-110 transform-gpu"
-                        />
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6">
+                {categories.map((cat) => {
+                  const slug = cat.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+                  return (
+                    <Link key={cat.id} href={`/browse?category=${slug}`}>
+                      <div className="group cursor-pointer flex flex-col items-center">
+                        <div className="w-full aspect-square mb-4 relative overflow-hidden rounded-[32px] bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center p-8 transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-primary-100 dark:group-hover:shadow-none transform-gpu">
+                          <span className="text-5xl opacity-30 group-hover:opacity-50 transition-opacity">{cat.icon || '📦'}</span>
+                        </div>
+                        <h3 className="text-gray-900 dark:text-white font-black text-sm uppercase tracking-widest text-center line-clamp-2 group-hover:text-primary-600 transition-colors">
+                          {cat.name}
+                        </h3>
                       </div>
-                      <h3 className="text-gray-900 dark:text-white font-black text-sm uppercase tracking-widest text-center line-clamp-1 group-hover:text-primary-600 transition-colors">
-                        {cat.name}
-                      </h3>
-                    </div>
-                  </Link>
-                ))}
+                    </Link>
+                  )
+                })}
               </div>
             </section>
 
@@ -147,25 +140,25 @@ export default function HomePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-                {popularItemsMock.map((item) => (
-                  <Link key={item.name} href={`/browse?q=${item.name}`}>
+                {popularItems.length > 0 ? popularItems.map((item) => (
+                  <Link key={item.id} href={`/items/${item.id}`}>
                     <div className="group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl transform-gpu">
                       <div className="aspect-square relative overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-10">
                         <Image
-                          src={item.img}
-                          alt={item.name}
+                          src={imgSrc(item.image_url)}
+                          alt={item.title}
                           width={250}
                           height={250}
                           className="object-contain transition-transform duration-300 ease-out group-hover:scale-110 transform-gpu"
                         />
                         <Badge className="absolute top-4 left-4 bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white backdrop-blur-md border-none text-[10px] font-black uppercase tracking-tighter px-3 py-1">
-                          {item.badge}
+                          Popular
                         </Badge>
                       </div>
                       <div className="p-6">
-                        <h3 className="text-gray-900 dark:text-white font-black text-lg mb-1 leading-tight group-hover:text-primary-600 transition-colors">{item.name}</h3>
+                        <h3 className="text-gray-900 dark:text-white font-black text-lg mb-1 leading-tight group-hover:text-primary-600 transition-colors">{item.title}</h3>
                         <div className="flex items-center justify-between mt-4">
-                          <p className="text-primary-600 font-black text-xl">{item.price}</p>
+                          <p className="text-primary-600 font-black text-xl">{formatCurrency(item.monthly_rent)}/mo</p>
                           <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                             <ArrowRight className="w-5 h-5" />
                           </div>
@@ -173,7 +166,7 @@ export default function HomePage() {
                       </div>
                     </div>
                   </Link>
-                ))}
+                )) : [1,2,3,4].map(i => <div key={i} className="aspect-square bg-gray-200 dark:bg-gray-800 animate-pulse rounded-[32px]" />)}
               </div>
             </section>
 
@@ -192,9 +185,9 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 {loading ? (
-                  [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-2xl" />)
+                  [1, 2, 3, 4, 5].map(i => <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-2xl" />)
                 ) : (
                   latestItems.map((item) => (
                     <Link key={item.id} href={`/items/${item.id}`}>
@@ -202,7 +195,7 @@ export default function HomePage() {
                         <CardContent className="p-0">
                           <div className="relative h-48 w-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6 overflow-hidden">
                             <Image
-                              src={item.image_url || "/images/placeholder.png"}
+                              src={imgSrc(item.image_url)}
                               alt={item.title}
                               width={200}
                               height={150}
