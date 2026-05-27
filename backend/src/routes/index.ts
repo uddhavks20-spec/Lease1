@@ -16,6 +16,7 @@ import creditRouter from './modules/credit'
 import wholesalerRouter from './modules/wholesaler'
 import chatRouter from './modules/chat'
 import visionRouter from './modules/vision'
+import pricingRouter from './modules/pricing'
 
 export const apiRouter = Router()
 
@@ -36,3 +37,4 @@ apiRouter.use('/credit', creditRouter)
 apiRouter.use('/wholesaler', wholesalerRouter)
 apiRouter.use('/chat', chatRouter)
 apiRouter.use('/vision', visionRouter)
+apiRouter.use('/pricing', pricingRouter)

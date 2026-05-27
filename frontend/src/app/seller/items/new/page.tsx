@@ -6,7 +6,8 @@ import api from '@/lib/api'
 import { toast } from 'react-hot-toast'
 import { useRouter } from 'next/navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Info, Calculator, ChevronDown, PackageCheck, Shield } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Info, Calculator, ChevronDown, PackageCheck, Shield, TrendingUp, Zap, Sparkles } from 'lucide-react'
 import { LeaseGuru } from '@/components/LeaseGuru'
 import { mockProductsData, MockProduct } from '@/data/mockProductsData'
 
@@ -43,6 +44,9 @@ export default function NewItemPage() {
 
   const [manualRentOverride, setManualRentOverride] = useState(false)
   const [customAttributes, setCustomAttributes] = useState<Record<string, string>>({})
+  const [pricingMode, setPricingMode] = useState<'p2p' | 'b2b2c'>('p2p')
+  const [pricingEstimate, setPricingEstimate] = useState<any>(null)
+  const [pricingLoading, setPricingLoading] = useState(false)
 
   // Image & video state
   const [imageViews, setImageViews] = useState<Record<string, string>>({
@@ -147,10 +151,39 @@ export default function NewItemPage() {
     setForm(prev => ({
       ...prev,
       depositAmount: dynamicDeposit,
-      monthlyRent: manualRentOverride ? prev.monthlyRent : suggestedRent,
+      monthlyRent: manualRentOverride || pricingEstimate ? prev.monthlyRent : suggestedRent,
       imageUrl: dynamicImage
     }))
   }, [form.originalPrice, form.condition, form.monthlyRent, form.subAttributes, selectedProduct, manualRentOverride, customAttributes])
+
+  // Pricing estimate via API
+  useEffect(() => {
+    if (!form.originalPrice || !selectedProduct) return
+    const timer = setTimeout(async () => {
+      setPricingLoading(true)
+      try {
+        const res = await api.post('/pricing/estimate', {
+          title: selectedProduct.title,
+          originalPrice: form.originalPrice,
+          condition: form.condition,
+          category: selectedProduct.category,
+          isB2B2C: pricingMode === 'b2b2c',
+        })
+        setPricingEstimate(res.data)
+        if (!manualRentOverride && res.data.suggestedRent) {
+          setForm(prev => ({
+            ...prev,
+            monthlyRent: res.data.suggestedRent,
+            depositAmount: res.data.suggestedRent,
+          }))
+        }
+      } catch (e) {
+        // Silently fail — existing pricing engine handles it
+      }
+      setPricingLoading(false)
+    }, 800)
+    return () => clearTimeout(timer)
+  }, [form.originalPrice, form.condition, selectedProduct, pricingMode])
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -528,9 +561,35 @@ export default function NewItemPage() {
                 <Calculator className="w-6 h-6 text-primary-500" />
                 Pricing Engine
               </CardTitle>
-              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Asset Valuation Model v2.0</p>
+              <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Asset Valuation Model v3.0</p>
             </CardHeader>
             <CardContent className="p-10 space-y-8">
+              {/* P2P / B2B2C Toggle */}
+              <div className="bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded-2xl flex border border-gray-100 dark:border-gray-800">
+                <button
+                  type="button"
+                  onClick={() => setPricingMode('p2p')}
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    pricingMode === 'p2p'
+                      ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <Zap className="w-3 h-3 inline mr-1" />P2P
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPricingMode('b2b2c')}
+                  className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    pricingMode === 'b2b2c'
+                      ? 'bg-primary-600 text-white shadow-lg shadow-primary-200'
+                      : 'text-gray-400 hover:text-gray-600'
+                  }`}
+                >
+                  <TrendingUp className="w-3 h-3 inline mr-1" />B2B2C
+                </button>
+              </div>
+
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 block">Original Purchase Price (₹)</label>
                 <input 
@@ -569,21 +628,78 @@ export default function NewItemPage() {
                 </div>
               </div>
 
+              {/* Market Comparison (P2P mode) */}
+              {pricingEstimate && pricingMode === 'p2p' && (
+                <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-3xl border border-green-200 dark:border-green-900/30 space-y-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-green-700 dark:text-green-400 uppercase tracking-widest">
+                    <Sparkles className="w-3 h-3" /> Market-Beating P2P Price
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-[10px]">
+                    <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
+                      <span className="text-gray-400 font-bold uppercase tracking-wider">Competitor Rent</span>
+                      <p className="font-black text-gray-800 dark:text-white">₹{pricingEstimate.competitorRentRange?.low?.toLocaleString('en-IN')} – ₹{pricingEstimate.competitorRentRange?.high?.toLocaleString('en-IN')}/mo</p>
+                    </div>
+                    <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
+                      <span className="text-gray-400 font-bold uppercase tracking-wider">12mo EMI (est.)</span>
+                      <p className="font-black text-gray-800 dark:text-white">₹{pricingEstimate.emiOptions?.['12']?.toLocaleString('en-IN')}/mo</p>
+                    </div>
+                  </div>
+                  {pricingEstimate.conditionAdjustment !== 0 && (
+                    <div className="text-[9px] text-green-600 dark:text-green-400 font-bold">
+                      {form.condition} condition: {Math.abs(pricingEstimate.conditionAdjustment * 100).toFixed(0)}% below base rate
+                    </div>
+                  )}
+                  <div className="text-[8px] text-gray-500 italic">{pricingEstimate.marketSummary}</div>
+                </div>
+              )}
+
+              {/* EMI Comparison */}
+              {pricingEstimate && pricingEstimate.emiOptions?.['12'] > 0 && (
+                <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-3xl border border-amber-200 dark:border-amber-900/30">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-amber-700 dark:text-amber-400 uppercase tracking-widest mb-2">
+                    <Calculator className="w-3 h-3" /> Rent vs EMI — Smart Choice
+                  </div>
+                  <div className="space-y-1 text-[10px]">
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">Your Rent</span>
+                      <span className="font-black text-green-600">₹{form.monthlyRent?.toLocaleString('en-IN')}/mo</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-gray-500">12mo EMI</span>
+                      <span className="font-black text-amber-600">₹{pricingEstimate.emiOptions['12']?.toLocaleString('en-IN')}/mo</span>
+                    </div>
+                    {form.monthlyRent < pricingEstimate.emiOptions['12'] && (
+                      <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800 text-[9px] font-bold text-green-600">
+                        ✓ Rent is {(100 - Math.round(form.monthlyRent / pricingEstimate.emiOptions['12'] * 100))}% cheaper than EMI — great for short-term needs
+                      </div>
+                    )}
+                    {form.monthlyRent >= pricingEstimate.emiOptions['12'] && (
+                      <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800 text-[9px] font-bold text-amber-600">
+                        ⚠ EMI is cheaper beyond {Math.ceil(form.originalPrice / form.monthlyRent / 12)} years — suggest buyer considers buying
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
               <div className="pt-8 border-t border-gray-100 dark:border-gray-700 space-y-6">
                 <div className="flex justify-between items-center">
                   <div>
                     <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Monthly Rent (₹)</label>
                     <p className="text-[10px] font-bold text-primary-600 uppercase mt-0.5">Lender Listed Price</p>
                   </div>
-                  <input 
-                    className={`w-36 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3 text-right font-black text-2xl outline-none ring-2 ${manualRentOverride ? 'ring-amber-500 text-amber-600' : 'ring-transparent text-gray-900 dark:text-white'} focus:ring-primary-500 transition-all`}
-                    type="number" 
-                    value={form.monthlyRent || ''} 
-                    onChange={(e) => {
-                      setForm({ ...form, monthlyRent: Number(e.target.value) });
-                      setManualRentOverride(true);
-                    }} 
-                  />
+                  <div className="flex items-center gap-2">
+                    {pricingLoading && <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />}
+                    <input 
+                      className={`w-36 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3 text-right font-black text-2xl outline-none ring-2 ${manualRentOverride ? 'ring-amber-500 text-amber-600' : 'ring-transparent text-gray-900 dark:text-white'} focus:ring-primary-500 transition-all`}
+                      type="number" 
+                      value={form.monthlyRent || ''} 
+                      onChange={(e) => {
+                        setForm({ ...form, monthlyRent: Number(e.target.value) });
+                        setManualRentOverride(true);
+                      }} 
+                    />
+                  </div>
                 </div>
 
                 <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/10 p-5 rounded-3xl border border-blue-100 dark:border-blue-900/30">

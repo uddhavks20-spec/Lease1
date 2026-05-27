@@ -150,6 +150,84 @@ Message: ${userMessage}`,
   }
 }
 
+// ─── PRICING RESEARCH (for seller pricing engine) ────────────────
+export async function generatePricingResearch(
+  title: string,
+  originalPrice: number,
+  condition: string,
+  category: string,
+  isB2B2C: boolean,
+): Promise<{
+  suggestedRent: number
+  competitorRentRange: { low: number; high: number }
+  emiOptions: Record<string, number>
+  conditionAdjustment: number
+  marketSummary: string
+}> {
+  if (!API_KEY) {
+    throw new Error('GEMINI_API_KEY not set')
+  }
+
+  const genAI = getClient()
+  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+
+  const mode = isB2B2C ? 'B2B2C (business-to-business-to-consumer — match competitor rates)' : 'P2P (peer-to-peer — must beat competitor rates and EMI)'
+
+  const prompt = `You are a pricing research analyst for a P2P rental marketplace in India.
+  
+Product: "${title}"
+Original Retail Price: ₹${originalPrice}
+Condition: ${condition}
+Category: ${category}
+Mode: ${mode}
+
+Research and return realistic market data for this product in the Indian market (2025-2026). Consider known platforms like RentoMojo, Furlenco, Amazon, Flipkart.
+
+Return ONLY valid JSON (no markdown, no code fences):
+{
+  "suggestedRent": <monthly rent in INR — for P2P this must be LESS than both competitor rental rates and EMI; for B2B2C match competitor rates>,
+  "competitorRentRange": { "low": <lowest monthly rent found on other platforms>, "high": <highest monthly rent found on other platforms> },
+  "emiOptions": { "3": <3-month EMI>, "6": <6-month EMI>, "12": <12-month EMI> },
+  "marketSummary": "<1-2 sentence market insight>"
+}
+
+Rules:
+- For P2P: suggestedRent must be AT LEAST 5-10% below the lowest competitor rent
+- For P2P: suggestedRent must be AT LEAST 5-10% below the 12-month EMI
+- For P2P: suggestedRent should be approximately ${isB2B2C ? 4.5 : 3.5}-${isB2B2C ? 6 : 4.5}% of originalPrice
+- For B2B2C: suggestedRent should match competitor rates (±5%)
+- EMI: use typical Indian credit card EMI rates (12-15% annual)`
+
+  const result = await model.generateContent([{ text: prompt }])
+  const text = result.response.text()
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+
+  if (jsonMatch) {
+    const data = JSON.parse(jsonMatch[0])
+
+    const condAdjustments: Record<string, number> = {
+      'Brand New': 0,
+      'Like New': 0,
+      'Good': -0.015,
+      'Fair': -0.045,
+    }
+    const adj = condAdjustments[condition] || 0
+    if (adj !== 0) {
+      data.suggestedRent = Math.round(data.suggestedRent * (1 + adj))
+    }
+
+    return {
+      suggestedRent: data.suggestedRent,
+      competitorRentRange: data.competitorRentRange || { low: 0, high: 0 },
+      emiOptions: data.emiOptions || { '3': 0, '6': 0, '12': 0 },
+      conditionAdjustment: adj,
+      marketSummary: data.marketSummary || '',
+    }
+  }
+
+  throw new Error('Failed to parse Gemini pricing response')
+}
+
 export function isGeminiAvailable(): boolean {
   return !!API_KEY
 }
