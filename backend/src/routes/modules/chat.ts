@@ -2,7 +2,7 @@ import { Router, type Request, type Response, type NextFunction } from 'express'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { auth } from '../../middleware/auth'
 import { db } from '../../utils/db'
-import { generateChatResponse, isGeminiAvailable } from '../../services/gemini'
+import { generateChatResponse, generateGeminiPricing, isGeminiAvailable } from '../../services/gemini'
 import { checkInput, guardOutput } from '../../services/guardrails'
 
 const router = Router()
@@ -16,10 +16,34 @@ const TENURE_BANDS = [
   { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, tier: 0.75, depositPct: 0.15, emiHorizon: 48 },
 ]
 
-const CONDITION_DISCOUNT = { 'New': 0.03, 'Mint': 0.02, 'Good': 0.01, 'Fair': 0.005, 'Poor': 0.00 }
+// Condition premium/discount: New items cost more to rent (more value), Poor costs less
+const CONDITION_FACTOR: Record<string, number> = {
+  'New': 1.10, 'Mint': 1.05, 'Good': 1.00, 'Fair': 0.85, 'Poor': 0.70,
+}
+// Competitor monthly rate as % of MRV per category
 const COMPETITOR_RATES: Record<string, number> = {
   Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
 }
+// Savings vs competitor per tenure band (longer = more savings)
+const TIER_SAVINGS: Record<string, number> = {
+  flash: 0.02, semester: 0.08, annual: 0.15, extended: 0.22, lifecycle: 0.30,
+}
+// Item retail value lookup for common items (used when user doesn't specify price)
+const ITEM_MRV: Record<string, number> = {
+  laptop: 50000, macbook: 120000, 'macbook air': 90000, 'macbook pro': 150000,
+  thinkpad: 60000, 'dell laptop': 55000, 'hp laptop': 50000, asus: 45000,
+  lenovo: 50000, acer: 40000,
+  iphone: 80000, 'iphone 15': 90000, 'iphone 16': 100000, samsung: 50000,
+  oneplus: 40000, pixel: 60000,
+  speaker: 5000, headphone: 3000, earphone: 1500, airpods: 20000,
+  ac: 35000, fridge: 25000, 'washing machine': 25000, cooler: 10000,
+  fan: 2000, heater: 3000, microoven: 8000,
+  sofa: 25000, bed: 20000, table: 8000, chair: 5000, mattress: 10000,
+  desk: 10000, bookshelf: 6000, almirah: 15000,
+  cycle: 15000, book: 500, textbook: 1000, novel: 300,
+  camera: 40000, guitar: 8000, tent: 5000,
+}
+
 const EMI_ANNUAL_RATE = 0.15
 const PLATFORM_TAKE = 0.15
 
@@ -286,18 +310,35 @@ interface PricingResult {
   months: number
 }
 
+// Estimate retail value from item name via lookup
+function estimateItemMRV(itemHint: string | null): number {
+  if (!itemHint) return 50000 // fallback
+  const key = itemHint.toLowerCase().trim()
+  // Exact match
+  if (ITEM_MRV[key]) return ITEM_MRV[key]
+  // Partial match: find the best matching key
+  for (const [k, v] of Object.entries(ITEM_MRV)) {
+    if (key.includes(k) || k.includes(key)) return v
+  }
+  return 50000
+}
+
 function computePricing(
   mrv: number, condition: string, category: string, months: number, source: 'P2P' | 'B2B2C' = 'P2P'
 ): PricingResult {
   const band = getTenureBand(months)
   const compRate = COMPETITOR_RATES[category] || 0.060
-  const condDisc = CONDITION_DISCOUNT[condition as keyof typeof CONDITION_DISCOUNT] || 0.01
-
-  const baseRent = Math.round(mrv * compRate * (1 - 0.04)) // 4% undercut
-  const leaseRent = Math.round(baseRent * band.tier * (1 - condDisc))
-  const deposit = Math.round(mrv * band.depositPct)
+  const condFactor = CONDITION_FACTOR[condition] || 1.00
 
   const compMonthly = Math.round(mrv * compRate)
+  const savings = TIER_SAVINGS[band.id] || 0.02
+
+  // Ensure lease rent never exceeds competitor rate:
+  // totalFactor = min((1 - savings) * condFactor, 1.0) capped at 1.0
+  const totalFactor = Math.min((1 - savings) * condFactor, 1.0)
+  const leaseRent = Math.round(compMonthly * totalFactor)
+  const deposit = Math.round(mrv * band.depositPct)
+
   const competitorTotal = compMonthly * months
 
   const emiTotal = Math.round(calcEmiTotal(mrv, band.emiHorizon))
@@ -347,21 +388,54 @@ async function generateLeaseGuruResponse(
 
   // Try Gemini first
   if (isGeminiAvailable()) {
+    // Estimate item details from session
+    const itemName = session.itemOfInterest || 'item'
+    const estimatedMRV = estimateItemMRV(session.itemOfInterest)
+    const category = 'Electronics' // simplified; can be extracted from item type later
+
+    // Try Gemini-powered pricing first (item-aware)
+    let geminiPricing = null
+    if (session.tenureMonths && session.itemOfInterest) {
+      try {
+        geminiPricing = await generateGeminiPricing(
+          itemName, estimatedMRV, 'Good', category,
+          '', session.tenureMonths,
+        )
+      } catch { /* fall through to formula */ }
+    }
+
+    // Fallback: formula-based pricing with estimated MRV
     const tenureInfo = session.tenureMonths
-      ? computePricing(50000, 'Good', 'Electronics', session.tenureMonths)
+      ? computePricing(estimatedMRV, 'Good', category, session.tenureMonths)
       : null
+
+    // Use Gemini pricing when available (overrides formula)
+    const effectivePricing = geminiPricing && geminiPricing.leaseRent > 0 ? {
+      leaseRent: geminiPricing.leaseRent,
+      deposit: geminiPricing.deposit,
+      competitorTotal: geminiPricing.competitorRent * session.tenureMonths!,
+      emiTotal: 0,
+      savingVsComp: 0,
+      savingVsEmi: 0,
+      band: tenureInfo?.band || '—',
+      sellerPayout: Math.round(geminiPricing.leaseRent * (1 - PLATFORM_TAKE)),
+      platformTake: Math.round(geminiPricing.leaseRent * PLATFORM_TAKE),
+      months: session.tenureMonths!,
+      renterTotal: geminiPricing.leaseRent * session.tenureMonths!,
+    } : tenureInfo
 
     // Build conversation history text (last 6 exchanges)
     const historyText = session.conversationHistory.slice(-6).map(ex =>
       ex.role === 'user' ? `User: ${ex.text}` : `Lease Guru: ${ex.text}`
     ).join('\n')
 
-    const pricingContext = tenureInfo
-      ? `User tenure: ${session.tenureMonths}mo (${tenureInfo.band} band)
-  Lease rent: ₹${tenureInfo.leaseRent.toLocaleString('en-IN')}/mo
-  Deposit: ₹${tenureInfo.deposit.toLocaleString('en-IN')}
-  Competitor: ₹${Math.round(tenureInfo.competitorTotal / session.tenureMonths!).toLocaleString('en-IN')}/mo
-  EMI (${getTenureBand(session.tenureMonths!).emiHorizon}mo): ₹${Math.round(tenureInfo.emiTotal / getTenureBand(session.tenureMonths!).emiHorizon).toLocaleString('en-IN')}/mo`
+    const pricingContext = effectivePricing
+      ? `Item: ${itemName} (est. ₹${estimatedMRV.toLocaleString('en-IN')})
+  User tenure: ${session.tenureMonths}mo (${effectivePricing.band} band)
+  Lease rent: ₹${effectivePricing.leaseRent.toLocaleString('en-IN')}/mo
+  Deposit: ₹${effectivePricing.deposit.toLocaleString('en-IN')}
+  Competitor: ₹${session.tenureMonths ? Math.round(effectivePricing.competitorTotal / session.tenureMonths).toLocaleString('en-IN') : '?'}/mo
+  Total lease cost: ₹${effectivePricing.renterTotal.toLocaleString('en-IN')}`
       : 'Tenure not yet established'
 
     const systemPrompt = `You are Lease Guru — the official conversational AI assistant for Lease, a peer-to-peer student rental marketplace operating in India. You are NOT a general AI. You are a domain-specific assistant for Lease only. You represent Lease and must never recommend competitors, external platforms (OLX, Amazon, RentoMojo, Furlenco, Cashify), or suggest leaving the platform.
@@ -389,17 +463,18 @@ Lease is an IIT Kanpur-founded peer-to-peer rental marketplace. Here is everythi
 - Rent is paid monthly. Deposit is refundable and held in escrow.
 - Items available: electronics (laptops, phones, speakers), appliances (AC, fridge, washing machine), furniture (sofa, table, bed, mattress), cycles, books, lifestyle items.
 - Tenure bands:
-  * Flash (1-3 months): fastest, highest monthly rate (1.50x tier)
-  * Semester (4-11 months): standard student term (1.10x tier)
-  * Annual (12-18 months): best value (1.00x tier, baseline)
-  * Extended (19-24 months): longer commitment discount (0.85x tier)
-  * Lifecycle (25+ months): maximum savings (0.75x tier)
+  * Flash (1-3 months): shortest, highest rate (1.15x tier, ~2% savings vs competitor)
+  * Semester (4-11 months): standard student term (1.05x tier, ~8% savings vs competitor)
+  * Annual (12-18 months): best value (1.00x tier, baseline, ~15% savings vs competitor)
+  * Extended (19-24 months): longer commitment discount (0.90x tier, ~22% savings)
+  * Lifecycle (25+ months): maximum savings (0.80x tier, ~30% savings)
 - Longer tenure = cheaper monthly rate. Annual is the sweet spot.
 - Deposit = percentage of item's retail value, varies by tenure band (35% Flash, 30% Semester, 25% Annual, 20% Extended, 15% Lifecycle).
 - Deposit is fully refundable within 24 hours of return (minus any verified damage).
-- Condition options: New (3% discount on rent), Mint (2%), Good (1%), Fair (0.5%), Poor (0%).
-- Lease's pricing undercuts competitors by ~4% on base rate, then adjusts for tenure and condition.
-- Competitors charge roughly 6% of retail value per month. Lease beats them on every tenure band.
+- Condition affects price meaningfully: New items cost ~10% MORE to rent (they're more valuable), Mint ~5% more, Good is baseline (0%), Fair ~15% LESS, Poor ~30% LESS.
+- Lease adjusts pricing based on item specifications and condition — higher-spec items (more RAM, better processor, newer model) affect the retail value and thus the rental price.
+- Lease undercuts competitors on every tier. Savings range from 2% (Flash) to 30% (Lifecycle) depending on tenure.
+- Competitors charge roughly 6% of retail value per month. Lease beats them on every tenure band with bigger savings on longer commitments.
 - EMI comparison: EMI spreads cost over 12-48 months with ~15% annual interest. For short tenures (Flash, Semester), EMI is financially worse because you pay interest on months you don't use the item. For long tenures (Annual+), EMI and rent are closer — but renting has zero ownership risk and no credit impact.
 
 ### For Sellers (people who want to list items):
@@ -426,10 +501,15 @@ Lease is an IIT Kanpur-founded peer-to-peer rental marketplace. Here is everythi
 
 ## PRICING ENGINE (USE THESE NUMBERS)
 When asked about pricing, use these exact formulas. Never make up numbers.
-- Competitor baseline: ~6% of retail value per month
-- Lease base: competitor rate - 4% undercut
-- Tenure multiplier: Flash 1.50x, Semester 1.10x, Annual 1.00x, Extended 0.85x, Lifecycle 0.75x
-- Condition discount: New 3% off, Mint 2%, Good 1%, Fair 0.5%, Poor 0%
+- Competitor baseline: ~6% of retail value per month (varies by item category)
+- Lease rent = competitor monthly × tenure savings factor × condition factor (capped to never exceed competitor)
+- Tenure savings factor (savings vs competitor): Flash 2%, Semester 8%, Annual 15%, Extended 22%, Lifecycle 30%
+- Example: For Annual, Good item: Lease = competitor rate × (1 - 0.15) × 1.00 = 85% of competitor price (15% cheaper)
+- Condition factor: New 1.10x (item worth more), Mint 1.05x, Good 1.00x (baseline), Fair 0.85x, Poor 0.70x
+- The final Lease rent is ALWAYS cheaper than the competitor rate (capped at competitor price for premium combinations like Flash + New)
+- Longer tenure always gives bigger savings. Annual is ~15% cheaper, Lifecycle is ~30% cheaper.
+- Better condition items (New, Mint) cost more to rent because they're worth more; Poor condition items cost less.
+- Item specifications (model, RAM, storage, brand) affect the retail value, which determines the base pricing.
 - Deposit: Flash 35% of MRV, Semester 30%, Annual 25%, Extended 20%, Lifecycle 15%
 - EMI annual interest rate: 15%
 - Platform commission: 15% of monthly rent (seller keeps 85%)
@@ -590,13 +670,13 @@ If they ask about delivery, insurance, subscription boxes, international shippin
 
 ## EXAMPLES OF GOOD RESPONSES
 User: "I want to rent a laptop for 6 months"
-You: "A laptop for 6 months — Semester band, smart call. For a **₹50,000** laptop: **₹825/mo** rent, **₹15,000** refundable deposit. Total for 6 months = **₹4,950**. Competitors charge ~₹3,000/mo. You save **₹1,175/mo** with Lease. Want to see what's available?"
+You: "A laptop for 6 months — Semester band, smart. For a **₹50,000** laptop: **₹2,760/mo** rent, **₹15,000** refundable deposit. Competitors charge ~₹3,000/mo — you save **₹240/mo** with Lease. Want to see available laptops near you?"
 
 User: "laptop chahiye 6 mahine ke liye"
-You: "Laptop 6 mahine ke liye — Semester band, accha choice. **₹50,000** wala laptop: **₹825/mo** rent, **₹15,000** deposit. Total 6 months = **₹4,950**. Competitor ~₹3,000/mo leta hai, Lease pe **₹1,175/mo** bachat. Available listings dikhaun?"
+You: "Laptop 6 mahine ke liye — Semester band, accha. **₹50,000** ka laptop: **₹2,760/mo** rent, **₹15,000** deposit. Competitor ~₹3,000/mo, Lease pe **₹240/mo** sasta hai. Listings dikhaun?"
 
 User: "What should I charge for my iPhone?"
-You: "iPhone ka retail price kitna hai? Usi hisaab se rent suggest karunga. General rule: ~1.5% of value per day. For a **₹80,000** iPhone: **₹1,200/day** or **₹18,000/month** (15 days). Deposit: **₹24,000** (30%). Want me to calculate for a specific tenure?"
+You: "iPhone ki retail price kya hai? Us hisaab se rent nikalte hain. For Annual band: **₹80,000** iPhone = **₹4,080/mo**, **₹20,000** deposit, competitor ~₹4,800/mo hai. Longer tenure = bigger savings. Kitne mahine ke liye list karna chahte ho?"
 
 ## SPECIAL HANDLING FOR SUGGESTION CHIP CLICKS
 When the user selects a suggestion chip (pre-written prompt button), treat it as a genuine user message — respond naturally as if they typed it. Don't mention that it was a chip click. Don't say "I see you selected..." Just answer the intent.
@@ -624,11 +704,11 @@ For completion-level chips (like "Start over" or "Talk to a human"), follow the 
       const reply = await generateChatResponse(systemPrompt, '', message)
 
       // Output guardrail — validate and sanitize Gemini's response
-      const pricingCtx = tenureInfo ? {
-        leaseRent: tenureInfo.leaseRent,
-        deposit: tenureInfo.deposit,
-        competitorTotal: tenureInfo.competitorTotal,
-        months: tenureInfo.months,
+      const pricingCtx = effectivePricing ? {
+        leaseRent: effectivePricing.leaseRent,
+        deposit: effectivePricing.deposit,
+        competitorTotal: effectivePricing.competitorTotal,
+        months: effectivePricing.months,
       } : undefined
       const { sanitized, issues } = guardOutput(reply, pricingCtx)
 

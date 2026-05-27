@@ -150,6 +150,88 @@ Message: ${userMessage}`,
   }
 }
 
+// ─── GEMINI-POWERED ITEM PRICING (for chatbot) ────────────────────
+interface GeminiItemPricing {
+  leaseRent: number
+  deposit: number
+  competitorRent: number
+  savingsPerMonth: number
+  reasoning: string
+}
+
+export async function generateGeminiPricing(
+  itemName: string,
+  retailPrice: number,
+  condition: string,
+  category: string,
+  specs: string,
+  tenureMonths: number,
+): Promise<GeminiItemPricing> {
+  if (!API_KEY) {
+    return {
+      leaseRent: 0, deposit: 0, competitorRent: 0,
+      savingsPerMonth: 0, reasoning: 'AI not connected',
+    }
+  }
+
+  const genAI = getClient()
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+
+  const prompt = `You are a pricing analyst for Lease, a P2P rental marketplace in India.
+Given an item, its retail price, condition, category, specifications, and rental tenure,
+estimate realistic monthly rent, deposit, and competitor price.
+
+Item: ${itemName}
+Retail Price: ₹${retailPrice}
+Condition: ${condition} (New/Mint/Good/Fair/Poor)
+Category: ${category}
+Specifications: ${specs || 'Not specified'}
+Tenure: ${tenureMonths} months
+
+Return ONLY valid JSON (no markdown, no code fences):
+{
+  "leaseRent": <realistic monthly rent on Lease, in ₹>,
+  "deposit": <refundable deposit, typically 15-35% of retail price depending on tenure, in ₹>,
+  "competitorRent": <what RentoMojo/Furlenco would charge monthly for same item+tenure, in ₹>,
+  "reasoning": "<1 sentence explaining the pricing logic>"
+}
+
+Rules:
+- The rent must be LOWER than competitorRent (Lease undercuts competitors)
+- But not too low — keep within 5-35% cheaper depending on tenure band
+- Consider: item age, condition, brand value, category-specific depreciation
+- Electronics lose value faster than furniture; books are cheapest
+- For short tenures (1-3mo), monthly rent is higher; for long tenures (12+mo), it's lower
+- Deposit should NOT exceed 35% of retail price
+- Be realistic about the Indian student rental market
+- If condition is Poor, reduce rent by ~15-25% vs Good
+- If condition is New or Mint, rent can be ~5-15% higher than Good (item is more valuable)
+- If category is Books, rent should be very low (₹50-500/mo range)
+- If category is Electronics (laptops, phones), rent is typically 3-6% of retail per month
+- For Furniture (sofa, bed), rent is typically 2-4% of retail per month
+`
+
+  const result = await model.generateContent([{ text: prompt }])
+  const text = result.response.text()
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+
+  if (jsonMatch) {
+    const data = JSON.parse(jsonMatch[0])
+    return {
+      leaseRent: Math.round(data.leaseRent || 0),
+      deposit: Math.round(data.deposit || 0),
+      competitorRent: Math.round(data.competitorRent || 0),
+      savingsPerMonth: Math.round((data.competitorRent || 0) - (data.leaseRent || 0)),
+      reasoning: data.reasoning || 'Based on market data',
+    }
+  }
+
+  return {
+    leaseRent: 0, deposit: 0, competitorRent: 0,
+    savingsPerMonth: 0, reasoning: 'Pricing engine unavailable',
+  }
+}
+
 const EMI_ANNUAL_RATE = 0.15
 const FINAL_UNDERCUT = 0.065
 
@@ -229,14 +311,23 @@ export async function estimateResellValue(
   category: string,
   attributes: Record<string, string>,
 ): Promise<{ estimatedResellValue: number; confidence: 'high' | 'medium' | 'low'; reasoning: string }> {
+  // Category-specific depreciation base rates (at Good condition)
+  const CATEGORY_DEPRECIATION: Record<string, number> = {
+    Electronics: 0.55, Appliance: 0.50, Furniture: 0.40,
+    Lifestyle: 0.45, Books: 0.20, Cycle: 0.50, General: 0.50,
+  }
+  const CONDITION_ADJ: Record<string, number> = {
+    'New': 1.30, 'Mint': 1.15, 'Good': 1.00, 'Fair': 0.80, 'Poor': 0.55,
+  }
+  const baseDep = CATEGORY_DEPRECIATION[category] || 0.50
+  const condAdj = CONDITION_ADJ[condition] || 1.00
+  const fallbackValue = Math.round(originalPrice * baseDep * condAdj)
+
   if (!API_KEY) {
-    // Fallback: simple depreciation
-    const conditionMap: Record<string, number> = { 'New': 0.85, 'Mint': 0.75, 'Good': 0.60, 'Fair': 0.45, 'Poor': 0.30 }
-    const mult = conditionMap[condition] || 0.60
     return {
-      estimatedResellValue: Math.round(originalPrice * mult),
+      estimatedResellValue: fallbackValue,
       confidence: 'low',
-      reasoning: 'AI not available — estimated by condition-based depreciation',
+      reasoning: `AI not available — ${category} base + ${condition} adjustment`,
     }
   }
 
@@ -264,9 +355,11 @@ Return ONLY valid JSON (no markdown, no code fences):
 
 Rules:
 - Be realistic about Indian second-hand market prices
-- Consider brand depreciation, category-specific resale value
+- Consider brand, model year, storage size, RAM, and other specs when estimating
 - Electronics lose 20-40% value, furniture 40-60%, books 60-80%
-- Factor in the specified condition and specifications`
+- A "New" condition item should retain ~70-85% of retail value
+- A "Poor" condition item should retain ~15-30% of retail value
+- Factor in the specified condition and specifications explicitly`
 
   const result = await model.generateContent([{ text: prompt }])
   const text = result.response.text()
@@ -275,19 +368,16 @@ Rules:
   if (jsonMatch) {
     const data = JSON.parse(jsonMatch[0])
     return {
-      estimatedResellValue: data.estimatedResellValue || Math.round(originalPrice * 0.5),
+      estimatedResellValue: data.estimatedResellValue || fallbackValue,
       confidence: data.confidence || 'medium',
       reasoning: data.reasoning || 'Estimated from market data',
     }
   }
 
-  // Fallback
-  const conditionMap: Record<string, number> = { 'New': 0.85, 'Mint': 0.75, 'Good': 0.60, 'Fair': 0.45, 'Poor': 0.30 }
-  const mult = conditionMap[condition] || 0.60
   return {
-    estimatedResellValue: Math.round(originalPrice * mult),
+    estimatedResellValue: fallbackValue,
     confidence: 'low',
-    reasoning: 'AI response parsing failed — estimated by condition-based depreciation',
+    reasoning: `AI response parsing failed — ${category} depreciation base with ${condition} condition`,
   }
 }
 
