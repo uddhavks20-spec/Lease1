@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lease Business Model — v2 Pricing P&L</title>
+<title>Lease Business Model — v3 Pricing P&L</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
@@ -71,8 +71,8 @@ tr.total td { font-weight: 700; border-top: 2px solid #475569; background: #0f17
 </head>
 <body>
 
-<h1>Lease Business Model — v2 Pricing P&L</h1>
-<p class="sub">Real-life challenges modeled: damage claims, late returns, theft, payment failures, seasonal dips, deposit cash-flow lock, dispute costs, inventory utilization</p>
+<h1>Lease Business Model — v3 Pricing P&L</h1>
+<p class="sub">Pricing: min(comp, EMI) × (1 − condUndercut) × condRentFactor · Undercut: New 2%, Mint 3%, Good/Fair/Poor 0% · Fixed 20% platform commission · 23 configurable drivers</p>
 
 <div class="grid">
   <div>
@@ -110,7 +110,7 @@ tr.total td { font-weight: 700; border-top: 2px solid #475569; background: #0f17
 
     <div class="panel" style="margin-bottom:12px">
       <h2>Costs &amp; Margins</h2>
-      <div class="param"><label>Platform Take Rate <span id="l_takeRate">15%</span></label><input type="range" id="takeRate" min="5" max="30" value="15" oninput="calc()"></div>
+      <div class="param"><label>Platform Take Rate <span id="l_takeRate">20%</span></label><input type="range" id="takeRate" min="5" max="30" value="20" oninput="calc()"><div class="num">Actual: fixed 20%. Slider for what-if.</div></div>
       <div class="param"><label>CAC per User <span id="l_cac">₹800</span></label><input type="range" id="cac" min="100" max="5000" value="800" step="50" oninput="calc()"></div>
       <div class="param"><label>Fixed Monthly Ops (₹) <span id="l_fixedOps">₹3,00,000</span></label><input type="range" id="fixedOps" min="50000" max="2000000" value="300000" step="10000" oninput="calc()"></div>
       <div class="param"><label>Payment Gateway Fee <span id="l_pgFee">2%</span></label><input type="range" id="pgFee" min="0.5" max="5" value="2" step="0.1" oninput="calc()"></div>
@@ -418,7 +418,7 @@ function renderPNL(d) {
     <tr><th class="l" style="width:55%">Line Item</th><th>Peak Month (₹)</th><th>Off-Peak (₹)</th><th>% of Rev</th></tr>
     <tr><td class="l">Gross Rentals</td><td>${fmt(d.gmv)}</td><td>${fmt(Math.round(d.gmv * (d.offPeakNetRev / d.netRev)))}</td><td>—</td></tr>
     <tr><td class="l">Seller Payout (${Math.round((1 - d.effectiveTakeRate) * 100)}%)</td><td class="red">−${fmt(d.sellerPayout)}</td><td class="red">−${fmt(Math.round(d.sellerPayout * (d.offPeakNetRev / d.netRev)))}</td><td>−${Math.round((1 - d.effectiveTakeRate) * 100)}%</td></tr>
-    <tr class="total"><td class="l">Net Commission Revenue</td><td class="green">${fmt(d.netRev)}</td><td class="yellow">${fmt(d.offPeakNetRev)}</td><td>15.0%</td></tr>
+    <tr class="total"><td class="l">Net Commission Revenue</td><td class="green">${fmt(d.netRev)}</td><td class="yellow">${fmt(d.offPeakNetRev)}</td><td>${Math.round(d.effectiveTakeRate * 100)}%</td></tr>
     <tr><td class="l">Deposit Interest Income</td><td class="green">+${fmt(d.depositInterestMonthly)}</td><td class="yellow">+${fmt(Math.round(d.depositInterestMonthly * 0.6))}</td><td>—</td></tr>
     <tr><td class="l" style="padding-top:8px;border-top:1px solid #334155;font-weight:600;color:#e2e8f0">Operating Costs</td><td style="border-top:1px solid #334155"></td><td style="border-top:1px solid #334155"></td><td style="border-top:1px solid #334155"></td></tr>
     <tr><td class="l">Payment Gateway (${(d.pgCost / d.gmv * 100).toFixed(1)}%)</td><td class="red">−${fmt(d.pgCost)}</td><td class="red">−${fmt(Math.round(d.pgCost * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.pgCost / d.netRev * 100).toFixed(1)}%</td></tr>
