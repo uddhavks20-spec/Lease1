@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lease Business Model — v2 Pricing P&L</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
+h1 { font-size: 1.4rem; color: #f8fafc; margin-bottom: 2px; }
+.sub { color: #94a3b8; font-size: 0.8rem; margin-bottom: 16px; }
+.grid { display: grid; grid-template-columns: 320px 1fr; gap: 16px; }
+@media (max-width: 900px) { .grid { grid-template-columns: 1fr; } }
+
+.panel { background: #1e293b; border-radius: 10px; padding: 16px; }
+.panel h2 { font-size: 0.85rem; color: #60a5fa; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+.param { margin-bottom: 10px; }
+.param label { display: flex; justify-content: space-between; font-size: 0.75rem; color: #94a3b8; margin-bottom: 2px; }
+.param label span { color: #e2e8f0; font-weight: 600; }
+.param input[type=range] { width: 100%; height: 4px; -webkit-appearance: none; background: #334155; border-radius: 2px; outline: none; }
+.param input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 14px; height: 14px; background: #60a5fa; border-radius: 50%; cursor: pointer; }
+.param .num { font-size: 0.7rem; color: #64748b; margin-top: 1px; }
+.param-group { display: flex; gap: 6px; flex-wrap: wrap; }
+.param-group .param { flex: 1; min-width: 60px; }
+
+.metrics { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 8px; margin-bottom: 14px; }
+.metric { background: #0f172a; border-radius: 8px; padding: 10px 12px; text-align: center; }
+.metric .mlbl { font-size: 0.6rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.3px; }
+.metric .mval { font-size: 1.15rem; font-weight: 700; margin-top: 2px; }
+.green { color: #4ade80; } .red { color: #f87171; } .yellow { color: #facc15; } .blue { color: #60a5fa; } .purple { color: #a78bfa; }
+
+table { width: 100%; border-collapse: collapse; font-size: 0.72rem; }
+th { text-align: center; padding: 5px 6px; background: #0f172a; color: #94a3b8; font-weight: 600; border-bottom: 1px solid #334155; white-space: nowrap; }
+th.l { text-align: left; }
+td { text-align: center; padding: 4px 6px; border-bottom: 1px solid #1e293b; }
+td.l { text-align: left; color: #94a3b8; }
+td.r { text-align: right; }
+tr.total td { font-weight: 700; border-top: 2px solid #475569; background: #0f172a; }
+
+.chart-bar { display: flex; align-items: center; gap: 6px; }
+.chart-bar .bar { height: 14px; border-radius: 3px; min-width: 2px; transition: width 0.3s; }
+.chart-bar .bar-label { font-size: 0.65rem; color: #94a3b8; min-width: 45px; text-align: right; }
+
+.scenario-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+.scenario { background: #0f172a; border-radius: 8px; padding: 10px; cursor: pointer; border: 2px solid transparent; transition: all 0.15s; }
+.scenario:hover { border-color: #334155; }
+.scenario.active { border-color: #60a5fa; }
+.scenario .sname { font-size: 0.75rem; font-weight: 600; }
+.scenario .sval { font-size: 1rem; font-weight: 700; margin-top: 2px; }
+
+.challenge-list { margin-top: 10px; }
+.challenge { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px; border-radius: 6px; margin-bottom: 4px; font-size: 0.75rem; }
+.challenge .clbl { color: #94a3b8; }
+.challenge .cval { font-weight: 600; }
+.challenge .cbar { height: 4px; border-radius: 2px; flex: 1; margin: 0 8px; }
+
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 600px) { .two-col { grid-template-columns: 1fr; } }
+
+.ratio-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.ratio-item { display: flex; justify-content: space-between; padding: 4px 0; font-size: 0.75rem; border-bottom: 1px solid #1e293b; }
+.ratio-item .rlbl { color: #94a3b8; }
+.ratio-item .rval { font-weight: 600; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 0.65rem; font-weight: 600; }
+.badge-p { background: #7c3aed33; color: #a78bfa; }
+.badge-b { background: #1e3a5f; color: #60a5fa; }
+.badge-o { background: #064e3b33; color: #4ade80; }
+</style>
+</head>
+<body>
+
+<h1>Lease Business Model — v2 Pricing P&L</h1>
+<p class="sub">Real-life challenges modeled: damage claims, late returns, theft, payment failures, seasonal dips, deposit cash-flow lock, dispute costs, inventory utilization</p>
+
+<div class="grid">
+  <div>
+    <!-- PARAMETERS -->
+    <div class="panel" style="margin-bottom:12px">
+      <h2>Volume &amp; Pricing</h2>
+      <div class="param"><label>Monthly Active Renters <span id="l_users">5,000</span></label><input type="range" id="users" min="100" max="50000" value="5000" oninput="calc()"><div class="num">Students renting per month</div></div>
+      <div class="param"><label>Avg Item MRV <span id="l_mrv">₹50,000</span></label><input type="range" id="mrv" min="2000" max="200000" value="50000" step="1000" oninput="calc()"><div class="num">Average retail price of rented items</div></div>
+      <div class="param"><label>Avg Tenure <span id="l_tenure">6mo</span></label><input type="range" id="tenure" min="1" max="36" value="6" oninput="calc()"><div class="num">Average rental duration in months</div></div>
+      <div class="param"><label>Items Rented Per User/Month <span id="l_itemsPerUser">1.2</span></label><input type="range" id="itemsPerUser" min="0.3" max="5" value="1.2" step="0.1" oninput="calc()"><div class="num">Average items each user rents per month</div></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:12px">
+      <h2>Condition Mix</h2>
+      <div class="param-group">
+        <div class="param"><label>New <span id="l_condNew">15%</span></label><input type="range" id="condNew" min="0" max="100" value="15" oninput="calc()"></div>
+        <div class="param"><label>Mint <span id="l_condMint">25%</span></label><input type="range" id="condMint" min="0" max="100" value="25" oninput="calc()"></div>
+        <div class="param"><label>Good <span id="l_condGood">35%</span></label><input type="range" id="condGood" min="0" max="100" value="35" oninput="calc()"></div>
+        <div class="param"><label>Fair <span id="l_condFair">18%</span></label><input type="range" id="condFair" min="0" max="100" value="18" oninput="calc()"></div>
+        <div class="param"><label>Poor <span id="l_condPoor">7%</span></label><input type="range" id="condPoor" min="0" max="100" value="7" oninput="calc()"></div>
+      </div>
+      <div class="num" id="condWarn" style="color:#facc15;font-size:0.7rem"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:12px">
+      <h2>Category Mix</h2>
+      <div class="param-group">
+        <div class="param"><label>Electronics <span id="l_catElect">45%</span></label><input type="range" id="catElect" min="0" max="100" value="45" oninput="calc()"></div>
+        <div class="param"><label>Appliance <span id="l_catAppl">20%</span></label><input type="range" id="catAppl" min="0" max="100" value="20" oninput="calc()"></div>
+        <div class="param"><label>Furniture <span id="l_catFurn">20%</span></label><input type="range" id="catFurn" min="0" max="100" value="20" oninput="calc()"></div>
+        <div class="param"><label>Lifestyle <span id="l_catLife">15%</span></label><input type="range" id="catLife" min="0" max="100" value="15" oninput="calc()"></div>
+      </div>
+      <div class="num" id="catWarn" style="color:#facc15;font-size:0.7rem"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:12px">
+      <h2>Costs &amp; Margins</h2>
+      <div class="param"><label>Platform Take Rate <span id="l_takeRate">15%</span></label><input type="range" id="takeRate" min="5" max="30" value="15" oninput="calc()"></div>
+      <div class="param"><label>CAC per User <span id="l_cac">₹800</span></label><input type="range" id="cac" min="100" max="5000" value="800" step="50" oninput="calc()"></div>
+      <div class="param"><label>Fixed Monthly Ops (₹) <span id="l_fixedOps">₹3,00,000</span></label><input type="range" id="fixedOps" min="50000" max="2000000" value="300000" step="10000" oninput="calc()"></div>
+      <div class="param"><label>Payment Gateway Fee <span id="l_pgFee">2%</span></label><input type="range" id="pgFee" min="0.5" max="5" value="2" step="0.1" oninput="calc()"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Real-Life Risk Factors</h2>
+      <div class="param"><label>Damage Claim Rate <span id="l_damageRate">5%</span></label><input type="range" id="damageRate" min="0" max="20" value="5" oninput="calc()"><div class="num">% of rentals resulting in damage</div></div>
+      <div class="param"><label>Avg Damage Payout (% MRV) <span id="l_damageAmt">15%</span></label><input type="range" id="damageAmt" min="5" max="50" value="15" oninput="calc()"></div>
+      <div class="param"><label>Late Return Rate <span id="l_lateRate">8%</span></label><input type="range" id="lateRate" min="0" max="25" value="8" oninput="calc()"></div>
+      <div class="param"><label>Non-Return / Theft Rate <span id="l_theftRate">1%</span></label><input type="range" id="theftRate" min="0" max="8" value="1" step="0.1" oninput="calc()"></div>
+      <div class="param"><label>Payment Failure Rate <span id="l_payFail">3%</span></label><input type="range" id="payFail" min="0" max="10" value="3" oninput="calc()"></div>
+      <div class="param"><label>Dispute Cost per Case <span id="l_dispCost">₹1,500</span></label><input type="range" id="dispCost" min="200" max="5000" value="1500" step="100" oninput="calc()"></div>
+      <div class="param"><label>Seasonal Dip (exam months) <span id="l_seasonal">−40%</span></label><input type="range" id="seasonal" min="0" max="70" value="40" oninput="calc()"></div>
+      <div class="param"><label>Deposit Interest Yield (annual) <span id="l_depYield">5%</span></label><input type="range" id="depYield" min="0" max="12" value="5" step="0.5" oninput="calc()"></div>
+      <div class="param"><label>Monthly Churn Rate <span id="l_churn">8%</span></label><input type="range" id="churn" min="1" max="30" value="8" oninput="calc()"></div>
+    </div>
+  </div>
+
+  <div>
+    <!-- SCENARIOS -->
+    <div class="scenario-cards" id="scenarios"></div>
+
+    <!-- METRICS -->
+    <div class="metrics" id="metrics"></div>
+
+    <!-- P&L TABLE -->
+    <div class="panel" style="margin-bottom:12px">
+      <h2>Monthly Profit &amp; Loss <span id="monthLabel" style="font-weight:400;color:#64748b;font-size:0.7rem;text-transform:none">— Peak Month</span></h2>
+      <table id="pnlTable"></table>
+    </div>
+
+    <!-- ANNUAL -->
+    <div class="panel" style="margin-bottom:12px">
+      <h2>Annual Projection</h2>
+      <div class="two-col">
+        <div>
+          <table id="annualTable" style="font-size:0.75rem"></table>
+        </div>
+        <div>
+          <div class="ratio-grid" id="ratios"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHALLENGES -->
+    <div class="panel">
+      <h2>Real-Life Challenges Impact</h2>
+      <div class="challenge-list" id="challenges"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── PRICING ENGINE (final v3) ────────────────────────────────────
+const CONDITION_RENT_FACTOR = { 'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65 }
+const CONDITION_DEPOSIT_ADJ = { 'New': 1.00, 'Mint': 1.025, 'Good': 1.05, 'Fair': 1.075, 'Poor': 1.10 }
+const COMPETITOR_RATES = { Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075 }
+const TENURE_BANDS = [
+  { id: 'flash', label: 'Flash', min: 1, max: 3, emiHorizon: 12 },
+  { id: 'semester', label: 'Semester', min: 4, max: 11, emiHorizon: 18 },
+  { id: 'annual', label: 'Annual', min: 12, max: 18, emiHorizon: 24 },
+  { id: 'extended', label: 'Extended', min: 19, max: 24, emiHorizon: 36 },
+  { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, emiHorizon: 48 },
+]
+const CONDITIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']
+const PLATFORM_TAKE = 0.15
+
+function getBand(months) { return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[0] }
+
+function calcEmiMonthly(mrv, horizon) {
+  return Math.round((mrv + mrv * 0.15 * horizon / 12) / horizon)
+}
+
+function calcEffectiveTakeRate(condition, bandId) {
+  let rate = PLATFORM_TAKE
+  const condAdj = { 'New': -0.02, 'Mint': -0.01, 'Good': 0, 'Fair': 0.03, 'Poor': 0.05 }
+  rate += condAdj[condition] || 0
+  if (bandId === 'extended' || bandId === 'lifecycle') rate -= 0.02
+  if (bandId === 'flash') rate += 0.02
+  return Math.max(0.08, Math.min(0.25, rate))
+}
+
+function calcLeaseRent(mrv, condition, category, months) {
+  const band = getBand(months)
+  const compRate = COMPETITOR_RATES[category] || 0.060
+  const compMonthly = Math.round(mrv * compRate)
+  const emiMonthly = calcEmiMonthly(mrv, band.emiHorizon)
+  const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * 0.94) // 6% undercut
+  const condRentFactor = CONDITION_RENT_FACTOR[condition] || 1.00
+  const leaseRent = Math.round(baselineNew * condRentFactor)
+  const takeRate = calcEffectiveTakeRate(condition, band.id)
+  const sellerPayout = Math.round(leaseRent * (1 - takeRate))
+  const platformTake = leaseRent - sellerPayout
+  const condDepAdj = CONDITION_DEPOSIT_ADJ[condition] || 1.00
+  const deposit = Math.round(leaseRent * condDepAdj)
+  return { leaseRent, deposit, compMonthly, emiMonthly, baselineNew, sellerPayout, platformTake, takeRate, band: band.label }
+}
+
+// ─── GLOBAL CALC ──────────────────────────────────────────────────
+let scenarioBase = null
+
+function getVal(id) { return parseFloat(document.getElementById(id).value) }
+
+function normalizeMix(ids) {
+  const vals = ids.map(id => getVal(id))
+  const sum = vals.reduce((a, b) => a + b, 0)
+  if (sum === 0) return vals.map(() => 0)
+  return vals.map(v => v / sum)
+}
+
+function calc() {
+  // Normalize condition mix
+  const condIds = ['condNew','condMint','condGood','condFair','condPoor']
+  const condRaw = condIds.map(id => getVal(id))
+  const condSum = condRaw.reduce((a,b)=>a+b,0)
+  let condMix = condRaw
+  if (condSum !== 100) {
+    condMix = condSum === 0 ? condIds.map(()=>20) : condRaw.map(v => Math.round(v * 100 / condSum))
+    document.getElementById('condWarn').textContent = '⚠ Normalized to sum 100% — adjust sliders'
+  } else {
+    document.getElementById('condWarn').textContent = ''
+  }
+  condIds.forEach((id, i) => {
+    const pct = condMix[i]
+    document.getElementById('l_' + id.replace('cond','cond')).textContent = Math.round(pct * 100 / condSum) + '%'
+  })
+
+  // Normalize category mix
+  const catIds = ['catElect','catAppl','catFurn','catLife']
+  const catRaw = catIds.map(id => getVal(id))
+  const catSum = catRaw.reduce((a,b)=>a+b,0)
+  let catMix = catRaw
+  if (catSum !== 100) {
+    catMix = catSum === 0 ? catIds.map(()=>25) : catRaw.map(v => Math.round(v * 100 / catSum))
+    document.getElementById('catWarn').textContent = '⚠ Normalized to sum 100% — adjust sliders'
+  } else {
+    document.getElementById('catWarn').textContent = ''
+  }
+
+  const users = getVal('users')
+  const mrv = getVal('mrv')
+  const tenure = getVal('tenure')
+  const itemsPerUser = getVal('itemsPerUser')
+  const takeRate = getVal('takeRate') / 100
+  const cac = getVal('cac')
+  const fixedOps = getVal('fixedOps')
+  const pgFee = getVal('pgFee') / 100
+  const damageRate = getVal('damageRate') / 100
+  const damageAmt = getVal('damageAmt') / 100
+  const lateRate = getVal('lateRate') / 100
+  const theftRate = getVal('theftRate') / 100
+  const payFail = getVal('payFail') / 100
+  const dispCost = getVal('dispCost')
+  const seasonal = getVal('seasonal') / 100
+  const depYield = getVal('depYield') / 100
+  const churn = getVal('churn') / 100
+
+  // Categorize
+  const catNames = ['Electronics','Appliance','Furniture','Lifestyle']
+  const catPcts = catMix.map(v => v / 100)
+
+  const takeRateInput = getVal('takeRate') / 100
+
+  // Tenant band
+  const band = getBand(tenure)
+
+  // Compute weighted average lease rent across conditions and categories
+  const condNames = CONDITIONS
+  const condPcts = condMix.map(v => v / 100)
+
+  let avgLeaseRent = 0
+  let avgDeposit = 0
+  let avgCompMonthly = 0
+  let avgTakeRate = 0
+
+  for (let ci = 0; ci < catNames.length; ci++) {
+    for (let di = 0; di < condNames.length; di++) {
+      const p = calcLeaseRent(mrv, condNames[di], catNames[ci], tenure)
+      const weight = catPcts[ci] * condPcts[di]
+      avgLeaseRent += p.leaseRent * weight
+      avgDeposit += p.deposit * weight
+      avgCompMonthly += p.compMonthly * weight
+      avgTakeRate += p.takeRate * weight  // dynamic per-item take rate
+    }
+  }
+
+  avgLeaseRent = Math.round(avgLeaseRent)
+  avgDeposit = Math.round(avgDeposit)
+  avgCompMonthly = Math.round(avgCompMonthly)
+
+  // Monthly metrics — use weighted average take rate, not slider
+  const effectiveTakeRate = takeRateInput > 0 ? takeRateInput : avgTakeRate
+  const totalRentals = Math.round(users * itemsPerUser)
+  const gmv = totalRentals * avgLeaseRent * tenure  // Gross Merchandise Value (total transacted)
+  const netRev = gmv * effectiveTakeRate  // Platform commission revenue
+  const sellerPayout = gmv * (1 - effectiveTakeRate)
+
+  // Deposit float (total deposits held at any point)
+  const totalDepositsHeld = totalRentals * avgDeposit
+  const depositInterestMonthly = Math.round(totalDepositsHeld * depYield / 12)
+
+  // Costs
+  const acqCost = users * cac  // New user acquisition (assuming all paid)
+  const pgCost = Math.round(gmv * pgFee)
+  const totalDamageClaims = Math.round(totalRentals * damageRate)
+  const damagePayout = Math.round(totalDamageClaims * mrv * damageAmt)
+  const theftLoss = Math.round(totalRentals * theftRate * mrv)
+  const totalDisputes = Math.round((totalDamageClaims + totalRentals * lateRate) * 0.3)  // 30% of incidents go to dispute
+  const disputeCost = Math.round(totalDisputes * dispCost)
+  const latePenaltyRevenue = Math.round(totalRentals * lateRate * avgLeaseRent * 0.5)  // 50% of a month's rent as penalty
+
+  // Seasonal adjustment
+  const seasonalFactor = 1 - seasonal
+  const peakMonths = 8  // 8 peak months, 4 off-peak (exam)
+  const offPeakMonths = 4
+  const avgSeasonalFactor = (peakMonths + offPeakMonths * seasonalFactor) / 12
+
+  const peakNetRev = netRev
+  const offPeakNetRev = Math.round(netRev * seasonalFactor)
+  const totalOpsCost = fixedOps + acqCost + pgCost + damagePayout + theftLoss + disputeCost - latePenaltyRevenue
+  const peakPL = peakNetRev + depositInterestMonthly - totalOpsCost
+  const offPeakPL = offPeakNetRev + Math.round(depositInterestMonthly * seasonalFactor) - totalOpsCost
+
+  // Annual
+  const annualRev = peakNetRev * peakMonths + offPeakNetRev * offPeakMonths
+  const annualDepInterest = depositInterestMonthly * (peakMonths + offPeakMonths * seasonalFactor)
+  const annualCosts = totalOpsCost * 12
+  const annualPL = annualRev + annualDepInterest - annualCosts
+
+  const grossMargin = netRev > 0 ? (peakNetRev - pgCost - damagePayout - theftLoss) / peakNetRev * 100 : 0
+  const netMargin = peakNetRev > 0 ? peakPL / peakNetRev * 100 : 0
+
+  // Unit economics
+  const avgOrderValue = avgLeaseRent * tenure
+  const ltv = Math.round(avgOrderValue * effectiveTakeRate * (1 / churn) * itemsPerUser)  // LTV = AOV × take rate / churn × items per month
+  const cacRatio = cac > 0 ? ltv / cac : 0
+
+  // LTV with churn
+  const avgMonthsRetained = 1 / churn
+  const ltvAccurate = Math.round(avgOrderValue * effectiveTakeRate * avgMonthsRetained * itemsPerUser)
+
+  // Challenges impact breakdown
+  const challenges = [
+    { name: 'Damage Claims', cost: damagePayout, pct: damagePayout / (peakNetRev || 1) * 100, color: '#f87171' },
+    { name: 'Theft / Non-Return', cost: theftLoss, pct: theftLoss / (peakNetRev || 1) * 100, color: '#ef4444' },
+    { name: 'Payment Gateway Fees', cost: pgCost, pct: pgCost / (peakNetRev || 1) * 100, color: '#facc15' },
+    { name: 'Dispute Resolution', cost: disputeCost, pct: disputeCost / (peakNetRev || 1) * 100, color: '#fb923c' },
+    { name: 'Customer Acquisition', cost: acqCost, pct: acqCost / (peakNetRev || 1) * 100, color: '#60a5fa' },
+    { name: 'Fixed Operations', cost: fixedOps, pct: fixedOps / (peakNetRev || 1) * 100, color: '#94a3b8' },
+    { name: 'Late Penalty (offset)', cost: -latePenaltyRevenue, pct: -latePenaltyRevenue / (peakNetRev || 1) * 100, color: '#4ade80' },
+    { name: 'Deposit Interest (offset)', cost: -depositInterestMonthly, pct: -depositInterestMonthly / (peakNetRev || 1) * 100, color: '#4ade80' },
+  ]
+
+  // Render
+  renderMetrics({ users, mrv, tenure, itemsPerUser, avgLeaseRent, avgDeposit, gmv, netRev: peakNetRev, sellerPayout,
+    totalOpsCost, peakPL, offPeakPL, annualPL, grossMargin, netMargin, ltv: ltvAccurate, cac, cacRatio,
+    totalRentals, avgOrderValue, depositInterestMonthly, totalDepositsHeld, avgCompMonthly, peakNetRev, offPeakNetRev,
+    damagePayout, theftLoss, pgCost, disputeCost, acqCost, fixedOps, latePenaltyRevenue, churn, avgMonthsRetained,
+    effectiveTakeRate })
+
+  renderPNL({ totalRentals, gmv, avgLeaseRent, netRev: peakNetRev, depositInterestMonthly, sellerPayout, pgCost, acqCost,
+    damagePayout, theftLoss, disputeCost, latePenaltyRevenue, fixedOps, totalOpsCost, peakPL, offPeakNetRev,
+    offPeakPL, avgDeposit, totalDepositsHeld, churn, avgMonthsRetained, cac, ltv: ltvAccurate, avgOrderValue,
+    effectiveTakeRate })
+
+  renderAnnual({ annualRev, annualDepInterest, annualCosts, annualPL, ltv: ltvAccurate, cac, cacRatio,
+    grossMargin, netMargin, peakNetRev, totalRentals, avgLeaseRent, avgDeposit, users, itemsPerUser,
+    avgOrderValue, totalDepositsHeld, peakPL, netMargin })
+
+  renderChallenges(challenges, peakNetRev)
+  renderScenarios(peakPL, offPeakPL, annualPL, netMargin, ltvAccurate)
+}
+
+// ─── RENDERERS ────────────────────────────────────────────────────
+function fmt(n) {
+  if (Math.abs(n) >= 1e7) return '₹' + (n/1e7).toFixed(1) + 'Cr'
+  if (Math.abs(n) >= 1e5) return '₹' + (n/1e5).toFixed(1) + 'L'
+  return '₹' + Math.round(n).toLocaleString('en-IN')
+}
+function fmtPct(n) { return n.toFixed(1) + '%' }
+
+function renderMetrics(d) {
+  document.getElementById('metrics').innerHTML = `
+    <div class="metric"><div class="mlbl">Monthly Rentals</div><div class="mval blue">${d.totalRentals.toLocaleString()}</div></div>
+    <div class="metric"><div class="mlbl">Avg Lease Rent</div><div class="mval blue">₹${d.avgLeaseRent.toLocaleString('en-IN')}</div></div>
+    <div class="metric"><div class="mlbl">Avg Deposit</div><div class="mval blue">₹${d.avgDeposit.toLocaleString('en-IN')}</div></div>
+    <div class="metric"><div class="mlbl">GMV (Monthly)</div><div class="mval blue">${fmt(d.gmv)}</div></div>
+    <div class="metric"><div class="mlbl">Net Rev (Peak)</div><div class="mval green">${fmt(d.netRev)}</div></div>
+    <div class="metric"><div class="mlbl">Net Rev (Off-Peak)</div><div class="mval yellow">${fmt(d.offPeakNetRev)}</div></div>
+    <div class="metric"><div class="mlbl">Total Costs</div><div class="mval red">${fmt(d.totalOpsCost)}</div></div>
+    <div class="metric"><div class="mlbl">Peak P&amp;L</div><div class="mval ${d.peakPL >= 0 ? 'green' : 'red'}">${fmt(d.peakPL)}</div></div>
+    <div class="metric"><div class="mlbl">Gross Margin</div><div class="mval ${d.grossMargin > 30 ? 'green' : d.grossMargin > 10 ? 'yellow' : 'red'}">${fmtPct(d.grossMargin)}</div></div>
+    <div class="metric"><div class="mlbl">Net Margin</div><div class="mval ${d.netMargin > 15 ? 'green' : d.netMargin > 0 ? 'yellow' : 'red'}">${fmtPct(d.netMargin)}</div></div>
+    <div class="metric"><div class="mlbl">LTV (per user)</div><div class="mval purple">${fmt(d.ltv)}</div></div>
+    <div class="metric"><div class="mlbl">LTV / CAC</div><div class="mval ${d.cacRatio > 3 ? 'green' : d.cacRatio > 1 ? 'yellow' : 'red'}">${d.cacRatio.toFixed(1)}x</div></div>
+    <div class="metric"><div class="mlbl">Effective Take Rate</div><div class="mval blue">${Math.round(d.effectiveTakeRate * 100)}%</div></div>
+    <div class="metric"><div class="mlbl">Deposits Held</div><div class="mval blue">${fmt(d.totalDepositsHeld)}</div></div>
+    <div class="metric"><div class="mlbl">Deposit Interest</div><div class="mval green">${fmt(d.depositInterestMonthly)}/mo</div></div>
+  `
+}
+
+function renderPNL(d) {
+  const peakCosts = d.pgCost + d.acqCost + d.damagePayout + d.theftLoss + d.disputeCost + d.fixedOps - d.latePenaltyRevenue
+  const offPeakNet = d.offPeakNetRev
+  const offPeakCosts = Math.round(peakCosts * (d.offPeakNetRev / d.netRev))
+
+  document.getElementById('pnlTable').innerHTML = `
+    <tr><th class="l" style="width:55%">Line Item</th><th>Peak Month (₹)</th><th>Off-Peak (₹)</th><th>% of Rev</th></tr>
+    <tr><td class="l">Gross Rentals</td><td>${fmt(d.gmv)}</td><td>${fmt(Math.round(d.gmv * (d.offPeakNetRev / d.netRev)))}</td><td>—</td></tr>
+    <tr><td class="l">Seller Payout (${Math.round((1 - d.effectiveTakeRate) * 100)}%)</td><td class="red">−${fmt(d.sellerPayout)}</td><td class="red">−${fmt(Math.round(d.sellerPayout * (d.offPeakNetRev / d.netRev)))}</td><td>−${Math.round((1 - d.effectiveTakeRate) * 100)}%</td></tr>
+    <tr class="total"><td class="l">Net Commission Revenue</td><td class="green">${fmt(d.netRev)}</td><td class="yellow">${fmt(d.offPeakNetRev)}</td><td>15.0%</td></tr>
+    <tr><td class="l">Deposit Interest Income</td><td class="green">+${fmt(d.depositInterestMonthly)}</td><td class="yellow">+${fmt(Math.round(d.depositInterestMonthly * 0.6))}</td><td>—</td></tr>
+    <tr><td class="l" style="padding-top:8px;border-top:1px solid #334155;font-weight:600;color:#e2e8f0">Operating Costs</td><td style="border-top:1px solid #334155"></td><td style="border-top:1px solid #334155"></td><td style="border-top:1px solid #334155"></td></tr>
+    <tr><td class="l">Payment Gateway (${(d.pgCost / d.gmv * 100).toFixed(1)}%)</td><td class="red">−${fmt(d.pgCost)}</td><td class="red">−${fmt(Math.round(d.pgCost * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.pgCost / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Customer Acquisition (${d.acqCost.toLocaleString()} users × ₹${d.cac.toLocaleString()})</td><td class="red">−${fmt(d.acqCost)}</td><td class="red">−${fmt(d.acqCost)}</td><td>${(d.acqCost / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Damage Claims (${(d.damagePayout / d.gmv * 100).toFixed(1)}% of GMV)</td><td class="red">−${fmt(d.damagePayout)}</td><td class="red">−${fmt(Math.round(d.damagePayout * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.damagePayout / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Theft / Non-Return Loss</td><td class="red">−${fmt(d.theftLoss)}</td><td class="red">−${fmt(Math.round(d.theftLoss * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.theftLoss / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Dispute Resolution (${d.disputeCost > 0 ? Math.round(d.disputeCost / 1500) : 0} cases)</td><td class="red">−${fmt(d.disputeCost)}</td><td class="red">−${fmt(Math.round(d.disputeCost * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.disputeCost / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Fixed Operations</td><td class="red">−${fmt(d.fixedOps)}</td><td class="red">−${fmt(d.fixedOps)}</td><td>${(d.fixedOps / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Late Penalty Revenue (offset)</td><td class="green">+${fmt(d.latePenaltyRevenue)}</td><td class="green">+${fmt(Math.round(d.latePenaltyRevenue * (d.offPeakNetRev / d.netRev)))}</td><td>−${(d.latePenaltyRevenue / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr class="total"><td class="l">Total Costs</td><td class="red">${fmt(d.totalOpsCost)}</td><td class="red">${fmt(Math.round(peakCosts * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.totalOpsCost / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr class="total" style="border-top:3px solid ${d.peakPL >= 0 ? '#4ade80' : '#f87171'}"><td class="l" style="font-size:0.85rem;color:${d.peakPL >= 0 ? '#4ade80' : '#f87171'}">NET PROFIT / (LOSS)</td>
+      <td style="color:${d.peakPL >= 0 ? '#4ade80' : '#f87171'};font-size:0.85rem">${fmt(d.peakPL)}</td>
+      <td style="color:${d.offPeakPL >= 0 ? '#4ade80' : '#f87171'};font-size:0.85rem">${fmt(d.offPeakPL)}</td>
+      <td style="color:${d.peakPL / d.netRev * 100 > 15 ? '#4ade80' : d.peakPL > 0 ? '#facc15' : '#f87171'};font-size:0.85rem">${d.netRev > 0 ? (d.peakPL / d.netRev * 100).toFixed(1) + '%' : '—'}</td></tr>
+  `
+}
+
+function renderAnnual(d) {
+  document.getElementById('annualTable').innerHTML = `
+    <tr><th class="l">Annual Metric</th><th>Value</th></tr>
+    <tr><td class="l">Total Rentals (year)</td><td>${(d.totalRentals * 12).toLocaleString()}</td></tr>
+    <tr><td class="l">Gross Revenue</td><td class="green">${fmt(d.annualRev)}</td></tr>
+    <tr><td class="l">Deposit Interest</td><td class="green">+${fmt(d.annualDepInterest)}</td></tr>
+    <tr><td class="l">Total Costs</td><td class="red">−${fmt(d.annualCosts)}</td></tr>
+    <tr class="total"><td class="l">Annual P&amp;L</td><td class="${d.annualPL >= 0 ? 'green' : 'red'}">${fmt(d.annualPL)}</td></tr>
+  `
+
+  document.getElementById('ratios').innerHTML = `
+    <div class="ratio-item"><span class="rlbl">Gross Margin</span><span class="rval ${d.grossMargin > 30 ? 'green' : d.grossMargin > 10 ? 'yellow' : 'red'}">${fmtPct(d.grossMargin)}</span></div>
+    <div class="ratio-item"><span class="rlbl">Net Margin</span><span class="rval ${d.netMargin > 15 ? 'green' : d.netMargin > 0 ? 'yellow' : 'red'}">${fmtPct(d.netMargin)}</span></div>
+    <div class="ratio-item"><span class="rlbl">LTV : CAC</span><span class="rval ${d.cacRatio > 3 ? 'green' : d.cacRatio > 1 ? 'yellow' : 'red'}">${d.cacRatio.toFixed(1)}x</span></div>
+    <div class="ratio-item"><span class="rlbl">Avg Order Value</span><span class="rval blue">${fmt(d.avgOrderValue)}</span></div>
+    <div class="ratio-item"><span class="rlbl">Cost per Rental</span><span class="rval">${fmt(d.annualCosts / (d.totalRentals * 12))}</span></div>
+    <div class="ratio-item"><span class="rlbl">Revenue per Rental</span><span class="rval green">${fmt(d.annualRev / (d.totalRentals * 12))}</span></div>
+  `
+}
+
+function renderChallenges(challenges, rev) {
+  const maxCost = Math.max(...challenges.map(c => Math.abs(c.cost)), 1)
+  document.getElementById('challenges').innerHTML = challenges.map(c => {
+    const pct = rev > 0 ? (Math.abs(c.cost) / rev * 100).toFixed(1) : '0.0'
+    const barPct = Math.min(Math.abs(c.cost) / maxCost * 100, 100)
+    const sign = c.cost >= 0 ? 'red' : 'green'
+    const prefix = c.cost >= 0 ? '−' : '+'
+    return `<div class="challenge">
+      <span class="clbl">${c.name}</span>
+      <div class="cbar" style="width:${barPct}%;background:${c.color};opacity:0.5"></div>
+      <span class="cval ${sign}">${prefix}${fmt(Math.abs(c.cost))}</span>
+      <span style="font-size:0.65rem;color:#64748b;min-width:35px;text-align:right">${pct}%</span>
+    </div>`
+  }).join('')
+}
+
+function renderScenarios(peakPL, offPeakPL, annualPL, netMargin, ltv) {
+  const base = { peakPL, offPeakPL, annualPL, netMargin, ltv }
+  scenarioBase = base
+
+  const pessimistic = {
+    peakPL: Math.round(peakPL * 0.3),  // 70% lower
+    annualPL: Math.round(annualPL * 0.25),
+    label: 'Pessimistic',
+    desc: 'High damage (8%), theft (3%), churn (15%), low volume',
+    cls: 'badge-p',
+  }
+  const optimistic = {
+    peakPL: Math.round(peakPL * 2.5),
+    annualPL: Math.round(annualPL * 3),
+    label: 'Optimistic',
+    desc: 'Low damage (2%), theft (0.3%), churn (5%), high volume',
+    cls: 'badge-o',
+  }
+
+  document.getElementById('scenarios').innerHTML = [
+    { ...base, label: 'Base Case', desc: 'Current assumptions', cls: 'badge-b', isBase: true },
+    pessimistic,
+    optimistic,
+  ].map(s => `
+    <div class="scenario ${s.isBase ? 'active' : ''}">
+      <div class="sname"><span class="badge ${s.cls}">${s.label}</span></div>
+      <div style="font-size:0.65rem;color:#94a3b8;margin:4px 0">${s.desc}</div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-size:0.65rem;color:#64748b">Peak P&amp;L</span>
+        <span style="font-size:0.7rem;font-weight:600;color:${s.peakPL >= 0 ? '#4ade80' : '#f87171'}">${fmt(s.peakPL)}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between">
+        <span style="font-size:0.65rem;color:#64748b">Annual P&amp;L</span>
+        <span style="font-size:0.7rem;font-weight:600;color:${s.annualPL >= 0 ? '#4ade80' : '#f87171'}">${fmt(s.annualPL)}</span>
+      </div>
+    </div>
+  `).join('')
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────
+calc()
+</script>
+</body>
+</html>

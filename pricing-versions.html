@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lease Pricing — Version History (v0, v1, v2)</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
+h1 { font-size: 1.4rem; color: #f8fafc; }
+.subtitle { color: #94a3b8; font-size: 0.85rem; margin: 4px 0 16px; }
+
+.version-tabs { display: flex; gap: 4px; margin-bottom: 20px; flex-wrap: wrap; }
+.vtab { padding: 10px 20px; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 0.85rem;
+  font-weight: 600; border: none; color: #94a3b8; background: #1e293b; transition: all 0.15s; }
+.vtab:hover { background: #334155; color: #e2e8f0; }
+.vtab.active { background: #1e3a5f; color: #60a5fa; }
+.vtab .tag { display: block; font-size: 0.6rem; font-weight: 400; color: #64748b; margin-top: 2px; }
+
+.stats-row { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+.stat { background: #1e293b; border-radius: 8px; padding: 10px 16px; flex: 1; min-width: 110px; }
+.stat-lbl { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; }
+.stat-val { font-size: 1.2rem; font-weight: 700; margin-top: 1px; }
+.green { color: #4ade80; } .yellow { color: #facc15; } .red { color: #f87171; } .blue { color: #60a5fa; }
+
+.formula-box { background: #1e293b; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; font-size: 0.8rem; }
+.formula-box code { color: #facc15; background: #0f172a; padding: 1px 6px; border-radius: 4px; font-size: 0.75rem; }
+.formula-box .vname { color: #60a5fa; font-weight: 600; }
+.formula-box .params { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 6px; color: #94a3b8; font-size: 0.75rem; }
+
+.controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; align-items: end; }
+.cg { display: flex; flex-direction: column; gap: 3px; }
+.cg label { font-size: 0.65rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.4px; }
+.cg select, .cg input { background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; padding: 5px 8px; font-size: 0.8rem; }
+
+.table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid #1e293b; }
+table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+th { background: #1e293b; padding: 6px 8px; text-align: center; font-weight: 600; color: #94a3b8;
+  position: sticky; top: 0; z-index: 2; white-space: nowrap; border-bottom: 2px solid #334155; }
+th.it { text-align: left; min-width: 110px; left: 0; z-index: 3; background: #1e293b; }
+td { padding: 4px 6px; text-align: center; border-bottom: 1px solid #1e293b; white-space: nowrap; }
+td.it { text-align: left; font-weight: 500; position: sticky; left: 0; background: #0f172a; z-index: 1; }
+td .hint { font-size: 0.6rem; color: #64748b; display: block; }
+
+.version-a { background: #1e3a5f22; }
+.version-b { background: #3b076422; }
+.version-c { background: #052e1622; }
+
+.hl-green { color: #4ade80; font-weight: 700; }
+.hl-red { color: #f87171; font-weight: 700; }
+.hl-yellow { color: #facc15; }
+
+@media (max-width: 768px) {
+  body { padding: 10px; }
+  .vtab { padding: 6px 12px; font-size: 0.75rem; }
+  td, th { font-size: 0.6rem; padding: 3px 4px; }
+}
+</style>
+</head>
+<body>
+
+<h1>Lease Pricing Engine — Version Comparison</h1>
+<p class="subtitle">Click a version tab to see its formula, constants, and results across 300+ combinations</p>
+
+<div class="version-tabs" id="tabs"></div>
+<div class="formula-box" id="formulaBox"></div>
+
+<div class="stats-row" id="statsRow"></div>
+<div class="controls" id="controls"></div>
+<div class="table-wrap" id="tableWrap"></div>
+
+<script>
+// ─── VERSIONS ──────────────────────────────────────────────────────
+const VERSIONS = {
+  v0: {
+    name: 'v0 — Original (broken)',
+    tag: 'hardcoded ₹50k · 1.50x tier · 0–3% discount · 4% undercut',
+    formula: 'leaseRent = mrv × compRate × (1 − 0.04) × band.tier × (1 − condDisc)',
+    constsDesc: 'MRV=₹50,000 · Condition: New 3%, Mint 2%, Good 1%, Fair 0.5%, Poor 0% off · Tier: 1.50/1.10/1.00/0.85/0.75 · No competitor cap',
+    TENURE_BANDS: [
+      { id: 'flash', label: 'Flash', min: 1, max: 3, tier: 1.50, depositPct: 0.35 },
+      { id: 'semester', label: 'Semester', min: 4, max: 11, tier: 1.10, depositPct: 0.30 },
+      { id: 'annual', label: 'Annual', min: 12, max: 18, tier: 1.00, depositPct: 0.25 },
+      { id: 'extended', label: 'Extended', min: 19, max: 24, tier: 0.85, depositPct: 0.20 },
+      { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, tier: 0.75, depositPct: 0.15 },
+    ],
+    CONDITION_DISCOUNT: { 'New': 0.03, 'Mint': 0.02, 'Good': 0.01, 'Fair': 0.005, 'Poor': 0.00 },
+    getBand: function(months) { return this.TENURE_BANDS.find(b => months >= b.min && months <= b.max) || this.TENURE_BANDS[0] },
+    compute: function(mrv, condition, category, months) {
+      const band = this.getBand(months)
+      const compRate = 0.060
+      const condDisc = this.CONDITION_DISCOUNT[condition] || 0.01
+      const baseRent = Math.round(mrv * compRate * (1 - 0.04))
+      const leaseRent = Math.round(baseRent * band.tier * (1 - condDisc))
+      const deposit = Math.round(mrv * band.depositPct)
+      const compMonthly = Math.round(mrv * compRate)
+      const savingPct = Math.round((1 - leaseRent / compMonthly) * 100)
+      return { leaseRent, deposit, compMonthly, savingPct, band: band.label, months }
+    }
+  },
+
+  v1: {
+    name: 'v1 — Tiers + Condition Fix',
+    tag: 'item MRV map · 1.15x tier · condition 1.10–0.70x · 4% undercut',
+    formula: 'leaseRent = mrv × compRate × (1 − 0.04) × band.tier × condFactor',
+    constsDesc: 'MRV from item map · Condition: New 1.10x, Mint 1.05x, Good 1.00x, Fair 0.85x, Poor 0.70x · Tier: 1.15/1.05/1.00/0.90/0.80 · Still flat 4% undercut — Flash still beats competitor only for Poor condition',
+    TENURE_BANDS: [
+      { id: 'flash', label: 'Flash', min: 1, max: 3, tier: 1.15, depositPct: 0.35 },
+      { id: 'semester', label: 'Semester', min: 4, max: 11, tier: 1.05, depositPct: 0.30 },
+      { id: 'annual', label: 'Annual', min: 12, max: 18, tier: 1.00, depositPct: 0.25 },
+      { id: 'extended', label: 'Extended', min: 19, max: 24, tier: 0.90, depositPct: 0.20 },
+      { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, tier: 0.80, depositPct: 0.15 },
+    ],
+    CONDITION_FACTOR: { 'New': 1.10, 'Mint': 1.05, 'Good': 1.00, 'Fair': 0.85, 'Poor': 0.70 },
+    getBand: function(months) { return this.TENURE_BANDS.find(b => months >= b.min && months <= b.max) || this.TENURE_BANDS[0] },
+    compute: function(mrv, condition, category, months) {
+      const band = this.getBand(months)
+      const compRate = 0.060
+      const condFactor = this.CONDITION_FACTOR[condition] || 1.00
+      const baseRent = Math.round(mrv * compRate * (1 - 0.04))
+      const leaseRent = Math.round(baseRent * band.tier * condFactor)
+      const deposit = Math.round(mrv * band.depositPct)
+      const compMonthly = Math.round(mrv * compRate)
+      const savingPct = Math.round((1 - leaseRent / compMonthly) * 100)
+      return { leaseRent, deposit, compMonthly, savingPct, band: band.label, months }
+    }
+  },
+
+  v2: {
+    name: 'v2 — Per-Tier Savings (current)',
+    tag: 'item MRV map · per-tier savings 2–30% · condition 1.10–0.70x · competitor cap',
+    formula: 'leaseRent = min(compMonthly × (1 − savings) × condFactor, compMonthly)',
+    constsDesc: 'MRV from item map · Savings per band: Flash 2%, Semester 8%, Annual 15%, Extended 22%, Lifecycle 30% · Condition: 1.10–0.70x · min() cap guarantees Lease never exceeds competitor · MAX savings = 30%, MIN = 0% (capped combos)',
+    TENURE_BANDS: [
+      { id: 'flash', label: 'Flash', min: 1, max: 3, tier: 1.15, depositPct: 0.35 },
+      { id: 'semester', label: 'Semester', min: 4, max: 11, tier: 1.05, depositPct: 0.30 },
+      { id: 'annual', label: 'Annual', min: 12, max: 18, tier: 1.00, depositPct: 0.25 },
+      { id: 'extended', label: 'Extended', min: 19, max: 24, tier: 0.90, depositPct: 0.20 },
+      { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, tier: 0.80, depositPct: 0.15 },
+    ],
+    CONDITION_FACTOR: { 'New': 1.10, 'Mint': 1.05, 'Good': 1.00, 'Fair': 0.85, 'Poor': 0.70 },
+    TIER_SAVINGS: { flash: 0.02, semester: 0.08, annual: 0.15, extended: 0.22, lifecycle: 0.30 },
+    getBand: function(months) { return this.TENURE_BANDS.find(b => months >= b.min && months <= b.max) || this.TENURE_BANDS[0] },
+    compute: function(mrv, condition, category, months) {
+      const band = this.getBand(months)
+      const compRate = 0.060
+      const condFactor = this.CONDITION_FACTOR[condition] || 1.00
+      const compMonthly = Math.round(mrv * compRate)
+      const savings = this.TIER_SAVINGS[band.id] || 0.02
+      const totalFactor = Math.min((1 - savings) * condFactor, 1.0)
+      const leaseRent = Math.round(compMonthly * totalFactor)
+      const deposit = Math.round(mrv * band.depositPct)
+      const savingPct = Math.round((1 - leaseRent / compMonthly) * 100)
+      return { leaseRent, deposit, compMonthly, savingPct, band: band.label, months }
+    }
+  },
+
+  v3: {
+    name: 'v3 — Final (current)',
+    tag: 'min(comp,EMI) baseline · condition 1.00–0.65x · deposit = rent × cond adj · dynamic take 8-25%',
+    formula: 'leaseRent = min(compMonthly, emiMonthly) × (1 − 0.06) × condRentFactor',
+    constsDesc: 'Baseline = min(competitor, EMI) × 94%. Condition rent: New 1.00, Mint 0.95, Good 0.88, Fair 0.78, Poor 0.65. Deposit = leaseRent × condAdj (New ×1.00 to Poor ×1.10). Take rate: 15% ± adj → 8-25%. Seller payout always < comp AND EMI.',
+    getBand: function(months) { return TENURE_BANDS_V3.find(b => months >= b.min && months <= b.max) || TENURE_BANDS_V3[0] },
+    compute: function(mrv, condition, category, months) {
+      const band = this.getBand(months)
+      const compRate = 0.060
+      const condRentFactor = CONDITION_RENT_FACTOR_V3[condition] || 1.00
+      const condDepAdj = CONDITION_DEPOSIT_ADJ_V3[condition] || 1.00
+      const compMonthly = Math.round(mrv * compRate)
+      const emiMonthly = calcEmiMonthly(mrv, band.emiHorizon)
+      const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * 0.94)
+      const leaseRent = Math.round(baselineNew * condRentFactor)
+      const deposit = Math.round(leaseRent * condDepAdj)
+      const takeRate = calcEffTakeRate(condition, band.id)
+      const savingPct = Math.round((1 - leaseRent / compMonthly) * 100)
+      return { leaseRent, deposit, compMonthly, savingPct, band: band.label, months, sellerPayout: Math.round(leaseRent * (1 - takeRate)), takeRate, emiMonthly, baselineNew }
+    }
+  }
+}
+
+const TENURE_BANDS_V3 = [
+  { id: 'flash', label: 'Flash', min: 1, max: 3, emiHorizon: 12 },
+  { id: 'semester', label: 'Semester', min: 4, max: 11, emiHorizon: 18 },
+  { id: 'annual', label: 'Annual', min: 12, max: 18, emiHorizon: 24 },
+  { id: 'extended', label: 'Extended', min: 19, max: 24, emiHorizon: 36 },
+  { id: 'lifecycle', label: 'Lifecycle', min: 25, max: 48, emiHorizon: 48 },
+]
+const CONDITION_RENT_FACTOR_V3 = { 'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65 }
+const CONDITION_DEPOSIT_ADJ_V3 = { 'New': 1.00, 'Mint': 1.025, 'Good': 1.05, 'Fair': 1.075, 'Poor': 1.10 }
+
+function calcEmiMonthly(mrv, horizon) {
+  return Math.round((mrv + mrv * 0.15 * horizon / 12) / horizon)
+}
+
+function calcEffTakeRate(condition, bandId) {
+  let rate = 0.15
+  const adj = { 'New': -0.02, 'Mint': -0.01, 'Good': 0, 'Fair': 0.03, 'Poor': 0.05 }
+  rate += adj[condition] || 0
+  if (bandId === 'extended' || bandId === 'lifecycle') rate -= 0.02
+  if (bandId === 'flash') rate += 0.02
+  return Math.max(0.08, Math.min(0.25, rate))
+}
+const ITEMS = [
+  { name: 'MacBook Pro 16"', mrv: 199000, cat: 'Electronics' },
+  { name: 'iPhone 15 Pro Max', mrv: 120000, cat: 'Electronics' },
+  { name: 'MacBook Air M3', mrv: 114900, cat: 'Electronics' },
+  { name: 'Gaming Laptop', mrv: 85000, cat: 'Electronics' },
+  { name: 'iPad Air', mrv: 59900, cat: 'Electronics' },
+  { name: 'PS5', mrv: 55000, cat: 'Electronics' },
+  { name: 'DSLR Camera', mrv: 55000, cat: 'Lifestyle' },
+  { name: 'Split AC 1.5T', mrv: 42000, cat: 'Appliance' },
+  { name: '4K Monitor 27"', mrv: 35000, cat: 'Electronics' },
+  { name: '3-Seater Sofa', mrv: 35000, cat: 'Furniture' },
+  { name: 'Queen Bed', mrv: 30000, cat: 'Furniture' },
+  { name: 'Refrigerator 210L', mrv: 28000, cat: 'Appliance' },
+  { name: 'Washing Machine 7kg', mrv: 28000, cat: 'Appliance' },
+  { name: 'AirPods Pro', mrv: 25000, cat: 'Electronics' },
+  { name: 'Mountain Cycle', mrv: 18000, cat: 'Lifestyle' },
+  { name: 'Ergonomic Chair', mrv: 15000, cat: 'Furniture' },
+  { name: 'Mattress Queen', mrv: 15000, cat: 'Furniture' },
+  { name: 'Noise-Cancelling Headphones', mrv: 12000, cat: 'Electronics' },
+  { name: 'Study Table', mrv: 12000, cat: 'Furniture' },
+  { name: 'Air Cooler', mrv: 12000, cat: 'Appliance' },
+  { name: 'Acoustic Guitar', mrv: 10000, cat: 'Lifestyle' },
+  { name: 'Bookshelf 5-tier', mrv: 8000, cat: 'Furniture' },
+  { name: 'Microwave Oven', mrv: 8000, cat: 'Appliance' },
+  { name: 'Tent 4-person', mrv: 6000, cat: 'Lifestyle' },
+  { name: 'Bluetooth Speaker', mrv: 5000, cat: 'Electronics' },
+  { name: 'Room Heater', mrv: 3500, cat: 'Appliance' },
+  { name: 'Textbook Set', mrv: 3000, cat: 'Lifestyle' },
+  { name: 'Novels Bundle (5)', mrv: 1500, cat: 'Lifestyle' },
+]
+
+const CONDITIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']
+const BAND_MONTHS = { flash: 3, semester: 6, annual: 12, extended: 24, lifecycle: 36 }
+
+// ─── STATE ─────────────────────────────────────────────────────────
+let activeVersion = 'v3'
+
+// ─── RENDER ────────────────────────────────────────────────────────
+function renderTabs() {
+  const tabs = document.getElementById('tabs')
+  tabs.innerHTML = Object.keys(VERSIONS).map(k => `
+    <button class="vtab ${k === activeVersion ? 'active' : ''}" onclick="setVersion('${k}')">
+      ${VERSIONS[k].name}
+      <span class="tag">${VERSIONS[k].tag}</span>
+    </button>
+  `).join('')
+}
+
+function renderFormulaBox() {
+  const v = VERSIONS[activeVersion]
+  document.getElementById('formulaBox').innerHTML = `
+    <div><span class="vname">${v.name}</span> &mdash; <code>${v.formula}</code></div>
+    <div class="params">${v.constsDesc}</div>
+  `
+}
+
+function getFilteredItems() {
+  const cat = document.getElementById('fc').value
+  return cat === 'all' ? ITEMS : ITEMS.filter(i => i.cat === cat)
+}
+function getFilteredConds() {
+  const c = document.getElementById('fcond').value
+  return c === 'all' ? CONDITIONS : [c]
+}
+function getFilteredBands() {
+  const b = document.getElementById('fb').value
+  if (b === 'all') return Object.keys(BAND_MONTHS)
+  return Object.keys(BAND_MONTHS).filter(k => VERSIONS[activeVersion].getBand(BAND_MONTHS[k]).label === b)
+}
+
+function computeAll() {
+  const v = VERSIONS[activeVersion]
+  const items = getFilteredItems()
+  const conds = getFilteredConds()
+  const bands = getFilteredBands()
+  const sortEl = document.getElementById('fs')
+  const sortFn = sortEl ? sortEl.value : 'name'
+
+  let data = []
+  const usedMRV = activeVersion === 'v0' ? 50000 : 0
+
+  for (const item of items) {
+    const mrv = activeVersion === 'v0' ? 50000 : item.mrv
+    for (const cond of conds) {
+      for (const bandId of bands) {
+        const months = BAND_MONTHS[bandId]
+        const p = v.compute(mrv, cond, item.cat, months)
+        data.push({ item: item, condition: cond, band: p.band, bandId, months, usedMRV: mrv, ...p })
+      }
+    }
+  }
+
+  if (sortFn === 'mrv') data.sort((a, b) => b.usedMRV - a.usedMRV)
+  else if (sortFn === 'savings') data.sort((a, b) => a.savingPct - b.savingPct)
+  else data.sort((a, b) => a.item.name.localeCompare(b.item.name))
+
+  return data
+}
+
+function renderStats(data) {
+  const violations = data.filter(d => d.savingPct < 0)
+  const avgSav = data.length ? Math.round(data.reduce((s, d) => s + d.savingPct, 0) / data.length) : 0
+  const minSav = data.length ? Math.min(...data.map(d => d.savingPct)) : 0
+  const maxSav = data.length ? Math.max(...data.map(d => d.savingPct)) : 0
+  const bandSpread = [...new Set(data.map(d => d.band))]
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat"><div class="stat-lbl">Combinations</div><div class="stat-val blue">${data.length}</div></div>
+    <div class="stat"><div class="stat-lbl">Avg Savings</div><div class="stat-val ${avgSav >= 10 ? 'green' : avgSav >= 0 ? 'yellow' : 'red'}">${avgSav > 0 ? avgSav + '%' : '0%'}</div></div>
+    <div class="stat"><div class="stat-lbl">Range</div><div class="stat-val">${minSav}% – ${maxSav}%</div></div>
+    <div class="stat"><div class="stat-lbl">Competitor Violations</div>
+      <div class="stat-val ${violations.length === 0 ? 'green' : 'red'}">
+        ${violations.length === 0 ? 'NONE ✓' : violations.length + ' found ✗'}
+      </div>
+    </div>
+    <div class="stat"><div class="stat-lbl">Band Spread</div><div class="stat-val blue">${bandSpread.join(' · ')}</div></div>
+  `
+}
+
+function renderControls() {
+  document.getElementById('controls').innerHTML = `
+    <div class="cg"><label>Category</label>
+      <select id="fc" onchange="renderTable()">
+        <option value="all">All</option>
+        <option value="Electronics">Electronics</option>
+        <option value="Appliance">Appliance</option>
+        <option value="Furniture">Furniture</option>
+        <option value="Lifestyle">Lifestyle</option>
+      </select></div>
+    <div class="cg"><label>Condition</label>
+      <select id="fcond" onchange="renderTable()">
+        <option value="all">All</option>
+        ${CONDITIONS.map(c => `<option value="${c}">${c}</option>`).join('')}
+      </select></div>
+    <div class="cg"><label>Band</label>
+      <select id="fb" onchange="renderTable()">
+        <option value="all">All</option>
+        ${['Flash','Semester','Annual','Extended','Lifecycle'].map(b => `<option value="${b}">${b}</option>`).join('')}
+      </select></div>
+    <div class="cg"><label>Sort</label>
+      <select id="fs" onchange="renderTable()">
+        <option value="name">Item</option>
+        <option value="mrv">Price high</option>
+        <option value="savings">Savings least</option>
+      </select></div>
+  `
+}
+
+function renderTable() {
+  const data = computeAll()
+  renderStats(data)
+
+  const v = VERSIONS[activeVersion]
+  const bands = [...new Set(data.map(d => d.band))]
+  const conds = [...new Set(data.map(d => d.condition))]
+  const items = [...new Map(data.map(d => [d.item.name, d.item])).values()]
+
+  const colHeaders = []
+  for (const band of bands) {
+    for (const cond of conds) {
+      colHeaders.push({ band, cond })
+    }
+  }
+
+  let html = '<table><thead><tr>'
+  html += '<th class="it">Item</th>'
+  for (const ch of colHeaders) {
+    html += `<th>${ch.band}<br><span style="font-weight:400;color:#64748b;font-size:0.6rem">${ch.cond}</span></th>`
+  }
+  html += '</tr></thead><tbody>'
+
+  for (const item of items) {
+    const first = data.find(d => d.item.name === item.name)
+    html += '<tr>'
+    html += `<td class="it">${item.name}<span class="hint">${first ? '₹' + first.usedMRV.toLocaleString('en-IN') + ' · ' + item.cat : ''}</span></td>`
+    for (const ch of colHeaders) {
+      const match = data.find(d => d.item.name === item.name && d.condition === ch.cond && d.band === ch.band)
+      if (match) {
+        const rent = match.leaseRent.toLocaleString('en-IN')
+        const sv = match.savingPct
+        const color = sv > 15 ? '#4ade80' : sv > 3 ? '#facc15' : sv >= 0 ? '#f87171' : '#ef4444'
+        const bg = sv > 15 ? '#064e3b33' : sv > 3 ? '#713f1222' : '#7f1d1d22'
+        html += `<td style="background:${bg}"><span style="font-weight:700">₹${rent}</span><br><span style="color:${color};font-size:0.65rem">${sv > 0 ? '−' + sv + '%' : sv < 0 ? '+' + Math.abs(sv) + '% ✗' : '0%'}</span></td>`
+      } else {
+        html += '<td>—</td>'
+      }
+    }
+    html += '</tr>'
+  }
+
+  html += '</tbody></table>'
+  document.getElementById('tableWrap').innerHTML = html
+}
+
+function setVersion(k) {
+  activeVersion = k
+  renderTabs()
+  renderFormulaBox()
+  renderTable()
+}
+
+function renderAll() {
+  renderTabs()
+  renderControls()
+  renderFormulaBox()
+  renderTable()
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────
+renderAll()
+</script>
+</body>
+</html>
