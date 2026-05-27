@@ -158,8 +158,8 @@ const VERSIONS = {
   v3: {
     name: 'v3 — Final (current)',
     tag: 'min(comp,EMI) baseline · condition 1.00–0.65x · deposit = rent × cond adj · fixed 20% take',
-    formula: 'leaseRent = min(compMonthly, emiMonthly) × (1 − 0.03) × condRentFactor',
-    constsDesc: 'Baseline = min(competitor, EMI) × 97%. Condition rent: New 1.00, Mint 0.95, Good 0.88, Fair 0.78, Poor 0.65. Deposit = leaseRent × condAdj (New ×1.00 to Poor ×1.10). Take rate: fixed 20%. Seller payout always < comp AND EMI.',
+    formula: 'leaseRent = min(compMonthly, emiMonthly) × (1 − condUndercut) × condRentFactor',
+    constsDesc: 'Baseline = min(competitor, EMI) × (1 − undercut). Undercut by condition: New 2%, Mint 3%, Good 0%, Fair 0%, Poor 0%. Condition rent: New 1.00, Mint 0.95, Good 0.88, Fair 0.78, Poor 0.65. Deposit = leaseRent × condAdj (New ×1.00 to Poor ×1.10). Take rate: fixed 20%. Seller payout always < comp AND EMI.',
     getBand: function(months) { return TENURE_BANDS_V3.find(b => months >= b.min && months <= b.max) || TENURE_BANDS_V3[0] },
     compute: function(mrv, condition, category, months) {
       const band = this.getBand(months)
@@ -168,7 +168,8 @@ const VERSIONS = {
       const condDepAdj = CONDITION_DEPOSIT_ADJ_V3[condition] || 1.00
       const compMonthly = Math.round(mrv * compRate)
       const emiMonthly = calcEmiMonthly(mrv, band.emiHorizon)
-      const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * 0.97)
+      const condUndercut = { 'New': 0.02, 'Mint': 0.03, 'Good': 0, 'Fair': 0, 'Poor': 0 }[condition] ?? 0.02
+      const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - condUndercut))
       const leaseRent = Math.round(baselineNew * condRentFactor)
       const deposit = Math.round(leaseRent * condDepAdj)
       const takeRate = 0.20
@@ -408,4 +409,5 @@ renderAll()
 </script>
 </body>
 </html>
+
 

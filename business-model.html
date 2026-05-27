@@ -194,7 +194,8 @@ function calcLeaseRent(mrv, condition, category, months) {
   const compRate = COMPETITOR_RATES[category] || 0.060
   const compMonthly = Math.round(mrv * compRate)
   const emiMonthly = calcEmiMonthly(mrv, band.emiHorizon)
-  const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * 0.97) // 3% undercut
+  const condUndercut = { 'New': 0.02, 'Mint': 0.03, 'Good': 0, 'Fair': 0, 'Poor': 0 }[condition] ?? 0.02
+  const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - condUndercut))
   const condRentFactor = CONDITION_RENT_FACTOR[condition] || 1.00
   const leaseRent = Math.round(baselineNew * condRentFactor)
   const takeRate = calcEffectiveTakeRate()

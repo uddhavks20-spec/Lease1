@@ -29,9 +29,15 @@ const CONDITION_DEPOSIT_ADJ: Record<string, number> = {
 const COMPETITOR_RATES: Record<string, number> = {
   Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
 }
-// Default undercut % below min(competitor, EMI) for New condition baseline
-// Gemini can override this per item (~3% for most items)
-const DEFAULT_UNDERCUT = 0.03
+// Per-condition undercut below min(competitor, EMI)
+// New: 2%, Mint: 3%, Good/Fair/Poor: 0% (condition already discounts rent enough)
+const CONDITION_UNDERCUT: Record<string, number> = {
+  'New': 0.02,
+  'Mint': 0.03,
+  'Good': 0,
+  'Fair': 0,
+  'Poor': 0,
+}
 // Item retail value lookup for common items (used when user doesn't specify price)
 const ITEM_MRV: Record<string, number> = {
   laptop: 50000, macbook: 120000, 'macbook air': 90000, 'macbook pro': 150000,
@@ -335,13 +341,13 @@ function estimateItemMRV(itemHint: string | null): number {
 
 function computePricing(
   mrv: number, condition: string, category: string, months: number,
-  sellerScore?: string, undercut?: number,
+  sellerScore?: string,
 ): PricingResult {
   const band = getTenureBand(months)
   const compRate = COMPETITOR_RATES[category] || 0.060
   const condRentFactor = CONDITION_RENT_FACTOR[condition] || 1.00
   const condDepAdj = CONDITION_DEPOSIT_ADJ[condition] || 1.00
-  const itemUndercut = undercut ?? DEFAULT_UNDERCUT
+  const itemUndercut = CONDITION_UNDERCUT[condition] ?? 0.02
 
   // Step 1: Calculate competitor monthly
   const compMonthly = Math.round(mrv * compRate)
@@ -525,7 +531,7 @@ Lease is an IIT Kanpur-founded peer-to-peer rental marketplace. Here is everythi
 When asked about pricing, use these exact formulas. Never make up numbers.
 - Competitor baseline: ~6% of retail value per month (varies by item category)
 - EMI monthly = (MRV + MRV × 15% × EMI_horizon / 12) / EMI_horizon. EMI horizon varies by band.
-- Lease baseline (New condition) = min(competitor monthly, EMI monthly) × (1 − undercut). Undercut is ~3% depending on item type.
+- Lease baseline = min(competitor monthly, EMI monthly) × (1 − undercut_by_condition). Undercut: New −2%, Mint −3%, Good/Fair/Poor −0%.
 - Other conditions scale from New baseline: Mint = 95% of New rent, Good = 88%, Fair = 78%, Poor = 65%.
 - Deposit = 1 month's rent × condition adjustment: New ×1.00, Mint ×1.025, Good ×1.05, Fair ×1.075, Poor ×1.10
 - Platform take is fixed at 20% of monthly rent (seller keeps 80%). Not negotiable.
@@ -658,10 +664,10 @@ If they ask about delivery, insurance, subscription boxes, international shippin
 → Don't try to respond in a language you're not calibrated for.
 
 ### 14. User asks "why should I use Lease instead of [competitor]"
-→ Give 2-3 factual reasons: lower prices (3% undercut + tenure discounts), no long-term commitment, refundable deposit in escrow, campus-specific (pickup/drop convenience).
+→ Give 2-3 factual reasons: lower prices (up to 3% undercut vs competitors + tenure discounts), no long-term commitment, refundable deposit in escrow, campus-specific (pickup/drop convenience).
 
 ### 15. User says "RentoMojo/Furlenco is cheaper than you"
-→ "Lease is cheaper (3% undercut + tenure discounts), you pay monthly with no lock-in, and your deposit is in escrow — fully protected. Plus pickup/drop within campus."
+→ "Lease is cheaper (up to 3% undercut + tenure discounts), you pay monthly with no lock-in, and your deposit is in escrow — fully protected. Plus pickup/drop within campus."
 
 ### 15. User provides incomplete info (says "I need a laptop" but no price or tenure)
 → Ask ONE follow-up question. Don't list everything you need at once.
