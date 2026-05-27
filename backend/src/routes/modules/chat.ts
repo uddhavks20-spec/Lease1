@@ -440,7 +440,7 @@ ${emiStep ? `\n${emiStep.response}` : ''}`,
   }
 
   // Live listings available — only for renter intent, not seller
-  if (listings.length > 0 && normalized.intent !== 'list' && !lower.includes('list') && !lower.includes('sell')) {
+  if (listings.length > 0 && !lower.includes('list') && !lower.includes('sell')) {
     const cheapest = listings.reduce((a: any, b: any) => Number(a.monthly_rent) < Number(b.monthly_rent) ? a : b)
     return {
       reply: `Found **${listings.length} active listings**. Cheapest: **${cheapest.title}** at **₹${Number(cheapest.monthly_rent).toLocaleString('en-IN')}/mo** from **${cheapest.seller_name}**. Want to compare or want pricing advice?`,
