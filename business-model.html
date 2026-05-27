@@ -112,8 +112,8 @@ tr.total td { font-weight: 700; border-top: 2px solid #475569; background: #0f17
       <h2>Costs &amp; Margins</h2>
       <div class="param"><label>Platform Take Rate <span id="l_takeRate">20%</span></label><input type="range" id="takeRate" min="5" max="30" value="20" oninput="calc()"><div class="num">Base rate. Actual varies by seller score (18-22%)</div></div>
       <div class="param"><label>GST on Platform Fee <span id="l_gst">18%</span></label><input type="range" id="gst" min="0" max="30" value="18" oninput="calc()"><div class="num">Charged to customer on top of commission (pass-through, not a cost)</div></div>
-      <div class="param"><label>CAC per User <span id="l_cac">₹800</span></label><input type="range" id="cac" min="100" max="5000" value="800" step="50" oninput="calc()"></div>
-      <div class="param"><label>Fixed Monthly Ops (₹) <span id="l_fixedOps">₹3,00,000</span></label><input type="range" id="fixedOps" min="50000" max="2000000" value="300000" step="10000" oninput="calc()"></div>
+      <div class="param"><label>CAC per User <span id="l_cac">₹0</span></label><input type="range" id="cac" min="0" max="5000" value="0" step="50" oninput="calc()"><div class="num">Word-of-mouth / organic — zero cost initially</div></div>
+      <div class="param"><label>Fixed Monthly Ops (₹) <span id="l_fixedOps">₹30,000</span></label><input type="range" id="fixedOps" min="5000" max="500000" value="30000" step="5000" oninput="calc()"><div class="num">Hosting + fuel + misc. Solo founder overhead</div></div>
       <div class="param"><label>Payment Gateway Fee <span id="l_pgFee">2%</span></label><input type="range" id="pgFee" min="0.5" max="5" value="2" step="0.1" oninput="calc()"></div>
     </div>
 
