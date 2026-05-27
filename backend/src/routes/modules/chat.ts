@@ -117,8 +117,20 @@ function normalizeHinglish(message: string): NormalizedInput {
 function updateSession(session: SessionState, message: string, normalized: NormalizedInput) {
   session.messagesInSession++
 
-  if (normalized.intent === 'rent') session.role = 'renter'
-  else if (normalized.intent === 'list') session.role = 'seller'
+  // Reset role when intent contradicts previous role
+  if (normalized.intent === 'rent' && session.role === 'seller') {
+    session.role = 'renter'
+    session.itemOfInterest = null
+    session.tenureMonths = null
+  } else if (normalized.intent === 'list' && session.role === 'renter') {
+    session.role = 'seller'
+    session.itemOfInterest = null
+    session.tenureMonths = null
+  } else if (normalized.intent === 'rent') {
+    session.role = 'renter'
+  } else if (normalized.intent === 'list') {
+    session.role = 'seller'
+  }
 
   if (normalized.itemHint) session.itemOfInterest = normalized.itemHint
   if (normalized.tenureHint) session.tenureMonths = normalized.tenureHint
@@ -328,6 +340,10 @@ Competitor: ₹${Math.round(tenureInfo.competitorTotal / session.tenureMonths!).
 EMI (${getTenureBand(session.tenureMonths!).emiHorizon}mo): ₹${Math.round(tenureInfo.emiTotal / getTenureBand(session.tenureMonths!).emiHorizon).toLocaleString('en-IN')}/mo` : 'No tenure established yet'}
 
 ## RULES
+- Determine the user's intent from their CURRENT message: are they looking to rent (renter) or list/sell (seller)? Do NOT rely on session role — use the current message.
+- If they want to list/sell → give seller advice (pricing, deposit, daily rate)
+- If they want to rent → give renter advice (pricing breakdown by tenure, EMI comparison)
+- If unsure, ask ONE clarifying question
 - NEVER ask more than one question per message
 - NEVER start with "Great question!" or "Certainly!"
 - NEVER repeat what the user just said back to them
@@ -391,21 +407,22 @@ ${session.emiTemptation ? `\n## EMI TEMPTATION DETECTED\nUse the EMI switcher lo
     }
   }
 
-  // Live listings available
-  if (listings.length > 0) {
-    const cheapest = listings.reduce((a: any, b: any) => Number(a.monthly_rent) < Number(b.monthly_rent) ? a : b)
+  // Seller pricing advice — check BEFORE listings so seller intent isn't hijacked
+  if (normalized.intent === 'list' || session.role === 'seller' || lower.includes('list') || lower.includes('sell') || lower.includes('charge')) {
+    const itemValue = 50000
+    const dailyRate = Math.round(itemValue * 0.015)
+    const deposit = Math.round(itemValue * 0.3)
     return {
-      reply: `Found **${listings.length} active listings**. Cheapest: **${cheapest.title}** at **₹${Number(cheapest.monthly_rent).toLocaleString('en-IN')}/mo** from **${cheapest.seller_name}**. Want to compare or want pricing advice?`,
-      table: listings.map((l: any, i: number) => ({
-        '#': i + 1, 'Item': l.title,
-        'Rate': '₹' + Number(l.monthly_rent).toLocaleString('en-IN') + '/mo',
-        'Deposit': '₹' + Number(l.deposit_amount).toLocaleString('en-IN'),
-        'Seller': l.seller_name,
-      })),
+      reply: `For **₹${itemValue.toLocaleString('en-IN')}** item: suggest **₹${dailyRate}/day** (~1.5% of value). Deposit **₹${deposit.toLocaleString('en-IN')}**. At 15 days/mo = **₹${(dailyRate * 15).toLocaleString('en-IN')}/mo** passive income. Semester = **₹${(dailyRate * 60).toLocaleString('en-IN')}**. Quick tip: keep pickup radius under 1km for better trust scores.`,
+      table: [
+        { 'Metric': 'Daily Rate', 'Value': '₹' + dailyRate + '/day' },
+        { 'Metric': 'Deposit', 'Value': '₹' + deposit.toLocaleString('en-IN') },
+        { 'Metric': 'Monthly (15 days)', 'Value': '₹' + (dailyRate * 15).toLocaleString('en-IN') },
+      ],
     }
   }
 
-  // Pricing inquiry
+  // Pricing inquiry (renter-side)
   if (normalized.intent === 'pricing_query' || lower.includes('price') || lower.includes('cost') || lower.includes('rate')) {
     if (!normalized.itemHint) return { reply: 'Kaunse item ki price chahiye? Batao item ka naam aur kitne der ke liye chahiye.' }
     if (!session.tenureMonths) return { reply: `${normalized.itemHint} ke liye price batane se pehle — kitne mahine ke liye chahiye? Usi hisaab se rent change hota hai.` }
@@ -422,23 +439,22 @@ ${emiStep ? `\n${emiStep.response}` : ''}`,
     }
   }
 
-  // Seller pricing advice
-  if (session.role === 'seller' || lower.includes('list') || lower.includes('sell') || lower.includes('charge')) {
-    const itemValue = 50000
-    const dailyRate = Math.round(itemValue * 0.015)
-    const deposit = Math.round(itemValue * 0.3)
+  // Live listings available — only for renter intent, not seller
+  if (listings.length > 0 && normalized.intent !== 'list' && !lower.includes('list') && !lower.includes('sell')) {
+    const cheapest = listings.reduce((a: any, b: any) => Number(a.monthly_rent) < Number(b.monthly_rent) ? a : b)
     return {
-      reply: `For **₹${itemValue.toLocaleString('en-IN')}** item: suggest **₹${dailyRate}/day** (~1.5% of value). Deposit **₹${deposit.toLocaleString('en-IN')}**. At 15 days/mo = **₹${(dailyRate * 15).toLocaleString('en-IN')}/mo** passive income. Semester = **₹${(dailyRate * 60).toLocaleString('en-IN')}**. Quick tip: keep pickup radius under 1km for better trust scores.`,
-      table: [
-        { 'Metric': 'Daily Rate', 'Value': '₹' + dailyRate + '/day' },
-        { 'Metric': 'Deposit', 'Value': '₹' + deposit.toLocaleString('en-IN') },
-        { 'Metric': 'Monthly (15 days)', 'Value': '₹' + (dailyRate * 15).toLocaleString('en-IN') },
-      ],
+      reply: `Found **${listings.length} active listings**. Cheapest: **${cheapest.title}** at **₹${Number(cheapest.monthly_rent).toLocaleString('en-IN')}/mo** from **${cheapest.seller_name}**. Want to compare or want pricing advice?`,
+      table: listings.map((l: any, i: number) => ({
+        '#': i + 1, 'Item': l.title,
+        'Rate': '₹' + Number(l.monthly_rent).toLocaleString('en-IN') + '/mo',
+        'Deposit': '₹' + Number(l.deposit_amount).toLocaleString('en-IN'),
+        'Seller': l.seller_name,
+      })),
     }
   }
 
-  // Session-based follow-up
-  if (!session.tenureMonths && session.itemOfInterest) {
+  // Session-based follow-up (renter)
+  if (!session.tenureMonths && session.itemOfInterest && session.role !== 'seller') {
     return { reply: `So you're looking at **${session.itemOfInterest}** — how long do you need it? A few weeks, a semester, or the full year? The price changes a lot based on that.` }
   }
 
