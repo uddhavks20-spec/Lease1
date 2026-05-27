@@ -18,11 +18,12 @@ export async function generateChatResponse(
   }
 
   const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
-  const result = await model.generateContent([
-    { text: `${systemPrompt}\n\n${dbContext}\n\nUser message: ${userMessage}` },
-  ])
+  const result = await model.generateContent({
+    contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n${dbContext}\n\nUser message: ${userMessage}` }] }],
+    tools: [{ googleSearch: {} }],
+  } as any)
 
   return result.response.text()
 }
@@ -53,7 +54,7 @@ export async function analyzeImages(
   }
 
   const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   const prompt = `You are a production vision analytics engine for a rental marketplace.
 Compare the CHECKOUT (handover baseline) images against the CHECKIN (return) images.
@@ -115,7 +116,7 @@ export async function classifyIntentWithLLM(userMessage: string, role?: string):
   }
 
   const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   const result = await model.generateContent([
     {
@@ -181,7 +182,7 @@ export async function generatePricingResearch(
   const isB2B2C = false
 
   const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
   const prompt = `You are a pricing analyst for a P2P rental marketplace in India.
   
@@ -219,6 +220,76 @@ Rules:
   }
 
   throw new Error('Failed to parse Gemini pricing response')
+}
+
+// ─── RESELL VALUE ESTIMATION (for seller pricing engine) ──────────
+export async function estimateResellValue(
+  title: string,
+  originalPrice: number,
+  condition: string,
+  category: string,
+  attributes: Record<string, string>,
+): Promise<{ estimatedResellValue: number; confidence: 'high' | 'medium' | 'low'; reasoning: string }> {
+  if (!API_KEY) {
+    // Fallback: simple depreciation
+    const conditionMap: Record<string, number> = { 'New': 0.85, 'Mint': 0.75, 'Good': 0.60, 'Fair': 0.45, 'Poor': 0.30 }
+    const mult = conditionMap[condition] || 0.60
+    return {
+      estimatedResellValue: Math.round(originalPrice * mult),
+      confidence: 'low',
+      reasoning: 'AI not available — estimated by condition-based depreciation',
+    }
+  }
+
+  const genAI = getClient()
+  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+
+  const specsText = Object.entries(attributes)
+    .map(([k, v]) => `${k}: ${v}`)
+    .join(', ')
+
+  const prompt = `You are a second-hand marketplace valuation expert for India (OLX, Cashify, Quikr).
+
+Product: "${title}"
+Original Price: ₹${originalPrice}
+Condition: ${condition}
+Category: ${category}
+Specifications: ${specsText || 'Not specified'}
+
+Return ONLY valid JSON (no markdown, no code fences):
+{
+  "estimatedResellValue": <what this item would realistically sell for on OLX/Cashify in its current condition>,
+  "confidence": "high" | "medium" | "low",
+  "reasoning": "<1 sentence explaining the valuation>"
+}
+
+Rules:
+- Be realistic about Indian second-hand market prices
+- Consider brand depreciation, category-specific resale value
+- Electronics lose 20-40% value, furniture 40-60%, books 60-80%
+- Factor in the specified condition and specifications`
+
+  const result = await model.generateContent([{ text: prompt }])
+  const text = result.response.text()
+  const jsonMatch = text.match(/\{[\s\S]*\}/)
+
+  if (jsonMatch) {
+    const data = JSON.parse(jsonMatch[0])
+    return {
+      estimatedResellValue: data.estimatedResellValue || Math.round(originalPrice * 0.5),
+      confidence: data.confidence || 'medium',
+      reasoning: data.reasoning || 'Estimated from market data',
+    }
+  }
+
+  // Fallback
+  const conditionMap: Record<string, number> = { 'New': 0.85, 'Mint': 0.75, 'Good': 0.60, 'Fair': 0.45, 'Poor': 0.30 }
+  const mult = conditionMap[condition] || 0.60
+  return {
+    estimatedResellValue: Math.round(originalPrice * mult),
+    confidence: 'low',
+    reasoning: 'AI response parsing failed — estimated by condition-based depreciation',
+  }
 }
 
 export function isGeminiAvailable(): boolean {

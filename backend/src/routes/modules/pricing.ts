@@ -1,6 +1,6 @@
 import { Router, type Request, type Response, type NextFunction } from 'express'
 import { auth } from '../../middleware/auth'
-import { generatePricingResearch, isGeminiAvailable } from '../../services/gemini'
+import { generatePricingResearch, estimateResellValue, isGeminiAvailable } from '../../services/gemini'
 
 const router = Router()
 
@@ -145,6 +145,29 @@ router.post('/estimate', auth(true), async (req: Request, res: Response, next: N
       marketSummary: geminiData?.marketSummary ||
         `${currentN}mo rental: Competitor ₹${current.compMonthly.toLocaleString('en-IN')}/mo | EMI ₹${current.emiMonthly.toLocaleString('en-IN')}/mo. Lease beats min by ${(RENTER_UNDERCUT * 100).toFixed(0)}%.`,
     })
+  } catch (e) {
+    next(e)
+  }
+})
+
+// ─── RESELL VALUE ESTIMATION ──────────────────────────────────────
+router.post('/estimate-resell', auth(true), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { title, originalPrice, condition, category, attributes } = req.body
+
+    if (!title || !originalPrice) {
+      return res.status(400).json({ error: 'title and originalPrice required' })
+    }
+
+    const result = await estimateResellValue(
+      title,
+      originalPrice,
+      condition || 'Good',
+      category || 'General',
+      attributes || {},
+    )
+
+    res.json(result)
   } catch (e) {
     next(e)
   }

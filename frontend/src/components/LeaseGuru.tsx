@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Bot, Zap, MapPin, Star, AlertTriangle, ShoppingCart, LifeBuoy, BookOpen } from 'lucide-react';
+import { X, Send, Bot, Zap, MapPin, Star, AlertTriangle, ShoppingCart, LifeBuoy, BookOpen, Camera } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
@@ -14,11 +14,36 @@ interface Message {
   ticket?: string;
 }
 
+interface SessionState {
+  role: string | null;
+  itemOfInterest: string | null;
+  tenure: number | null;
+  budgetSignal: string | null;
+  hinglishMode: boolean;
+}
+
 interface LeaseGuruProps {
   role?: 'buyer' | 'seller' | 'renter' | 'wholesaler';
 }
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'https://lease1-backend.vercel.app/api';
+
+const TENURE_BADGES: Record<string, { label: string; color: string }> = {
+  flash: { label: 'Flash 1-3mo', color: 'bg-purple-500' },
+  semester: { label: 'Semester 4-11mo', color: 'bg-blue-500' },
+  annual: { label: 'Annual 12-18mo', color: 'bg-green-500' },
+  extended: { label: 'Extended 19-24mo', color: 'bg-amber-500' },
+  lifecycle: { label: 'Lifecycle 25+mo', color: 'bg-rose-500' },
+};
+
+function getTenureBadge(months: number): { label: string; color: string } | null {
+  if (months >= 1 && months <= 3) return TENURE_BADGES.flash;
+  if (months >= 4 && months <= 11) return TENURE_BADGES.semester;
+  if (months >= 12 && months <= 18) return TENURE_BADGES.annual;
+  if (months >= 19 && months <= 24) return TENURE_BADGES.extended;
+  if (months >= 25) return TENURE_BADGES.lifecycle;
+  return null;
+}
 
 const INTENT_LABELS: Record<string, { label: string; icon: any; color: string }> = {
   TRANSACTIONAL_SALES: { label: 'Sales', icon: ShoppingCart, color: 'bg-blue-500' },
@@ -32,8 +57,12 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [currentIntent, setCurrentIntent] = useState<string | null>(null);
+  const [sessionState, setSessionState] = useState<SessionState | null>(null);
   const [error, setError] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [identifying, setIdentifying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (messages.length === 0) {
@@ -54,6 +83,50 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
   const addBotMsg = useCallback((text: string, table?: any[], highlight?: string, ticket?: string) => {
     setMessages(prev => [...prev, { role: 'bot', text, table, highlight, ticket }]);
   }, []);
+
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      setImagePreview(base64);
+      setIdentifying(true);
+
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const res = await fetch(`${API_BASE}/chat/identify-item`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+          body: JSON.stringify({ image: base64 }),
+        });
+
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+        const data = await res.json();
+        setImagePreview(null);
+        setIdentifying(false);
+
+        if (data.itemName) {
+          const desc = `**${data.itemName}** (${data.category}) — estimated ₹${(data.estimatedRetailPrice || 0).toLocaleString('en-IN')}, condition: ${data.condition}`;
+          const msg = `I can see a ${desc}. How long do you need it for?`;
+          addBotMsg(msg, undefined, undefined, undefined);
+          setInput(`I want to rent ${data.itemName}`);
+        } else {
+          addBotMsg("Couldn't identify that clearly — can you describe the item? What is it and what's it worth?");
+        }
+      } catch {
+        setImagePreview(null);
+        setIdentifying(false);
+        addBotMsg("Image upload failed — try describing the item instead. What is it?");
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSend = useCallback(async () => {
     const q = input.trim();
@@ -83,6 +156,7 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
 
       setIsTyping(false);
       setCurrentIntent(data.intent);
+      if (data.sessionState) setSessionState(data.sessionState);
 
       if (data.table && data.table.length > 0) {
         setTimeout(() => addBotMsg(data.reply, data.table, undefined, data.escalationTicket), 200);
@@ -92,7 +166,6 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
     } catch (e) {
       setIsTyping(false);
       setError(true);
-      // Fallback to simple local response
       const lower = q.toLowerCase();
       let fb = '';
       if (lower.includes('hi') || lower.includes('hey') || lower.includes('hello')) {
@@ -103,6 +176,8 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
         fb = "Security deposits are held in escrow and refunded within 24 hours after both parties sign off on return.";
       } else if (lower.includes('how') || lower.includes('help') || lower.includes('guide')) {
         fb = "I can guide you through listing items, making bookings, or managing your account. Just ask!";
+      } else if (lower.includes('ma') || lower.includes('hai') || lower.includes('kya') || lower.includes('chahiye') || lower.includes('bhai')) {
+        fb = "Kya chahiye? Item batao aur kitne mahine ke liye chahiye — main price batata hoon!";
       } else {
         fb = "I'm having trouble connecting to my brain right now. Try again in a moment, or ask something simple like 'how do I list an item?'";
       }
@@ -111,6 +186,7 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
   }, [input, isTyping, role, addBotMsg]);
 
   const intentInfo = currentIntent ? INTENT_LABELS[currentIntent] : null;
+  const tenureBadge = sessionState?.tenure ? getTenureBadge(sessionState.tenure) : null;
 
   return (
     <div className="fixed bottom-6 right-6 z-[100]">
@@ -133,6 +209,12 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
                 <div className="flex items-center gap-2">
                   <h4 className="font-black text-sm uppercase tracking-widest">Lease Guru</h4>
                   <Badge className="bg-yellow-300 text-yellow-900 border-none text-[8px] font-black px-1.5 py-0">AI</Badge>
+                  {sessionState?.hinglishMode && (
+                    <Badge className="bg-pink-400 text-white border-none text-[8px] font-black px-1.5 py-0">Hinglish</Badge>
+                  )}
+                  {tenureBadge && (
+                    <Badge className={`${tenureBadge.color} text-white border-none text-[8px] font-black px-1.5 py-0`}>{tenureBadge.label}</Badge>
+                  )}
                 </div>
                 <div className="flex items-center gap-1.5">
                   <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse" />
@@ -143,17 +225,24 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
                         {intentInfo.label}
                       </span>
                     ) : (
-                      'Online \u2022 Multi-Agent'
+                      'Online \u2022 GenAI'
                     )}
                   </span>
                 </div>
+                {sessionState?.itemOfInterest && (
+                  <div className="text-[9px] text-white/60 mt-0.5">
+                    Tracking: {sessionState.itemOfInterest}{sessionState.tenure ? ` \u00b7 ${sessionState.tenure}mo` : ''}{sessionState.budgetSignal ? ` \u00b7 ${sessionState.budgetSignal}` : ''}
+                  </div>
+                )}
               </div>
               <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-white/10 rounded-lg transition-colors">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <p className="text-[10px] text-white/70 mt-2 font-medium leading-relaxed">
-              Multi-agent AI: Sales, Escrow &amp; Ops specialists.
+              {sessionState?.hinglishMode
+                ? 'Hinglish mode — bolo bhai, kya chahiye?'
+                : 'Pricing engine with tenure bands, EMI switcher &amp; photo ID.'}
             </p>
           </div>
 
@@ -241,6 +330,27 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
                 </div>
               </div>
             )}
+            {identifying && (
+              <div className="flex justify-start">
+                <div className="bg-white dark:bg-gray-800 rounded-2xl rounded-tl-none p-3 shadow-sm border border-gray-100 dark:border-gray-700 flex items-center gap-2">
+                  <div className="w-2 h-2 bg-purple-400 rounded-full animate-ping" />
+                  <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400">Identifying item...</span>
+                </div>
+              </div>
+            )}
+            {imagePreview && !identifying && (
+              <div className="flex justify-center">
+                <div className="relative w-20 h-20 rounded-xl overflow-hidden border-2 border-primary-300 shadow-sm">
+                  <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                  <button
+                    onClick={() => setImagePreview(null)}
+                    className="absolute top-0.5 right-0.5 w-4 h-4 bg-gray-900/60 rounded-full flex items-center justify-center"
+                  >
+                    <X className="w-3 h-3 text-white" />
+                  </button>
+                </div>
+              </div>
+            )}
             {error && (
               <div className="flex justify-center">
                 <div className="text-[9px] text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-full">
@@ -254,26 +364,43 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
           <div className="p-4 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 shrink-0">
             <div className="relative">
               <input
-                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl pl-4 pr-14 py-3.5 text-sm font-medium outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all"
-                placeholder={role === 'seller' || role === 'wholesaler' ? "Ask about pricing..." : "e.g. compare laptop listings..."}
+                className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl pl-4 pr-20 py-3.5 text-sm font-medium outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all"
+                placeholder={sessionState?.hinglishMode ? "Kya chahiye? Batao..." : sessionState?.tenure ? "Ask about pricing, EMI, or listings..." : role === 'seller' || role === 'wholesaler' ? "Ask about pricing..." : "e.g. compare laptop listings..."}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}
                 disabled={isTyping}
               />
-              <button
-                onClick={handleSend}
-                disabled={isTyping || !input.trim()}
-                className="absolute right-1.5 top-1.5 p-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                <Send className="w-4 h-4" />
-              </button>
+              <div className="absolute right-1.5 top-1.5 flex gap-0.5">
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={isTyping}
+                  className="p-2.5 text-gray-400 hover:text-primary-600 transition-colors disabled:opacity-40"
+                  title="Upload image to identify item"
+                >
+                  <Camera className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={handleSend}
+                  disabled={isTyping || !input.trim()}
+                  className="p-2.5 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleImageSelect}
+              />
             </div>
           </div>
 
           {/* Footer with contact */}
           <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 text-[9px] text-gray-400 text-center font-medium shrink-0">
-            Powered by Lease Multi-Agent System &middot; Escalate: <strong>kishanuddhav2004@gmail.com</strong>
+            Powered by Lease GenAI <span className="mx-1">·</span> Escalate: <strong>kishanuddhav2004@gmail.com</strong>
           </div>
         </Card>
       )}

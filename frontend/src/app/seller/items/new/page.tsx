@@ -82,6 +82,9 @@ export default function NewItemPage() {
   const [customAttributes, setCustomAttributes] = useState<Record<string, string>>({})
   const [sellerType, setSellerType] = useState<'A' | 'B'>('B')
   const [resellValue, setResellValue] = useState<number>(0)
+  const [resellLocked, setResellLocked] = useState(true)
+  const [aiAnalyzing, setAiAnalyzing] = useState(false)
+  const [aiResellReasoning, setAiResellReasoning] = useState('')
   const [pricingEstimate, setPricingEstimate] = useState<any>(null)
   const [pricingLoading, setPricingLoading] = useState(false)
 
@@ -202,6 +205,33 @@ export default function NewItemPage() {
     return () => clearTimeout(timer)
   }, [form.originalPrice, selectedProduct, form.minRentDuration, sellerType, resellValue])
 
+  // AI resell value estimation
+  const canAnalyzeResell = useMemo(() => {
+    return form.originalPrice > 0 && selectedProduct && Object.keys(form.subAttributes).length > 0
+  }, [form.originalPrice, selectedProduct, form.subAttributes])
+
+  const analyzeResellValue = async () => {
+    if (!selectedProduct || !canAnalyzeResell) return
+    setAiAnalyzing(true)
+    try {
+      const res = await api.post('/pricing/estimate-resell', {
+        title: selectedProduct.title,
+        originalPrice: form.originalPrice,
+        condition: form.condition,
+        category: selectedProduct.category,
+        attributes: { ...form.subAttributes, ...customAttributes },
+      })
+      setResellValue(res.data.estimatedResellValue)
+      setAiResellReasoning(res.data.reasoning)
+      setResellLocked(false)
+      toast.success(`AI estimated resell value: ₹${res.data.estimatedResellValue.toLocaleString('en-IN')}`)
+    } catch (e) {
+      toast.error('AI analysis failed. Enter resell value manually.')
+      setResellLocked(false)
+    }
+    setAiAnalyzing(false)
+  }
+
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.categoryId || !form.cityId) {
@@ -280,11 +310,11 @@ export default function NewItemPage() {
             </CardHeader>
             <CardContent>
               <div className="bg-gray-50 dark:bg-gray-900/50 p-1.5 rounded-2xl flex border border-gray-100 dark:border-gray-800">
-                <button type="button" onClick={() => setSellerType('B')}
+                <button type="button" onClick={() => { setSellerType('B'); setResellLocked(true); setAiResellReasoning('') }}
                   className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sellerType === 'B' ? 'bg-green-600 text-white shadow-lg shadow-green-200' : 'text-gray-400 hover:text-gray-600'}`}>
                   <Shield className="w-3 h-3 inline mr-1" />Safety First
                 </button>
-                <button type="button" onClick={() => setSellerType('A')}
+                <button type="button" onClick={() => { setSellerType('A'); setResellLocked(true); setAiResellReasoning('') }}
                   className={`flex-1 py-3 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${sellerType === 'A' ? 'bg-amber-600 text-white shadow-lg shadow-amber-200' : 'text-gray-400 hover:text-gray-600'}`}>
                   <TrendingUp className="w-3 h-3 inline mr-1" />Sell Alternative
                 </button>
@@ -295,14 +325,65 @@ export default function NewItemPage() {
                   : 'We help you earn more than selling outright on OLX/Cashify.'}
               </p>
               {sellerType === 'A' && (
-                <div className="mt-4">
+                <div className="mt-4 space-y-3">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-2">What can you sell this for on OLX/Cashify?</label>
                   <div className="flex items-center gap-2">
                     <span className="text-lg font-black text-gray-400">₹</span>
-                    <input type="number" className="flex-1 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3 text-lg font-black outline-none ring-2 ring-transparent focus:ring-amber-500 transition-all"
-                      placeholder="Resell value" value={resellValue || ''} onChange={e => setResellValue(Number(e.target.value))} />
+                    <input type="number" className={`flex-1 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3 text-lg font-black outline-none ring-2 transition-all ${
+                      resellLocked && !aiAnalyzing
+                        ? 'ring-gray-200 text-gray-300 cursor-not-allowed'
+                        : 'ring-amber-500/50 text-gray-900 dark:text-white focus:ring-amber-500'
+                    }`}
+                      placeholder={resellLocked ? 'Analyze with AI first...' : 'Enter resell value'}
+                      value={resellValue || ''}
+                      onChange={e => setResellValue(Number(e.target.value))}
+                      disabled={resellLocked}
+                    />
                     <span className="text-[9px] font-bold text-gray-400">We'll beat this by 15%</span>
                   </div>
+
+                  {resellLocked && !aiAnalyzing && (
+                    <div className="bg-amber-50 dark:bg-amber-900/10 p-3 rounded-2xl border border-amber-200 dark:border-amber-900/30 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="text-[10px] text-amber-800 dark:text-amber-300 font-bold">
+                          First fill in the product details, specs, and images above, then click "Analyze with AI" to auto-estimate the resell value.
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={analyzeResellValue}
+                        disabled={!canAnalyzeResell || aiAnalyzing}
+                        className={`w-full py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 ${
+                          canAnalyzeResell && !aiAnalyzing
+                            ? 'bg-amber-600 text-white shadow-lg shadow-amber-200 hover:bg-amber-700'
+                            : 'bg-gray-200 dark:bg-gray-800 text-gray-400 cursor-not-allowed'
+                        }`}
+                      >
+                        {aiAnalyzing ? (
+                          <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> Analyzing...</>
+                        ) : (
+                          <><Sparkles className="w-4 h-4" /> {canAnalyzeResell ? 'Analyze with AI' : 'Fill specs & price first'}</>
+                        )}
+                      </button>
+                    </div>
+                  )}
+
+                  {aiResellReasoning && !resellLocked && (
+                    <div className="bg-green-50 dark:bg-green-900/10 p-3 rounded-2xl border border-green-200 dark:border-green-900/30">
+                      <div className="flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 text-green-600 shrink-0 mt-0.5" />
+                        <div className="text-[9px] text-green-800 dark:text-green-300 font-bold">
+                          {aiResellReasoning}
+                        </div>
+                      </div>
+                      <p className="text-[8px] text-green-600 font-black mt-1 uppercase tracking-wider">You can edit this value — your price, your call.</p>
+                    </div>
+                  )}
+
+                  {!resellLocked && !aiResellReasoning && (
+                    <p className="text-[8px] text-amber-600 font-black uppercase tracking-wider">You can edit this value after entering it.</p>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -621,6 +702,10 @@ export default function NewItemPage() {
               <p className="text-gray-400 text-[10px] font-bold uppercase tracking-[0.2em]">Platform Fundamentals v4.0 • Smart Undercut</p>
             </CardHeader>
             <CardContent className="p-10 space-y-8">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="w-6 h-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-[10px] font-black">1</div>
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Enter Your Item Value</span>
+              </div>
               <div>
                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-3 block">Original Purchase Price (₹)</label>
                 <input 
@@ -651,22 +736,26 @@ export default function NewItemPage() {
               {/* Viability & Duration Info */}
               {pricingEstimate && form.originalPrice > 0 && (
                 <>
-                {/* Market Comparison */}
+                <div className="flex items-center gap-2 mb-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div className="w-6 h-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-[10px] font-black">2</div>
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Market Analysis & Your Earnings</span>
+              </div>
+              {/* Market Comparison: What Renters Pay Elsewhere */}
                 {(() => {
                   const mo = Math.max(3, Math.min(48, form.minRentDuration || 3))
                   const emiThis = pricingEstimate.emiOptions?.[String(mo)]
                   return (
                   <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-3xl border border-green-200 dark:border-green-900/30 space-y-2">
                     <div className="flex items-center gap-2 text-[10px] font-black text-green-700 dark:text-green-400 uppercase tracking-widest">
-                      <Sparkles className="w-3 h-3" /> Market Comparison — {mo}mo
+                      <Sparkles className="w-3 h-3" /> What Renters Pay Elsewhere — {mo}mo
                     </div>
                     <div className="grid grid-cols-2 gap-2 text-[10px]">
                       <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
-                        <span className="text-gray-400 font-bold uppercase tracking-wider">Competitor</span>
+                        <span className="text-gray-400 font-bold uppercase tracking-wider">RentoMojo / Grabhouse</span>
                         <p className="font-black text-gray-800 dark:text-white">₹{pricingEstimate.competitorRentRange?.low?.toLocaleString('en-IN')} – ₹{pricingEstimate.competitorRentRange?.high?.toLocaleString('en-IN')}/mo</p>
                       </div>
                       <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
-                        <span className="text-gray-400 font-bold uppercase tracking-wider">{mo}mo EMI</span>
+                        <span className="text-gray-400 font-bold uppercase tracking-wider">{mo}mo EMI (Credit Card)</span>
                         <p className="font-black text-gray-800 dark:text-white">₹{Math.round(emiThis || 0).toLocaleString('en-IN')}/mo</p>
                       </div>
                     </div>
@@ -675,49 +764,78 @@ export default function NewItemPage() {
                   )
                 })()}
 
-                {/* Viability Alert */}
-                {pricingEstimate.current && (
-                  <div className={`p-4 rounded-3xl border space-y-2 ${
-                    pricingEstimate.current.viable
-                      ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-900/30'
-                      : 'bg-amber-50 dark:bg-amber-900/10 border-amber-200 dark:border-amber-900/30'
-                  }`}>
-                    <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest">
-                      {pricingEstimate.current.viable
-                        ? <><Zap className="w-3 h-3 text-blue-600" /> <span className="text-blue-700">Viable — {pricingEstimate.current.n}mo</span></>
-                        : <><AlertCircle className="w-3 h-3 text-amber-600" /> <span className="text-amber-700">Not viable at {pricingEstimate.current.n}mo</span></>
-                      }
+                {/* Your Earnings at Current Duration */}
+                {(() => {
+                  const mo = Math.max(3, Math.min(48, form.minRentDuration || 3))
+                  const totalEarning = Math.floor(form.monthlyRent * 0.85 * mo)
+                  return (
+                  <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-3xl border border-blue-200 dark:border-blue-900/30 space-y-2">
+                    <div className="flex items-center gap-2 text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">
+                      <Zap className="w-3 h-3" /> Your Earnings — {mo}mo Duration
                     </div>
-                    <div className="text-[10px] space-y-1">
-                      <div className="flex justify-between"><span className="text-gray-500">Your monthly payout</span><span className="font-black">₹{pricingEstimate.current.sellerPayout?.toLocaleString('en-IN')}/mo</span></div>
-                      {pricingEstimate.current.need && <div className="flex justify-between"><span className="text-gray-500">Monthly target</span><span className="font-black">₹{pricingEstimate.current.need?.toLocaleString('en-IN')}/mo</span></div>}
-                      {!pricingEstimate.current.viable && pricingEstimate.current.gap && (
-                        <div className="mt-2 pt-2 border-t border-amber-200 dark:border-amber-800 text-[9px] font-bold text-amber-600">
-                          Gap: ₹{pricingEstimate.current.gap.toLocaleString('en-IN')}/mo — increase duration
-                        </div>
-                      )}
+                    <div className="text-[10px] space-y-1.5">
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Your monthly payout (85%)</span>
+                        <span className="font-black text-green-600">₹{Math.floor(form.monthlyRent * 0.85).toLocaleString('en-IN')}/mo</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-gray-500">Platform fee (15%)</span>
+                        <span className="font-black text-gray-500">₹{Math.ceil(form.monthlyRent * 0.15).toLocaleString('en-IN')}/mo</span>
+                      </div>
+                      <div className="pt-1.5 border-t border-blue-200 dark:border-blue-800 flex justify-between">
+                        <span className="font-black text-blue-700 dark:text-blue-400">Total you earn over {mo}mo</span>
+                        <span className="font-black text-lg text-green-600">₹{totalEarning.toLocaleString('en-IN')}</span>
+                      </div>
                     </div>
                   </div>
-                )}
+                  )
+                })()}
 
-                {/* Best Duration Suggestion */}
-                {pricingEstimate.best && (
-                  <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-3xl border border-purple-200 dark:border-purple-900/30">
-                    <div className="flex items-center gap-2 text-[10px] font-black text-purple-700 uppercase tracking-widest mb-2">
-                      <TrendingUp className="w-3 h-3" /> Best Duration: {pricingEstimate.best.n}mo
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-[10px]">
-                      <div className="bg-white/60 p-2 rounded-xl"><span className="text-gray-400">Rent</span><p className="font-black">₹{pricingEstimate.best.rent?.toLocaleString('en-IN')}/mo</p></div>
-                      <div className="bg-white/60 p-2 rounded-xl"><span className="text-gray-400">Your payout</span><p className="font-black text-green-600">₹{pricingEstimate.best.sellerPayout?.toLocaleString('en-IN')}/mo</p></div>
-                    </div>
-                    {pricingEstimate.best.n > (form.minRentDuration || 3) && (
-                      <button type="button" onClick={() => setForm(prev => ({ ...prev, minRentDuration: pricingEstimate.best.n }))} 
-                        className="mt-3 w-full py-2 bg-purple-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all">
-                        Extend to {pricingEstimate.best.n}mo
-                      </button>
-                    )}
+                {/* Best Duration Recommendation */}
+                <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-3xl border border-purple-200 dark:border-purple-900/30">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-purple-700 uppercase tracking-widest mb-2">
+                    <TrendingUp className="w-3 h-3" /> Best Duration Recommendation
                   </div>
-                )}
+                  {pricingEstimate.best ? (
+                    <>
+                      <div className="grid grid-cols-2 gap-2 text-[10px] mb-3">
+                        <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
+                          <span className="text-gray-400 font-bold uppercase tracking-wider">Duration</span>
+                          <p className="font-black text-purple-700">{pricingEstimate.best.n} months</p>
+                        </div>
+                        <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
+                          <span className="text-gray-400 font-bold uppercase tracking-wider">Monthly Rent</span>
+                          <p className="font-black">₹{pricingEstimate.best.rent?.toLocaleString('en-IN')}/mo</p>
+                        </div>
+                        <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
+                          <span className="text-gray-400 font-bold uppercase tracking-wider">Your Payout/mo</span>
+                          <p className="font-black text-green-600">₹{pricingEstimate.best.sellerPayout?.toLocaleString('en-IN')}</p>
+                        </div>
+                        <div className="bg-white/60 dark:bg-black/20 p-2 rounded-xl">
+                          <span className="text-gray-400 font-bold uppercase tracking-wider">Total You Earn</span>
+                          <p className="font-black text-green-600">₹{(pricingEstimate.best.sellerPayout * pricingEstimate.best.n).toLocaleString('en-IN')}</p>
+                        </div>
+                      </div>
+                      <div className="text-[9px] text-purple-600 font-bold mb-2">
+                        {sellerType === 'A'
+                          ? `Beats your resell value by ${Math.round(((pricingEstimate.best.sellerPayout * pricingEstimate.best.n) / (resellValue || 1) - 1) * 100)}%`
+                          : 'Steady income while your item stays safe with verified renters'}
+                      </div>
+                      {pricingEstimate.best.n > (form.minRentDuration || 3) && (
+                        <button type="button" onClick={() => setForm(prev => ({ ...prev, minRentDuration: pricingEstimate.best.n }))} 
+                          className="w-full py-2 bg-purple-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-purple-700 transition-all">
+                          Apply {pricingEstimate.best.n}mo Duration
+                        </button>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-[10px] text-gray-500 font-bold text-center py-3">
+                      {sellerType === 'A' && !resellValue
+                        ? 'Enter your resell value above to see the best duration'
+                        : 'No optimal duration found — try adjusting the rental months'}
+                    </div>
+                  )}
+                </div>
 
                 {/* Suggestions */}
                 {pricingEstimate.suggestions?.map((s: any, i: number) => (
@@ -738,26 +856,46 @@ export default function NewItemPage() {
                 </>
               )}
 
-              <div className="pt-8 border-t border-gray-100 dark:border-gray-700 space-y-6">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Monthly Rent (₹)</label>
-                    <p className="text-[10px] font-bold text-primary-600 uppercase mt-0.5">Lender Listed Price</p>
+              <div className="flex items-center gap-2 mb-2 pt-2 border-t border-gray-200 dark:border-gray-700">
+                <div className="w-6 h-6 rounded-full bg-primary-600 text-white flex items-center justify-center text-[10px] font-black">3</div>
+                <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Set Your Listing Price</span>
+              </div>
+              <div className="space-y-6">
+                <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-3xl border border-amber-200 dark:border-amber-900/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Calculator className="w-4 h-4 text-amber-600" />
+                    <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Set Your Listing Price (Editable)</span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {pricingLoading && <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />}
-                    <input 
-                      className={`w-36 bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3 text-right font-black text-2xl outline-none ring-2 ${manualRentOverride ? 'ring-amber-500 text-amber-600' : 'ring-transparent text-gray-900 dark:text-white'} focus:ring-primary-500 transition-all`}
-                      type="number" value={form.monthlyRent || ''} 
-                      onChange={(e) => { setForm({ ...form, monthlyRent: Number(e.target.value) }); setManualRentOverride(true); }} 
-                    />
+                  <p className="text-[9px] text-amber-600 font-bold mb-3">The suggested rent is pre-filled below. You can override it anytime — your price, your call.</p>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Monthly Rent (₹)</label>
+                      <p className="text-[10px] font-bold text-primary-600 uppercase mt-0.5">Lender Listed Price</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {pricingLoading && <div className="w-4 h-4 border-2 border-primary-600 border-t-transparent rounded-full animate-spin" />}
+                      <input 
+                        className={`w-36 bg-white dark:bg-gray-900 border-2 rounded-2xl px-5 py-3 text-right font-black text-2xl outline-none transition-all ${
+                          manualRentOverride
+                            ? 'border-amber-400 text-amber-600 ring-2 ring-amber-200'
+                            : 'border-primary-300 text-gray-900 dark:text-white'
+                        }`}
+                        type="number" value={form.monthlyRent || ''} 
+                        onChange={(e) => { setForm({ ...form, monthlyRent: Number(e.target.value) }); setManualRentOverride(true); }} 
+                      />
+                    </div>
                   </div>
+                  {manualRentOverride && (
+                    <p className="text-[9px] text-amber-600 font-black mt-2 flex items-center gap-1">
+                      <AlertCircle className="w-3 h-3" /> Manual override — pricing recommendations below are based on your entered value
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/10 p-5 rounded-3xl border border-blue-100 dark:border-blue-900/30">
                   <div>
                     <label className="text-[10px] font-black text-blue-900 uppercase tracking-[0.2em] block">Security Deposit</label>
-                    <p className="text-[10px] font-bold text-blue-600 uppercase mt-0.5 italic">1 Month Rent</p>
+                    <p className="text-[10px] font-bold text-blue-600 uppercase mt-0.5 italic">1 Month Rent (Auto-calculated)</p>
                   </div>
                   <input className="w-36 bg-white/50 dark:bg-black/20 border-none rounded-2xl px-5 py-3 text-right font-black text-2xl text-blue-900 outline-none cursor-not-allowed"
                     type="number" value={form.depositAmount || ''} disabled readOnly />
@@ -765,17 +903,35 @@ export default function NewItemPage() {
               </div>
 
               <div className="bg-gray-50 dark:bg-gray-900/50 p-6 rounded-3xl space-y-3 border border-gray-100 dark:border-gray-800">
+                <div className="text-[9px] font-black text-primary-600 uppercase tracking-[0.2em] mb-3 flex items-center gap-2">
+                  <Calculator className="w-3 h-3" /> Step 4: Payout Summary
+                </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
                   <span>Your Monthly Payout (85%)</span>
-                  <span className="text-green-600">₹{Math.floor(form.monthlyRent * 0.85)}</span>
+                  <span className="text-green-600">₹{Math.floor(form.monthlyRent * 0.85).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
                   <span>Platform Fee (15%)</span>
-                  <span>₹{Math.ceil(form.monthlyRent * 0.15)}</span>
+                  <span>₹{Math.ceil(form.monthlyRent * 0.15).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="pt-3 border-t border-gray-200 dark:border-gray-700 flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
-                  <span>Renter Pays (Rent)</span>
-                  <span className="text-primary-600">₹{Math.ceil(form.monthlyRent)}</span>
+                <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
+                  <span>Renter Pays (Monthly Rent)</span>
+                  <span className="text-primary-600">₹{Math.ceil(form.monthlyRent).toLocaleString('en-IN')}/mo</span>
+                </div>
+                <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
+                  <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Total Cost to Renter (Full Duration)</div>
+                  <div className="flex justify-between text-[10px] font-black tracking-widest">
+                    <span className="text-gray-500">Total Rent ({form.minRentDuration}mo × ₹{Math.ceil(form.monthlyRent).toLocaleString('en-IN')})</span>
+                    <span className="text-gray-800 dark:text-white">₹{(form.minRentDuration * Math.ceil(form.monthlyRent)).toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-black tracking-widest">
+                    <span className="text-gray-500">Security Deposit (Refundable)</span>
+                    <span className="text-blue-600">₹{form.depositAmount.toLocaleString('en-IN')}</span>
+                  </div>
+                  <div className="flex justify-between text-[12px] font-black tracking-widest pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-gray-900 dark:text-white">Total Renter Pays</span>
+                    <span className="text-primary-600">₹{(form.minRentDuration * Math.ceil(form.monthlyRent) + form.depositAmount).toLocaleString('en-IN')}</span>
+                  </div>
                 </div>
               </div>
 
