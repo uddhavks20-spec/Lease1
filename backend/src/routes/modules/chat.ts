@@ -322,8 +322,12 @@ interface PricingResult {
   months: number
 }
 
-function calcEffectiveTakeRate(): number {
-  return PLATFORM_TAKE
+function calcEffectiveTakeRate(sellerScore?: string): number {
+  // Base 20% commission. Seller score adjusts it.
+  // High-score sellers pay 18% (reward), low-score pay 22% (penalty)
+  if (sellerScore === 'high') return 0.18
+  if (sellerScore === 'low') return 0.22
+  return PLATFORM_TAKE // 0.20 for medium / unknown
 }
 
 // Estimate retail value from item name via lookup
@@ -365,8 +369,8 @@ function computePricing(
   // Step 5: Deposit = monthly rent × condition deposit adjustment
   const deposit = Math.round(leaseRent * condDepAdj)
 
-  // Step 6: Fixed 20% platform commission
-  const takeRate = PLATFORM_TAKE
+  // Step 6: Platform commission based on seller score (18-22%)
+  const takeRate = calcEffectiveTakeRate(sellerScore)
   const platformTakeCalc = Math.round(leaseRent * takeRate)
   const sellerPayout = leaseRent - platformTakeCalc
 
@@ -534,8 +538,10 @@ When asked about pricing, use these exact formulas. Never make up numbers.
 - Lease baseline = min(competitor monthly, EMI monthly) × (1 − undercut_by_condition). Undercut: New −2%, Mint −3%, Good/Fair/Poor −0%.
 - Other conditions scale from New baseline: Mint = 95% of New rent, Good = 88%, Fair = 78%, Poor = 65%.
 - Deposit = 1 month's rent × condition adjustment: New ×1.00, Mint ×1.025, Good ×1.05, Fair ×1.075, Poor ×1.10
-- Platform take is fixed at 20% of monthly rent (seller keeps 80%). Not negotiable.
-- Seller payout = monthly rent × 0.80. Always less than competitor AND EMI rates.
+- Platform take is variable by seller score: high-score sellers pay 18% (keep 82%), medium/unknown pay 20% (keep 80%), low-score pay 22% (keep 78%). Not negotiable on a per-session basis.
+- Seller payout = monthly rent × (1 − takeRate). Always less than competitor AND EMI rates.
+- Late fee: 10% of monthly rent per week overdue. 3-day grace period. Capped at 2× monthly rent. Non-return beyond 30 days triggers full MRV charge.
+- Damage waiver (optional add-on): available at ₹100-500/mo depending on item value. Covers accidental damage up to 50% of MRV. Not mandatory.
 - Longer tenure = cheaper monthly because EMI comparison favors longer horizons.
 - Item specifications (model, RAM, storage, brand) affect the retail value, which determines the base pricing.
 - Condition is assessed by Gemini Vision (uploaded photos) + 5-question seller questionnaire, final grade is non-editable. Without condition, no pricing is shown.

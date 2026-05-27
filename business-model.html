@@ -72,7 +72,7 @@ tr.total td { font-weight: 700; border-top: 2px solid #475569; background: #0f17
 <body>
 
 <h1>Lease Business Model — v3 Pricing P&L</h1>
-<p class="sub">Pricing: min(comp, EMI) × (1 − condUndercut) × condRentFactor · Undercut: New 2%, Mint 3%, Good/Fair/Poor 0% · Fixed 20% platform commission · 23 configurable drivers</p>
+<p class="sub">Pricing: min(comp, EMI) × (1 − condUndercut) × condRentFactor · Undercut: New 2%, Mint 3%, Good/Fair/Poor 0% · Score-based take (18-22%) · 18% GST · Damage waiver revenue · Late fee: 10%/wk</p>
 
 <div class="grid">
   <div>
@@ -110,10 +110,27 @@ tr.total td { font-weight: 700; border-top: 2px solid #475569; background: #0f17
 
     <div class="panel" style="margin-bottom:12px">
       <h2>Costs &amp; Margins</h2>
-      <div class="param"><label>Platform Take Rate <span id="l_takeRate">20%</span></label><input type="range" id="takeRate" min="5" max="30" value="20" oninput="calc()"><div class="num">Actual: fixed 20%. Slider for what-if.</div></div>
+      <div class="param"><label>Platform Take Rate <span id="l_takeRate">20%</span></label><input type="range" id="takeRate" min="5" max="30" value="20" oninput="calc()"><div class="num">Base rate. Actual varies by seller score (18-22%)</div></div>
+      <div class="param"><label>GST on Platform Fee <span id="l_gst">18%</span></label><input type="range" id="gst" min="0" max="30" value="18" oninput="calc()"><div class="num">Applied to platform commission revenue</div></div>
       <div class="param"><label>CAC per User <span id="l_cac">₹800</span></label><input type="range" id="cac" min="100" max="5000" value="800" step="50" oninput="calc()"></div>
       <div class="param"><label>Fixed Monthly Ops (₹) <span id="l_fixedOps">₹3,00,000</span></label><input type="range" id="fixedOps" min="50000" max="2000000" value="300000" step="10000" oninput="calc()"></div>
       <div class="param"><label>Payment Gateway Fee <span id="l_pgFee">2%</span></label><input type="range" id="pgFee" min="0.5" max="5" value="2" step="0.1" oninput="calc()"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:12px">
+      <h2>Seller Score Mix</h2>
+      <div class="param-group">
+        <div class="param"><label>High Score <span id="l_sellerHigh">30%</span></label><input type="range" id="sellerHigh" min="0" max="100" value="30" oninput="calc()"></div>
+        <div class="param"><label>Medium Score <span id="l_sellerMed">50%</span></label><input type="range" id="sellerMed" min="0" max="100" value="50" oninput="calc()"></div>
+        <div class="param"><label>Low Score <span id="l_sellerLow">20%</span></label><input type="range" id="sellerLow" min="0" max="100" value="20" oninput="calc()"></div>
+      </div>
+      <div class="num" id="sellerWarn" style="color:#facc15;font-size:0.7rem"></div>
+    </div>
+
+    <div class="panel" style="margin-bottom:12px">
+      <h2>Damage Waiver</h2>
+      <div class="param"><label>Opt-in Rate <span id="l_waiverOptIn">25%</span></label><input type="range" id="waiverOptIn" min="0" max="100" value="25" oninput="calc()"><div class="num">% of renters who purchase damage waiver</div></div>
+      <div class="param"><label>Monthly Fee <span id="l_waiverFee">₹200</span></label><input type="range" id="waiverFee" min="0" max="500" value="200" step="25" oninput="calc()"><div class="num">Per-item monthly charge for damage coverage</div></div>
     </div>
 
     <div class="panel">
@@ -251,6 +268,7 @@ function calc() {
   const tenure = getVal('tenure')
   const itemsPerUser = getVal('itemsPerUser')
   const takeRate = getVal('takeRate') / 100
+  const gst = getVal('gst') / 100
   const cac = getVal('cac')
   const fixedOps = getVal('fixedOps')
   const pgFee = getVal('pgFee') / 100
@@ -263,6 +281,25 @@ function calc() {
   const seasonal = getVal('seasonal') / 100
   const depYield = getVal('depYield') / 100
   const churn = getVal('churn') / 100
+  const sellerHigh = getVal('sellerHigh')
+  const sellerMed = getVal('sellerMed')
+  const sellerLow = getVal('sellerLow')
+  const waiverOptIn = getVal('waiverOptIn') / 100
+  const waiverFee = getVal('waiverFee')
+
+  // Normalize seller score mix
+  const sellerSum = sellerHigh + sellerMed + sellerLow
+  const sellerPctHigh = sellerSum > 0 ? sellerHigh / sellerSum : 0.3
+  const sellerPctMed = sellerSum > 0 ? sellerMed / sellerSum : 0.5
+  const sellerPctLow = sellerSum > 0 ? sellerLow / sellerSum : 0.2
+  if (sellerSum !== 100) {
+    document.getElementById('sellerWarn').textContent = sellerSum === 0 ? '' : '⚠ Normalized to sum 100%'
+  } else {
+    document.getElementById('sellerWarn').textContent = ''
+  }
+
+  // Score-weighted take rate: high 18%, med 20%, low 22%
+  const scoreTakeRate = sellerPctHigh * 0.18 + sellerPctMed * 0.20 + sellerPctLow * 0.22
 
   // Update all slider value labels
   document.getElementById('l_users').textContent = users.toLocaleString('en-IN')
@@ -270,6 +307,7 @@ function calc() {
   document.getElementById('l_tenure').textContent = tenure + 'mo'
   document.getElementById('l_itemsPerUser').textContent = itemsPerUser.toFixed(1)
   document.getElementById('l_takeRate').textContent = Math.round(takeRate * 100) + '%'
+  document.getElementById('l_gst').textContent = Math.round(gst * 100) + '%'
   document.getElementById('l_cac').textContent = '₹' + cac.toLocaleString('en-IN')
   document.getElementById('l_fixedOps').textContent = '₹' + fixedOps.toLocaleString('en-IN')
   document.getElementById('l_pgFee').textContent = (pgFee * 100).toFixed(1) + '%'
@@ -282,6 +320,11 @@ function calc() {
   document.getElementById('l_seasonal').textContent = '\u2212' + seasonal * 100 + '%'
   document.getElementById('l_depYield').textContent = depYield * 100 + '%'
   document.getElementById('l_churn').textContent = churn * 100 + '%'
+  document.getElementById('l_sellerHigh').textContent = Math.round(sellerPctHigh * 100) + '%'
+  document.getElementById('l_sellerMed').textContent = Math.round(sellerPctMed * 100) + '%'
+  document.getElementById('l_sellerLow').textContent = Math.round(sellerPctLow * 100) + '%'
+  document.getElementById('l_waiverOptIn').textContent = Math.round(waiverOptIn * 100) + '%'
+  document.getElementById('l_waiverFee').textContent = '₹' + waiverFee
   // Category mix labels
   catIds.forEach((id, i) => {
     document.getElementById('l_' + id).textContent = (catSum > 0 ? Math.round(catMix[i] * 100 / catSum) : 25) + '%'
@@ -303,7 +346,6 @@ function calc() {
   let avgLeaseRent = 0
   let avgDeposit = 0
   let avgCompMonthly = 0
-  let avgTakeRate = 0
 
   for (let ci = 0; ci < catNames.length; ci++) {
     for (let di = 0; di < condNames.length; di++) {
@@ -312,7 +354,6 @@ function calc() {
       avgLeaseRent += p.leaseRent * weight
       avgDeposit += p.deposit * weight
       avgCompMonthly += p.compMonthly * weight
-      avgTakeRate += p.takeRate * weight  // dynamic per-item take rate
     }
   }
 
@@ -320,16 +361,21 @@ function calc() {
   avgDeposit = Math.round(avgDeposit)
   avgCompMonthly = Math.round(avgCompMonthly)
 
-  // Monthly metrics — use weighted average take rate, not slider
-  const effectiveTakeRate = takeRateInput > 0 ? takeRateInput : avgTakeRate
+  // Effective take rate uses score-weighted value by default
+  const effectiveTakeRate = takeRateInput > 0 ? takeRateInput : scoreTakeRate
   const totalRentals = Math.round(users * itemsPerUser)
   const gmv = totalRentals * avgLeaseRent * tenure  // Gross Merchandise Value (total transacted)
-  const netRev = gmv * effectiveTakeRate  // Platform commission revenue
+  const grossCommission = gmv * effectiveTakeRate  // Platform commission before GST
+  const gstCost = Math.round(grossCommission * gst)  // GST on commission
+  const netRev = grossCommission - gstCost  // Platform commission after GST
   const sellerPayout = gmv * (1 - effectiveTakeRate)
 
   // Deposit float (total deposits held at any point)
   const totalDepositsHeld = totalRentals * avgDeposit
   const depositInterestMonthly = Math.round(totalDepositsHeld * depYield / 12)
+
+  // Damage waiver revenue
+  const waiverRevenue = Math.round(totalRentals * waiverOptIn * waiverFee)
 
   // Costs
   const acqCost = users * cac  // New user acquisition (assuming all paid)
@@ -339,32 +385,35 @@ function calc() {
   const theftLoss = Math.round(totalRentals * theftRate * mrv)
   const totalDisputes = Math.round((totalDamageClaims + totalRentals * lateRate) * 0.3)  // 30% of incidents go to dispute
   const disputeCost = Math.round(totalDisputes * dispCost)
-  const latePenaltyRevenue = Math.round(totalRentals * lateRate * avgLeaseRent * 0.5)  // 50% of a month's rent as penalty
+
+  // Late fee: 10% of monthly rent per week, avg 3 weeks late = 30% of rent per late return
+  const latePenaltyRevenue = Math.round(totalRentals * lateRate * avgLeaseRent * 0.3)
 
   // Seasonal adjustment
   const seasonalFactor = 1 - seasonal
-  const peakMonths = 8  // 8 peak months, 4 off-peak (exam)
+  const peakMonths = 8
   const offPeakMonths = 4
-  const avgSeasonalFactor = (peakMonths + offPeakMonths * seasonalFactor) / 12
 
   const peakNetRev = netRev
   const offPeakNetRev = Math.round(netRev * seasonalFactor)
-  const totalOpsCost = fixedOps + acqCost + pgCost + damagePayout + theftLoss + disputeCost - latePenaltyRevenue
-  const peakPL = peakNetRev + depositInterestMonthly - totalOpsCost
-  const offPeakPL = offPeakNetRev + Math.round(depositInterestMonthly * seasonalFactor) - totalOpsCost
+  const totalOpsCost = fixedOps + acqCost + pgCost + damagePayout + theftLoss + disputeCost - latePenaltyRevenue - waiverRevenue
+  const peakPLreal = grossCommission + depositInterestMonthly + waiverRevenue - (totalOpsCost + gstCost)
+  const offPeakPLreal = offPeakNetRev + Math.round(depositInterestMonthly * seasonalFactor) + Math.round(waiverRevenue * seasonalFactor) - (totalOpsCost + Math.round(gstCost * seasonalFactor))
 
   // Annual
-  const annualRev = peakNetRev * peakMonths + offPeakNetRev * offPeakMonths
+  const annualRev = grossCommission * peakMonths + Math.round(grossCommission * seasonalFactor * offPeakMonths)
   const annualDepInterest = depositInterestMonthly * (peakMonths + offPeakMonths * seasonalFactor)
-  const annualCosts = totalOpsCost * 12
-  const annualPL = annualRev + annualDepInterest - annualCosts
+  const annualWaiver = waiverRevenue * (peakMonths + offPeakMonths * seasonalFactor)
+  const annualCostsBase = totalOpsCost * 12
+  const annualGst = gstCost * (peakMonths + offPeakMonths * seasonalFactor)
+  const annualPL = annualRev + annualDepInterest + annualWaiver - annualCostsBase - annualGst
 
-  const grossMargin = netRev > 0 ? (peakNetRev - pgCost - damagePayout - theftLoss) / peakNetRev * 100 : 0
-  const netMargin = peakNetRev > 0 ? peakPL / peakNetRev * 100 : 0
+  const grossMargin = grossCommission > 0 ? (grossCommission - pgCost - damagePayout - theftLoss) / grossCommission * 100 : 0
+  const netMargin = grossCommission > 0 ? peakPLreal / grossCommission * 100 : 0
 
   // Unit economics
   const avgOrderValue = avgLeaseRent * tenure
-  const ltv = Math.round(avgOrderValue * effectiveTakeRate * (1 / churn) * itemsPerUser)  // LTV = AOV × take rate / churn × items per month
+  const ltv = Math.round(avgOrderValue * effectiveTakeRate * (1 / churn) * itemsPerUser)
   const cacRatio = cac > 0 ? ltv / cac : 0
 
   // LTV with churn
@@ -373,34 +422,36 @@ function calc() {
 
   // Challenges impact breakdown
   const challenges = [
-    { name: 'Damage Claims', cost: damagePayout, pct: damagePayout / (peakNetRev || 1) * 100, color: '#f87171' },
-    { name: 'Theft / Non-Return', cost: theftLoss, pct: theftLoss / (peakNetRev || 1) * 100, color: '#ef4444' },
-    { name: 'Payment Gateway Fees', cost: pgCost, pct: pgCost / (peakNetRev || 1) * 100, color: '#facc15' },
-    { name: 'Dispute Resolution', cost: disputeCost, pct: disputeCost / (peakNetRev || 1) * 100, color: '#fb923c' },
-    { name: 'Customer Acquisition', cost: acqCost, pct: acqCost / (peakNetRev || 1) * 100, color: '#60a5fa' },
-    { name: 'Fixed Operations', cost: fixedOps, pct: fixedOps / (peakNetRev || 1) * 100, color: '#94a3b8' },
-    { name: 'Late Penalty (offset)', cost: -latePenaltyRevenue, pct: -latePenaltyRevenue / (peakNetRev || 1) * 100, color: '#4ade80' },
-    { name: 'Deposit Interest (offset)', cost: -depositInterestMonthly, pct: -depositInterestMonthly / (peakNetRev || 1) * 100, color: '#4ade80' },
+    { name: 'Damage Claims', cost: damagePayout, pct: damagePayout / (grossCommission || 1) * 100, color: '#f87171' },
+    { name: 'Theft / Non-Return', cost: theftLoss, pct: theftLoss / (grossCommission || 1) * 100, color: '#ef4444' },
+    { name: 'GST on Commission', cost: gstCost, pct: gstCost / (grossCommission || 1) * 100, color: '#a78bfa' },
+    { name: 'Payment Gateway Fees', cost: pgCost, pct: pgCost / (grossCommission || 1) * 100, color: '#facc15' },
+    { name: 'Dispute Resolution', cost: disputeCost, pct: disputeCost / (grossCommission || 1) * 100, color: '#fb923c' },
+    { name: 'Customer Acquisition', cost: acqCost, pct: acqCost / (grossCommission || 1) * 100, color: '#60a5fa' },
+    { name: 'Fixed Operations', cost: fixedOps, pct: fixedOps / (grossCommission || 1) * 100, color: '#94a3b8' },
+    { name: 'Late Penalty (offset)', cost: -latePenaltyRevenue, pct: -latePenaltyRevenue / (grossCommission || 1) * 100, color: '#4ade80' },
+    { name: 'Damage Waiver (offset)', cost: -waiverRevenue, pct: -waiverRevenue / (grossCommission || 1) * 100, color: '#22d3ee' },
+    { name: 'Deposit Interest (offset)', cost: -depositInterestMonthly, pct: -depositInterestMonthly / (grossCommission || 1) * 100, color: '#4ade80' },
   ]
 
   // Render
-  renderMetrics({ users, mrv, tenure, itemsPerUser, avgLeaseRent, avgDeposit, gmv, netRev: peakNetRev, sellerPayout,
-    totalOpsCost, peakPL, offPeakPL, annualPL, grossMargin, netMargin, ltv: ltvAccurate, cac, cacRatio,
+  renderMetrics({ users, mrv, tenure, itemsPerUser, avgLeaseRent, avgDeposit, gmv, grossCommission, gstCost, netRev, sellerPayout,
+    totalOpsCost, peakPL: peakPLreal, offPeakPL: offPeakPLreal, annualPL, grossMargin, netMargin, ltv: ltvAccurate, cac, cacRatio,
     totalRentals, avgOrderValue, depositInterestMonthly, totalDepositsHeld, avgCompMonthly, peakNetRev, offPeakNetRev,
     damagePayout, theftLoss, pgCost, disputeCost, acqCost, fixedOps, latePenaltyRevenue, churn, avgMonthsRetained,
-    effectiveTakeRate })
+    effectiveTakeRate, waiverRevenue, scoreTakeRate })
 
-  renderPNL({ totalRentals, gmv, avgLeaseRent, netRev: peakNetRev, depositInterestMonthly, sellerPayout, pgCost, acqCost,
-    damagePayout, theftLoss, disputeCost, latePenaltyRevenue, fixedOps, totalOpsCost, peakPL, offPeakNetRev,
-    offPeakPL, avgDeposit, totalDepositsHeld, churn, avgMonthsRetained, cac, ltv: ltvAccurate, avgOrderValue,
-    effectiveTakeRate })
+  renderPNL({ totalRentals, gmv, avgLeaseRent, grossCommission, gstCost, netRev, depositInterestMonthly, sellerPayout, pgCost, acqCost,
+    damagePayout, theftLoss, disputeCost, latePenaltyRevenue, waiverRevenue, fixedOps, totalOpsCost, peakPL: peakPLreal, offPeakNetRev,
+    offPeakPL: offPeakPLreal, avgDeposit, totalDepositsHeld, churn, avgMonthsRetained, cac, ltv: ltvAccurate, avgOrderValue,
+    effectiveTakeRate, scoreTakeRate })
 
-  renderAnnual({ annualRev, annualDepInterest, annualCosts, annualPL, ltv: ltvAccurate, cac, cacRatio,
-    grossMargin, netMargin, peakNetRev, totalRentals, avgLeaseRent, avgDeposit, users, itemsPerUser,
-    avgOrderValue, totalDepositsHeld, peakPL, netMargin })
+  renderAnnual({ annualRev, annualDepInterest, annualWaiver, annualCostsBase, annualGst, annualPL, ltv: ltvAccurate, cac, cacRatio,
+    grossMargin, netMargin, grossCommission, totalRentals, avgLeaseRent, avgDeposit, users, itemsPerUser,
+    avgOrderValue, totalDepositsHeld, peakPL: peakPLreal, netMargin, effectiveTakeRate, gstCost })
 
-  renderChallenges(challenges, peakNetRev)
-  renderScenarios(peakPL, offPeakPL, annualPL, netMargin, ltvAccurate)
+  renderChallenges(challenges, peakNetRev, gstCost, waiverRevenue)
+  renderScenarios(peakPLreal, offPeakPLreal, annualPL, netMargin, ltvAccurate)
 }
 
 // ─── RENDERERS ────────────────────────────────────────────────────
@@ -417,15 +468,18 @@ function renderMetrics(d) {
     <div class="metric"><div class="mlbl">Avg Lease Rent</div><div class="mval blue">₹${d.avgLeaseRent.toLocaleString('en-IN')}</div></div>
     <div class="metric"><div class="mlbl">Avg Deposit</div><div class="mval blue">₹${d.avgDeposit.toLocaleString('en-IN')}</div></div>
     <div class="metric"><div class="mlbl">GMV (Monthly)</div><div class="mval blue">${fmt(d.gmv)}</div></div>
+    <div class="metric"><div class="mlbl">Gross Commission</div><div class="mval green">${fmt(d.grossCommission)}</div></div>
+    <div class="metric"><div class="mlbl">GST (${Math.round(d.gstCost / d.grossCommission * 100)}%)</div><div class="mval red">−${fmt(d.gstCost)}</div></div>
     <div class="metric"><div class="mlbl">Net Rev (Peak)</div><div class="mval green">${fmt(d.netRev)}</div></div>
-    <div class="metric"><div class="mlbl">Net Rev (Off-Peak)</div><div class="mval yellow">${fmt(d.offPeakNetRev)}</div></div>
+    <div class="metric"><div class="mlbl">Damage Waiver Rev</div><div class="mval green">+${fmt(d.waiverRevenue)}</div></div>
     <div class="metric"><div class="mlbl">Total Costs</div><div class="mval red">${fmt(d.totalOpsCost)}</div></div>
     <div class="metric"><div class="mlbl">Peak P&amp;L</div><div class="mval ${d.peakPL >= 0 ? 'green' : 'red'}">${fmt(d.peakPL)}</div></div>
     <div class="metric"><div class="mlbl">Gross Margin</div><div class="mval ${d.grossMargin > 30 ? 'green' : d.grossMargin > 10 ? 'yellow' : 'red'}">${fmtPct(d.grossMargin)}</div></div>
     <div class="metric"><div class="mlbl">Net Margin</div><div class="mval ${d.netMargin > 15 ? 'green' : d.netMargin > 0 ? 'yellow' : 'red'}">${fmtPct(d.netMargin)}</div></div>
     <div class="metric"><div class="mlbl">LTV (per user)</div><div class="mval purple">${fmt(d.ltv)}</div></div>
     <div class="metric"><div class="mlbl">LTV / CAC</div><div class="mval ${d.cacRatio > 3 ? 'green' : d.cacRatio > 1 ? 'yellow' : 'red'}">${d.cacRatio.toFixed(1)}x</div></div>
-    <div class="metric"><div class="mlbl">Effective Take Rate</div><div class="mval blue">${Math.round(d.effectiveTakeRate * 100)}%</div></div>
+    <div class="metric"><div class="mlbl">Eff. Take Rate</div><div class="mval blue">${Math.round(d.effectiveTakeRate * 100)}%</div></div>
+    <div class="metric"><div class="mlbl">Score Take Rate</div><div class="mval blue">${Math.round(d.scoreTakeRate * 100)}%</div></div>
     <div class="metric"><div class="mlbl">Deposits Held</div><div class="mval blue">${fmt(d.totalDepositsHeld)}</div></div>
     <div class="metric"><div class="mlbl">Deposit Interest</div><div class="mval green">${fmt(d.depositInterestMonthly)}/mo</div></div>
   `
@@ -433,28 +487,30 @@ function renderMetrics(d) {
 
 function renderPNL(d) {
   const peakCosts = d.pgCost + d.acqCost + d.damagePayout + d.theftLoss + d.disputeCost + d.fixedOps - d.latePenaltyRevenue
-  const offPeakNet = d.offPeakNetRev
-  const offPeakCosts = Math.round(peakCosts * (d.offPeakNetRev / d.netRev))
+  const offPeakRatio = d.netRev > 0 ? d.offPeakNetRev / d.netRev : 0
 
   document.getElementById('pnlTable').innerHTML = `
-    <tr><th class="l" style="width:55%">Line Item</th><th>Peak Month (₹)</th><th>Off-Peak (₹)</th><th>% of Rev</th></tr>
-    <tr><td class="l">Gross Rentals</td><td>${fmt(d.gmv)}</td><td>${fmt(Math.round(d.gmv * (d.offPeakNetRev / d.netRev)))}</td><td>—</td></tr>
-    <tr><td class="l">Seller Payout (${Math.round((1 - d.effectiveTakeRate) * 100)}%)</td><td class="red">−${fmt(d.sellerPayout)}</td><td class="red">−${fmt(Math.round(d.sellerPayout * (d.offPeakNetRev / d.netRev)))}</td><td>−${Math.round((1 - d.effectiveTakeRate) * 100)}%</td></tr>
-    <tr class="total"><td class="l">Net Commission Revenue</td><td class="green">${fmt(d.netRev)}</td><td class="yellow">${fmt(d.offPeakNetRev)}</td><td>${Math.round(d.effectiveTakeRate * 100)}%</td></tr>
-    <tr><td class="l">Deposit Interest Income</td><td class="green">+${fmt(d.depositInterestMonthly)}</td><td class="yellow">+${fmt(Math.round(d.depositInterestMonthly * 0.6))}</td><td>—</td></tr>
+    <tr><th class="l" style="width:50%">Line Item</th><th>Peak Month (₹)</th><th>Off-Peak (₹)</th><th>% of Gross Comm</th></tr>
+    <tr><td class="l">Gross Rentals (GMV)</td><td>${fmt(d.gmv)}</td><td>${fmt(Math.round(d.gmv * offPeakRatio))}</td><td>—</td></tr>
+    <tr><td class="l">Seller Payout (${Math.round((1 - d.effectiveTakeRate) * 100)}%)</td><td class="red">−${fmt(d.sellerPayout)}</td><td class="red">−${fmt(Math.round(d.sellerPayout * offPeakRatio))}</td><td>—</td></tr>
+    <tr class="total"><td class="l" style="color:#60a5fa">Gross Commission Revenue</td><td style="color:#60a5fa">${fmt(d.grossCommission)}</td><td style="color:#60a5fa">${fmt(Math.round(d.grossCommission * offPeakRatio))}</td><td>100%</td></tr>
+    <tr><td class="l">GST (${Math.round(d.gstCost / d.grossCommission * 100)}%)</td><td class="red">−${fmt(d.gstCost)}</td><td class="red">−${fmt(Math.round(d.gstCost * offPeakRatio))}</td><td class="red">${(d.gstCost / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l" style="color:#4ade80">Net Commission (after GST)</td><td style="color:#4ade80">${fmt(d.netRev)}</td><td style="color:#4ade80">${fmt(d.offPeakNetRev)}</td><td>${(d.netRev / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Damage Waiver Revenue</td><td class="green">+${fmt(d.waiverRevenue)}</td><td class="green">+${fmt(Math.round(d.waiverRevenue * offPeakRatio))}</td><td>—</td></tr>
+    <tr><td class="l">Deposit Interest Income</td><td class="green">+${fmt(d.depositInterestMonthly)}</td><td class="green">+${fmt(Math.round(d.depositInterestMonthly * offPeakRatio))}</td><td>—</td></tr>
     <tr><td class="l" style="padding-top:8px;border-top:1px solid #334155;font-weight:600;color:#e2e8f0">Operating Costs</td><td style="border-top:1px solid #334155"></td><td style="border-top:1px solid #334155"></td><td style="border-top:1px solid #334155"></td></tr>
-    <tr><td class="l">Payment Gateway (${(d.pgCost / d.gmv * 100).toFixed(1)}%)</td><td class="red">−${fmt(d.pgCost)}</td><td class="red">−${fmt(Math.round(d.pgCost * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.pgCost / d.netRev * 100).toFixed(1)}%</td></tr>
-    <tr><td class="l">Customer Acquisition (${d.acqCost.toLocaleString()} users × ₹${d.cac.toLocaleString()})</td><td class="red">−${fmt(d.acqCost)}</td><td class="red">−${fmt(d.acqCost)}</td><td>${(d.acqCost / d.netRev * 100).toFixed(1)}%</td></tr>
-    <tr><td class="l">Damage Claims (${(d.damagePayout / d.gmv * 100).toFixed(1)}% of GMV)</td><td class="red">−${fmt(d.damagePayout)}</td><td class="red">−${fmt(Math.round(d.damagePayout * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.damagePayout / d.netRev * 100).toFixed(1)}%</td></tr>
-    <tr><td class="l">Theft / Non-Return Loss</td><td class="red">−${fmt(d.theftLoss)}</td><td class="red">−${fmt(Math.round(d.theftLoss * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.theftLoss / d.netRev * 100).toFixed(1)}%</td></tr>
-    <tr><td class="l">Dispute Resolution (${d.disputeCost > 0 ? Math.round(d.disputeCost / 1500) : 0} cases)</td><td class="red">−${fmt(d.disputeCost)}</td><td class="red">−${fmt(Math.round(d.disputeCost * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.disputeCost / d.netRev * 100).toFixed(1)}%</td></tr>
-    <tr><td class="l">Fixed Operations</td><td class="red">−${fmt(d.fixedOps)}</td><td class="red">−${fmt(d.fixedOps)}</td><td>${(d.fixedOps / d.netRev * 100).toFixed(1)}%</td></tr>
-    <tr><td class="l">Late Penalty Revenue (offset)</td><td class="green">+${fmt(d.latePenaltyRevenue)}</td><td class="green">+${fmt(Math.round(d.latePenaltyRevenue * (d.offPeakNetRev / d.netRev)))}</td><td>−${(d.latePenaltyRevenue / d.netRev * 100).toFixed(1)}%</td></tr>
-    <tr class="total"><td class="l">Total Costs</td><td class="red">${fmt(d.totalOpsCost)}</td><td class="red">${fmt(Math.round(peakCosts * (d.offPeakNetRev / d.netRev)))}</td><td>${(d.totalOpsCost / d.netRev * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Payment Gateway (${(d.pgCost / d.grossCommission * 100).toFixed(1)}%)</td><td class="red">−${fmt(d.pgCost)}</td><td class="red">−${fmt(Math.round(d.pgCost * offPeakRatio))}</td><td>${(d.pgCost / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Customer Acquisition (${d.acqCost.toLocaleString()} users × ₹${d.cac.toLocaleString()})</td><td class="red">−${fmt(d.acqCost)}</td><td class="red">−${fmt(d.acqCost)}</td><td>${(d.acqCost / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Damage Claims (${(d.damagePayout / d.grossCommission * 100).toFixed(1)}% of comm)</td><td class="red">−${fmt(d.damagePayout)}</td><td class="red">−${fmt(Math.round(d.damagePayout * offPeakRatio))}</td><td>${(d.damagePayout / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Theft / Non-Return Loss</td><td class="red">−${fmt(d.theftLoss)}</td><td class="red">−${fmt(Math.round(d.theftLoss * offPeakRatio))}</td><td>${(d.theftLoss / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Dispute Resolution (${d.disputeCost > 0 ? Math.round(d.disputeCost / 1500) : 0} cases)</td><td class="red">−${fmt(d.disputeCost)}</td><td class="red">−${fmt(Math.round(d.disputeCost * offPeakRatio))}</td><td>${(d.disputeCost / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Fixed Operations</td><td class="red">−${fmt(d.fixedOps)}</td><td class="red">−${fmt(d.fixedOps)}</td><td>${(d.fixedOps / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr><td class="l">Late Penalty Revenue (offset)</td><td class="green">+${fmt(d.latePenaltyRevenue)}</td><td class="green">+${fmt(Math.round(d.latePenaltyRevenue * offPeakRatio))}</td><td class="green">−${(d.latePenaltyRevenue / d.grossCommission * 100).toFixed(1)}%</td></tr>
+    <tr class="total"><td class="l">Total Costs (incl. GST)</td><td class="red">${fmt(d.totalOpsCost + d.gstCost)}</td><td class="red">${fmt(Math.round(d.totalOpsCost * offPeakRatio + d.gstCost * offPeakRatio))}</td><td>${((d.totalOpsCost + d.gstCost) / d.grossCommission * 100).toFixed(1)}%</td></tr>
     <tr class="total" style="border-top:3px solid ${d.peakPL >= 0 ? '#4ade80' : '#f87171'}"><td class="l" style="font-size:0.85rem;color:${d.peakPL >= 0 ? '#4ade80' : '#f87171'}">NET PROFIT / (LOSS)</td>
       <td style="color:${d.peakPL >= 0 ? '#4ade80' : '#f87171'};font-size:0.85rem">${fmt(d.peakPL)}</td>
       <td style="color:${d.offPeakPL >= 0 ? '#4ade80' : '#f87171'};font-size:0.85rem">${fmt(d.offPeakPL)}</td>
-      <td style="color:${d.peakPL / d.netRev * 100 > 15 ? '#4ade80' : d.peakPL > 0 ? '#facc15' : '#f87171'};font-size:0.85rem">${d.netRev > 0 ? (d.peakPL / d.netRev * 100).toFixed(1) + '%' : '—'}</td></tr>
+      <td style="color:${d.peakPL / d.grossCommission * 100 > 15 ? '#4ade80' : d.peakPL > 0 ? '#facc15' : '#f87171'};font-size:0.85rem">${d.grossCommission > 0 ? (d.peakPL / d.grossCommission * 100).toFixed(1) + '%' : '—'}</td></tr>
   `
 }
 
@@ -462,23 +518,27 @@ function renderAnnual(d) {
   document.getElementById('annualTable').innerHTML = `
     <tr><th class="l">Annual Metric</th><th>Value</th></tr>
     <tr><td class="l">Total Rentals (year)</td><td>${(d.totalRentals * 12).toLocaleString()}</td></tr>
-    <tr><td class="l">Gross Revenue</td><td class="green">${fmt(d.annualRev)}</td></tr>
+    <tr><td class="l">Gross Commission Revenue</td><td class="green">${fmt(d.annualRev)}</td></tr>
+    <tr><td class="l">GST Paid</td><td class="red">−${fmt(d.annualGst)}</td></tr>
     <tr><td class="l">Deposit Interest</td><td class="green">+${fmt(d.annualDepInterest)}</td></tr>
-    <tr><td class="l">Total Costs</td><td class="red">−${fmt(d.annualCosts)}</td></tr>
+    <tr><td class="l">Damage Waiver Revenue</td><td class="green">+${fmt(d.annualWaiver)}</td></tr>
+    <tr><td class="l">Total Costs (excl. GST)</td><td class="red">−${fmt(d.annualCostsBase)}</td></tr>
     <tr class="total"><td class="l">Annual P&amp;L</td><td class="${d.annualPL >= 0 ? 'green' : 'red'}">${fmt(d.annualPL)}</td></tr>
   `
 
   document.getElementById('ratios').innerHTML = `
     <div class="ratio-item"><span class="rlbl">Gross Margin</span><span class="rval ${d.grossMargin > 30 ? 'green' : d.grossMargin > 10 ? 'yellow' : 'red'}">${fmtPct(d.grossMargin)}</span></div>
     <div class="ratio-item"><span class="rlbl">Net Margin</span><span class="rval ${d.netMargin > 15 ? 'green' : d.netMargin > 0 ? 'yellow' : 'red'}">${fmtPct(d.netMargin)}</span></div>
+    <div class="ratio-item"><span class="rlbl">Effective Take Rate</span><span class="rval blue">${Math.round(d.effectiveTakeRate * 100)}%</span></div>
+    <div class="ratio-item"><span class="rlbl">GST % of Commission</span><span class="rval red">${(d.gstCost / d.grossCommission * 100).toFixed(1)}%</span></div>
     <div class="ratio-item"><span class="rlbl">LTV : CAC</span><span class="rval ${d.cacRatio > 3 ? 'green' : d.cacRatio > 1 ? 'yellow' : 'red'}">${d.cacRatio.toFixed(1)}x</span></div>
     <div class="ratio-item"><span class="rlbl">Avg Order Value</span><span class="rval blue">${fmt(d.avgOrderValue)}</span></div>
-    <div class="ratio-item"><span class="rlbl">Cost per Rental</span><span class="rval">${fmt(d.annualCosts / (d.totalRentals * 12))}</span></div>
+    <div class="ratio-item"><span class="rlbl">Cost per Rental</span><span class="rval">${fmt(d.annualCostsBase / (d.totalRentals * 12))}</span></div>
     <div class="ratio-item"><span class="rlbl">Revenue per Rental</span><span class="rval green">${fmt(d.annualRev / (d.totalRentals * 12))}</span></div>
   `
 }
 
-function renderChallenges(challenges, rev) {
+function renderChallenges(challenges, rev, gstCost, waiverRevenue) {
   const maxCost = Math.max(...challenges.map(c => Math.abs(c.cost)), 1)
   document.getElementById('challenges').innerHTML = challenges.map(c => {
     const pct = rev > 0 ? (Math.abs(c.cost) / rev * 100).toFixed(1) : '0.0'
