@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Lease Pricing — Version History (v0, v1, v2)</title>
+<title>Lease Pricing — Version History + RentoMojo Comparison</title>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 20px; }
@@ -61,6 +61,8 @@ td .hint { font-size: 0.6rem; color: #64748b; display: block; }
 
 <h1>Lease Pricing Engine — Version Comparison</h1>
 <p class="subtitle">Click a version tab to see its formula, constants, and results across 300+ combinations</p>
+
+<div id="comparisonBox" style="background:#1e293b;border-radius:8px;padding:12px 16px;margin-bottom:16px;font-size:0.8rem;display:none"></div>
 
 <div class="version-tabs" id="tabs"></div>
 <div class="formula-box" id="formulaBox"></div>
@@ -176,6 +178,25 @@ const VERSIONS = {
       const savingPct = Math.round((1 - leaseRent / compMonthly) * 100)
       return { leaseRent, deposit, compMonthly, savingPct, band: band.label, months, sellerPayout: Math.round(leaseRent * (1 - takeRate)), takeRate, emiMonthly, baselineNew }
     }
+  },
+
+  rentomojo: {
+    name: 'RentoMojo',
+    tag: 'tenure rate 3.9–6.0%/mo · no condition factor · deposit = 1mo rent',
+    formula: 'leaseRent = mrv × compRate × rentomojoDiscount(tenure)',
+    constsDesc: 'RentoMojo estimate based on public pricing. Rates: Flash 6.0%/mo, Semester 5.5%/mo, Annual 4.9%/mo, Extended 4.3%/mo, Lifecycle 3.9%/mo. No condition differentiation. Deposit = 1 months rent. No seller payout model (RentoMojo owns inventory).',
+    getBand: function(months) { return TENURE_BANDS_V3.find(b => months >= b.min && months <= b.max) || TENURE_BANDS_V3[0] },
+    RM_DISCOUNT: { flash: 0.00, semester: 0.08, annual: 0.18, extended: 0.28, lifecycle: 0.35 },
+    compute: function(mrv, condition, category, months) {
+      const band = this.getBand(months)
+      const compRate = 0.060
+      const disc = this.RM_DISCOUNT[band.id] || 0
+      const leaseRent = Math.round(mrv * compRate * (1 - disc))
+      const compMonthly = Math.round(mrv * compRate)
+      const deposit = Math.round(leaseRent)
+      const savingPct = Math.round((1 - leaseRent / compMonthly) * 100)
+      return { leaseRent, deposit, compMonthly, savingPct, band: band.label, months, sellerPayout: 0, takeRate: 0, emiMonthly: 0, baselineNew: 0 }
+    }
   }
 }
 
@@ -236,12 +257,19 @@ let activeVersion = 'v3'
 // ─── RENDER ────────────────────────────────────────────────────────
 function renderTabs() {
   const tabs = document.getElementById('tabs')
-  tabs.innerHTML = Object.keys(VERSIONS).map(k => `
+  const keys = Object.keys(VERSIONS)
+  const leaseKeys = keys.filter(k => k !== 'rentomojo')
+  tabs.innerHTML = leaseKeys.map(k => `
     <button class="vtab ${k === activeVersion ? 'active' : ''}" onclick="setVersion('${k}')">
       ${VERSIONS[k].name}
       <span class="tag">${VERSIONS[k].tag}</span>
     </button>
-  `).join('')
+  `).join('') +
+  '<div style="width:2px;background:#334155;margin:0 8px;border-radius:2px"></div>' +
+  `<button class="vtab ${activeVersion === 'rentomojo' ? 'active' : ''}" onclick="setVersion('rentomojo')" style="border:1px solid ${activeVersion === 'rentomojo' ? '#a78bfa' : '#334155'}">
+    RentoMojo
+    <span class="tag">competitor comparison</span>
+  </button>`
 }
 
 function renderFormulaBox() {
@@ -394,7 +422,88 @@ function setVersion(k) {
   activeVersion = k
   renderTabs()
   renderFormulaBox()
+  if (k === 'rentomojo') {
+    renderComparison()
+    document.getElementById('comparisonBox').style.display = 'block'
+  } else {
+    document.getElementById('comparisonBox').style.display = 'none'
+  }
   renderTable()
+}
+
+function renderComparison() {
+  const v3 = VERSIONS.v3
+  const rm = VERSIONS.rentomojo
+  const items = getFilteredItems()
+  const conds = getFilteredConds()
+  const bands = getFilteredBands()
+
+  let rows = []
+  let leaseWins = 0, total = 0
+  for (const item of items) {
+    for (const cond of conds) {
+      for (const bandId of bands) {
+        const months = BAND_MONTHS[bandId]
+        const p3 = v3.compute(item.mrv, cond, item.cat, months)
+        const pr = rm.compute(item.mrv, 'Good', item.cat, months)
+        const diff = pr.leaseRent - p3.leaseRent
+        const pct = pr.leaseRent > 0 ? Math.round(diff / pr.leaseRent * 100) : 0
+        if (diff >= 0) leaseWins++
+        total++
+        rows.push({ item: item.name, mrv: item.mrv, cat: item.cat, cond, band: p3.band, lease: p3.leaseRent, rentomojo: pr.leaseRent, diff, pct, leaseWins: diff >= 0 })
+      }
+    }
+  }
+
+  const winPct = total > 0 ? Math.round(leaseWins / total * 100) : 0
+  const avgSav = rows.length > 0 ? Math.round(rows.reduce((s, r) => s + r.pct, 0) / rows.length) : 0
+  const maxSav = rows.length > 0 ? Math.max(...rows.map(r => r.pct)) : 0
+
+  const bandsList = [...new Set(rows.map(r => r.band))]
+  const condsList = [...new Set(rows.map(r => r.cond))]
+
+  // Summary header
+  let html = `
+    <div style="display:flex;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="background:#0f172a;border-radius:8px;padding:8px 14px;flex:1;min-width:100px;text-align:center">
+        <div style="font-size:0.6rem;color:#64748b;text-transform:uppercase">Lease Wins vs RentoMojo</div>
+        <div style="font-size:1.2rem;font-weight:700;color:${winPct >= 50 ? '#4ade80' : '#f87171'}">${leaseWins}/${total} (${winPct}%)</div>
+      </div>
+      <div style="background:#0f172a;border-radius:8px;padding:8px 14px;flex:1;min-width:100px;text-align:center">
+        <div style="font-size:0.6rem;color:#64748b;text-transform:uppercase">Avg Savings vs RentoMojo</div>
+        <div style="font-size:1.2rem;font-weight:700;color:${avgSav > 0 ? '#4ade80' : '#f87171'}">${avgSav > 0 ? avgSav + '%' : '0%'}</div>
+      </div>
+      <div style="background:#0f172a;border-radius:8px;padding:8px 14px;flex:1;min-width:100px;text-align:center">
+        <div style="font-size:0.6rem;color:#64748b;text-transform:uppercase">Best Lease Advantage</div>
+        <div style="font-size:1.2rem;font-weight:700;color:#60a5fa">${maxSav}%</div>
+      </div>
+    </div>
+    <div style="overflow-x:auto;border-radius:8px;border:1px solid #1e293b">
+    <table><thead><tr>
+      <th class="it">Item</th>
+      <th>Cond</th>
+      <th>Band</th>
+      <th>RentoMojo</th>
+      <th>Lease v3</th>
+      <th>Save vs RM</th>
+    </tr></thead><tbody>`
+
+  for (const r of rows) {
+    const bg = r.diff > 0 ? '#064e3b22' : r.diff < 0 ? '#7f1d1d22' : '#1e293b'
+    const color = r.diff > 0 ? '#4ade80' : r.diff < 0 ? '#f87171' : '#94a3b8'
+    const sign = r.diff > 0 ? '−' : r.diff < 0 ? '+' : '±'
+    html += `<tr style="background:${bg}">
+      <td class="it">${r.item}<span class="hint">₹${r.mrv.toLocaleString('en-IN')} · ${r.cat}</span></td>
+      <td>${r.cond}</td>
+      <td>${r.band}</td>
+      <td style="color:#a78bfa">₹${r.rentomojo.toLocaleString('en-IN')}</td>
+      <td style="color:${r.diff <= 0 ? '#4ade80' : '#f87171'}">₹${r.lease.toLocaleString('en-IN')}</td>
+      <td style="color:${color};font-weight:700">${sign}${Math.abs(r.pct)}%</td>
+    </tr>`
+  }
+
+  html += '</tbody></table></div>'
+  document.getElementById('comparisonBox').innerHTML = html
 }
 
 function renderAll() {
