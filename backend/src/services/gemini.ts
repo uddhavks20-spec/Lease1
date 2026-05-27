@@ -150,17 +150,24 @@ Message: ${userMessage}`,
   }
 }
 
-// ─── Tenure Bands ──────────────────────────────────────────────────
-const TENURE_BANDS_PRICING = [
-  { name: 'Flash', range: [1, 3], tierMult: 1.50, condDisc: { New: 0.03, Mint: 0.04, Good: 0.05, Fair: 0.07, Poor: 0.09 }, depositPct: 0.35, emiHorizon: 12 },
-  { name: 'Semester', range: [4, 11], tierMult: 1.10, condDisc: { New: 0.015, Mint: 0.020, Good: 0.030, Fair: 0.045, Poor: 0.065 }, depositPct: 0.30, emiHorizon: 18 },
-  { name: 'Annual', range: [12, 18], tierMult: 1.00, condDisc: { New: 0.010, Mint: 0.015, Good: 0.020, Fair: 0.030, Poor: 0.045 }, depositPct: 0.25, emiHorizon: 24 },
-  { name: 'Extended', range: [19, 24], tierMult: 0.85, condDisc: { New: 0.005, Mint: 0.008, Good: 0.012, Fair: 0.020, Poor: 0.030 }, depositPct: 0.20, emiHorizon: 36 },
-  { name: 'Lifecycle', range: [25, 999], tierMult: 0.75, condDisc: { New: 0.000, Mint: 0.003, Good: 0.005, Fair: 0.010, Poor: 0.015 }, depositPct: 0.15, emiHorizon: 48 },
-]
+function calcTierMultP(months: number): number {
+  const m = Math.max(3, Math.min(48, months))
+  return 1.55 - m * (0.75 / 45)
+}
 
-function getTenureBandP(months: number) {
-  return TENURE_BANDS_PRICING.find(b => months >= b.range[0] && months <= b.range[1]) || TENURE_BANDS_PRICING[1]
+function calcEmiHorizonP(months: number): number {
+  const m = Math.max(3, Math.min(48, months))
+  return Math.round(12 + (m - 3) * (36 / 45))
+}
+
+const COND_DISC_3MO_P: Record<string, number> = { New: 0.03, Mint: 0.04, Good: 0.05, Fair: 0.07, Poor: 0.09 }
+const COND_DISC_48MO_P: Record<string, number> = { New: 0.0, Mint: 0.003, Good: 0.005, Fair: 0.01, Poor: 0.015 }
+
+function calcCondDiscP(months: number, condition: string): number {
+  const m = Math.max(3, Math.min(48, months))
+  const start = COND_DISC_3MO_P[condition] ?? 0.05
+  const end = COND_DISC_48MO_P[condition] ?? 0.005
+  return start + (m - 3) * (end - start) / 45
 }
 
 // ─── PRICING RESEARCH (for seller pricing engine) ────────────────
@@ -182,8 +189,9 @@ export async function generatePricingResearch(
     throw new Error('GEMINI_API_KEY not set')
   }
 
-  const band = getTenureBandP(tenureMonths || 3)
-  const mode = isB2B2C ? 'B2B2C (match competitor rates)' : `P2P (beat competitor rates and ${band.emiHorizon}mo EMI)`
+  const mo = Math.max(3, Math.min(48, tenureMonths || 3))
+  const emiH = calcEmiHorizonP(mo)
+  const mode = isB2B2C ? 'B2B2C (match competitor rates)' : `P2P (beat competitor rates and ${emiH}mo EMI)`
 
   const genAI = getClient()
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
@@ -191,7 +199,7 @@ export async function generatePricingResearch(
   const prompt = `You are a pricing analyst for a P2P rental marketplace in India.
   
 Product: "${title}" | Price: ₹${originalPrice} | Condition: ${condition} | Category: ${category}
-Tenure Band: ${band.name} (${band.range[0]}-${band.range[1]} months)
+Duration: ${mo} months
 Mode: ${mode}
 
 Return ONLY valid JSON (no markdown, no code fences):
@@ -203,10 +211,10 @@ Return ONLY valid JSON (no markdown, no code fences):
 }
 
 Rules:
-- For P2P: baseRent = min(lowest competitor rent, ${band.emiHorizon}mo EMI) — before condition discount
+- For P2P: baseRent = min(lowest competitor rent, ${emiH}mo EMI) — before condition discount
 - For B2B2C: baseRent = low competitor rent — match, don't undercut
 - Competitor rent: what RentoMojo/Furlenco charge for this item`
-  const condDiscValue = band.condDisc[condition as keyof typeof band.condDisc] ?? 0.03
+  const condDiscValue = calcCondDiscP(mo, condition)
 
   const result = await model.generateContent([{ text: prompt }])
   const text = result.response.text()
@@ -218,8 +226,8 @@ Rules:
     const suggestedRent = Math.round(baseRent * (1 - condDiscValue))
 
     const emiOptions: Record<string, number> = {}
-    for (const b of TENURE_BANDS_PRICING) {
-      emiOptions[String(b.emiHorizon)] = data.emiOptions?.[String(b.emiHorizon)] || Math.round(originalPrice / b.emiHorizon)
+    for (let h = 12; h <= 48; h += 6) {
+      emiOptions[String(h)] = data.emiOptions?.[String(h)] || Math.round(originalPrice / h)
     }
 
     return {
@@ -227,7 +235,7 @@ Rules:
       competitorRentRange: data.competitorRentRange || { low: 0, high: 0 },
       emiOptions,
       conditionAdjustment: -condDiscValue,
-      marketSummary: data.marketSummary || `[${band.name}] ${condition} discount: ${(condDiscValue * 100).toFixed(1)}% applied.`,
+      marketSummary: data.marketSummary || `${condition} (${mo}mo): discount ${(condDiscValue * 100).toFixed(1)}% applied.`,
     }
   }
 

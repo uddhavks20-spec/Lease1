@@ -4,21 +4,8 @@ import { generatePricingResearch, isGeminiAvailable } from '../../services/gemin
 
 const router = Router()
 
-// ─── Tenure Bands ──────────────────────────────────────────────────
-const TENURE_BANDS = [
-  { name: 'Flash', range: [1, 3], tierMult: 1.50, condDisc: { New: 0.03, Mint: 0.04, Good: 0.05, Fair: 0.07, Poor: 0.09 }, depositPct: 0.35, emiHorizon: 12 },
-  { name: 'Semester', range: [4, 11], tierMult: 1.10, condDisc: { New: 0.015, Mint: 0.020, Good: 0.030, Fair: 0.045, Poor: 0.065 }, depositPct: 0.30, emiHorizon: 18 },
-  { name: 'Annual', range: [12, 18], tierMult: 1.00, condDisc: { New: 0.010, Mint: 0.015, Good: 0.020, Fair: 0.030, Poor: 0.045 }, depositPct: 0.25, emiHorizon: 24 },
-  { name: 'Extended', range: [19, 24], tierMult: 0.85, condDisc: { New: 0.005, Mint: 0.008, Good: 0.012, Fair: 0.020, Poor: 0.030 }, depositPct: 0.20, emiHorizon: 36 },
-  { name: 'Lifecycle', range: [25, 999], tierMult: 0.75, condDisc: { New: 0.000, Mint: 0.003, Good: 0.005, Fair: 0.010, Poor: 0.015 }, depositPct: 0.15, emiHorizon: 48 },
-]
-
 const COMPETITOR_RATES: Record<string, number> = {
   Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
-}
-
-function getTenureBand(months: number) {
-  return TENURE_BANDS.find(b => months >= b.range[0] && months <= b.range[1]) || TENURE_BANDS[1]
 }
 
 function matchCompRate(category: string): number {
@@ -30,21 +17,43 @@ function matchCompRate(category: string): number {
   return 0.060
 }
 
+function calcTierMult(months: number): number {
+  const m = Math.max(3, Math.min(48, months))
+  return 1.55 - m * (0.75 / 45)
+}
+
+function calcEmiHorizon(months: number): number {
+  const m = Math.max(3, Math.min(48, months))
+  return Math.round(12 + (m - 3) * (36 / 45))
+}
+
+const COND_DISC_3MO: Record<string, number> = { New: 0.03, Mint: 0.04, Good: 0.05, Fair: 0.07, Poor: 0.09 }
+const COND_DISC_48MO: Record<string, number> = { New: 0.0, Mint: 0.003, Good: 0.005, Fair: 0.01, Poor: 0.015 }
+
+function calcCondDisc(months: number, condition: string): number {
+  const m = Math.max(3, Math.min(48, months))
+  const start = COND_DISC_3MO[condition] ?? 0.05
+  const end = COND_DISC_48MO[condition] ?? 0.005
+  return start + (m - 3) * (end - start) / 45
+}
+
 function fallbackPricing(originalPrice: number, condition: string, isB2B2C: boolean, tenureMonths: number) {
-  const band = getTenureBand(tenureMonths)
+  const mo = Math.max(3, Math.min(48, tenureMonths || 3))
   const compRate = matchCompRate('General')
-  const compMonthly = Math.round(originalPrice * compRate * band.tierMult)
-  const minEmi = Math.round(originalPrice / band.emiHorizon)
-  const baseTarget = Math.min(compMonthly, minEmi)
-  const condDiscValue = band.condDisc[condition as keyof typeof band.condDisc] ?? 0.03
+  const compMonthly = Math.round(originalPrice * compRate * calcTierMult(mo))
+  const emiH = calcEmiHorizon(mo)
+  const minEmi = Math.round(originalPrice / emiH)
+  // P2P: beat both competitor and EMI. B2B2C: match competitor.
+  const baseTarget = isB2B2C ? compMonthly : Math.min(compMonthly, minEmi)
+  const condDiscValue = calcCondDisc(mo, condition)
   const suggestedRent = Math.round(baseTarget * (1 - condDiscValue))
 
   const competitorRentLow = Math.round(originalPrice * compRate * 0.85)
   const competitorRentHigh = Math.round(originalPrice * compRate * 1.15)
 
   const emiOptions: Record<string, number> = {}
-  for (const b of TENURE_BANDS) {
-    emiOptions[String(b.emiHorizon)] = Math.round(originalPrice / b.emiHorizon)
+  for (let h = 12; h <= 48; h += 6) {
+    emiOptions[String(h)] = Math.round(originalPrice / h)
   }
 
   return {
@@ -52,7 +61,7 @@ function fallbackPricing(originalPrice: number, condition: string, isB2B2C: bool
     competitorRentRange: { low: competitorRentLow, high: competitorRentHigh },
     emiOptions,
     conditionAdjustment: -condDiscValue,
-    marketSummary: `[${band.name}] Competitor: ~₹${compMonthly.toLocaleString('en-IN')}/mo. EMI (${band.emiHorizon}mo): ₹${minEmi.toLocaleString('en-IN')}/mo. Saving: ₹${(baseTarget - suggestedRent).toLocaleString('en-IN')}/mo from condition discount.`,
+    marketSummary: `Competitor: ~₹${compMonthly.toLocaleString('en-IN')}/mo. EMI (${emiH}mo): ₹${minEmi.toLocaleString('en-IN')}/mo. Saving: ₹${(baseTarget - suggestedRent).toLocaleString('en-IN')}/mo from condition discount.`,
   }
 }
 
