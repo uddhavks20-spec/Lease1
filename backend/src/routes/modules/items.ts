@@ -69,9 +69,11 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
       originalPrice,
       subAttributes = {},
       minRentDuration = 3,
-      maxRentDuration = 12,
+      maxRentDuration = 48,
       images = [],
       videoUrl,
+      sellerType,
+      resellValue,
       // Product verification fields
       purchaseReceiptUrl,
       serialNumber,
@@ -91,9 +93,9 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
 
     const status = process.env.TEST_MODE === 'true' ? 'approved' : 'pending'
     const result = await db.query(
-      `INSERT INTO items (seller_id, title, description, category_id, city_id, monthly_rent, deposit_amount, retail_price, sub_attributes, min_rent_duration, max_rent_duration, status, video_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13) RETURNING id`,
-      [sellerId, title, description, categoryId, cityId, monthlyRent, depositAmount, originalPrice, JSON.stringify(subAttributes), minRentDuration, maxRentDuration, status, videoUrl || null]
+      `INSERT INTO items (seller_id, title, description, category_id, city_id, monthly_rent, deposit_amount, retail_price, sub_attributes, min_rent_duration, max_rent_duration, status, video_url, seller_type, resell_value)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
+      [sellerId, title, description, categoryId, cityId, monthlyRent, depositAmount, originalPrice, JSON.stringify(subAttributes), minRentDuration, maxRentDuration, status, videoUrl || null, sellerType || 'B', resellValue || null]
     )
     const itemId = result.rows[0].id
 
@@ -139,11 +141,20 @@ router.get('/seller/my-items', auth(true), requireRoles('seller'), async (req: R
   try {
     const sellerId = req.user!.sub
     const result = await db.query(
-      `SELECT id, title, monthly_rent, status, created_at
+      `SELECT id, title, monthly_rent, status, seller_type, retail_price, resell_value, recovered_amount, created_at
        FROM items WHERE seller_id=$1 ORDER BY created_at DESC`,
       [sellerId]
     )
-    res.json({ items: result.rows })
+    // Compute recovery percentage for each item
+    const items = result.rows.map(item => {
+      const target = item.seller_type === 'A' && item.resell_value
+        ? Math.round(Number(item.resell_value) * 1.15)
+        : Number(item.retail_price) || 0
+      const recovered = Number(item.recovered_amount) || 0
+      const recoveryPct = target > 0 ? Math.min(100, Math.round(recovered / target * 100)) : 0
+      return { ...item, recoveryTarget: target, recoveryPct }
+    })
+    res.json({ items })
   } catch (e) {
     next(e)
   }
@@ -155,6 +166,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     const row = (
       await db.query(
         `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.status, i.category_id, i.city_id, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url,
+                i.seller_type, i.resell_value, i.recovered_amount,
                 u.first_name || ' ' || u.last_name as seller_name
          FROM items i JOIN users u ON u.id=i.seller_id
          WHERE i.id=$1`,
@@ -162,6 +174,13 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       )
     ).rows[0]
     if (!row) return res.status(404).json({ error: 'Not found' })
+    // Compute recovery percentage
+    const target = row.seller_type === 'A' && row.resell_value
+      ? Math.round(Number(row.resell_value) * 1.15)
+      : Number(row.retail_price) || 0
+    const recovered = Number(row.recovered_amount) || 0
+    row.recoveryTarget = target
+    row.recoveryPct = target > 0 ? Math.min(100, Math.round(recovered / target * 100)) : 0
     const images = (await db.query(`SELECT image_url, is_primary, alt_text FROM item_images WHERE item_id=$1 ORDER BY is_primary DESC, created_at ASC`, [id]))
       .rows
     // Get product verification info

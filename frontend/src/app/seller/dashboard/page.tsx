@@ -22,6 +22,11 @@ interface Item {
   title: string;
   monthly_rent: number;
   status: 'pending' | 'approved' | 'active' | 'rented' | 'rejected';
+  seller_type: string;
+  retail_price: number;
+  resell_value: number;
+  recoveryPct: number;
+  recoveryTarget: number;
   views?: number;
 }
 
@@ -142,25 +147,39 @@ export default function SellerDashboard() {
             <div className="divide-y divide-gray-100 dark:divide-gray-800">
               {items.map((item) => (
                 <div key={item.id} className="py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-gray-50 dark:bg-gray-900 rounded-lg flex items-center justify-center text-gray-400">
-                      <Package className="h-6 w-6" />
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-gray-900 dark:text-white">{item.title}</h4>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-sm text-gray-500">{formatCurrency(item.monthly_rent)}/mo</span>
-                        <span className="text-gray-300">•</span>
-                        <Badge variant={
-                          item.status === 'active' ? 'default' : 
-                          item.status === 'pending' ? 'secondary' : 
-                          'outline'
-                        } className="capitalize py-0 h-5 text-[10px]">
-                          {item.status}
-                        </Badge>
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 bg-gray-50 dark:bg-gray-900 rounded-lg flex items-center justify-center text-gray-400">
+                        <Package className="h-6 w-6" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-gray-900 dark:text-white truncate">{item.title}</h4>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-sm text-gray-500">{formatCurrency(item.monthly_rent)}/mo</span>
+                          <span className="text-gray-300">•</span>
+                          <Badge variant={
+                            item.status === 'active' ? 'default' : 
+                            item.status === 'pending' ? 'secondary' : 
+                            'outline'
+                          } className="capitalize py-0 h-5 text-[10px]">
+                            {item.status}
+                          </Badge>
+                          <span className="text-[9px] text-gray-400 font-bold uppercase">{item.seller_type === 'A' ? 'Type A' : 'Type B'}</span>
+                        </div>
+                        {/* Recovery Bar */}
+                        {item.recoveryTarget > 0 && (
+                          <div className="mt-2">
+                            <div className="flex justify-between text-[9px] font-bold text-gray-400 mb-0.5">
+                              <span>Recovery</span>
+                              <span>{item.recoveryPct}% · ₹{Math.round(item.recoveryTarget * item.recoveryPct / 100).toLocaleString('en-IN')} / ₹{item.recoveryTarget.toLocaleString('en-IN')}</span>
+                            </div>
+                            <div className="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                              <div className={`h-full rounded-full transition-all duration-500 ${item.recoveryPct >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+                                style={{ width: `${item.recoveryPct}%` }} />
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
-                  </div>
                   
                   <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
                     <Link href={`/items/${item.id}`}>

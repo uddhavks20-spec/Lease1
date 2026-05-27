@@ -5,7 +5,10 @@ import { generatePricingResearch, isGeminiAvailable } from '../../services/gemin
 const router = Router()
 
 const EMI_ANNUAL_RATE = 0.15
-const FINAL_UNDERCUT = 0.065
+const RENTER_UNDERCUT = 0.04
+const PLATFORM_TAKE = 0.15
+const TYPE_A_BEAT = 1.15
+const TYPE_B_MONTHLY = 0.05
 
 const COMPETITOR_RATES: Record<string, number> = {
   Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
@@ -26,57 +29,122 @@ function calcEmiMonthly(mrv: number, months: number): number {
   return Math.round(totalPayable / n)
 }
 
-function calcCompMonthly(mrv: number, months: number, compRate: number): number {
-  return Math.round(mrv * compRate)
-}
+function evaluateDuration(
+  mrv: number,
+  n: number,
+  compRate: number,
+  sellerType: string,
+  resellValue: number | null
+) {
+  const compMonthly = Math.round(mrv * compRate)
+  const emiMonthly = calcEmiMonthly(mrv, n)
+  const benchmark = Math.min(compMonthly, emiMonthly)
+  const rent = Math.round(benchmark * (1 - RENTER_UNDERCUT))
+  const sellerPayout = Math.round(rent * (1 - PLATFORM_TAKE))
+  const platformTake = rent - sellerPayout
 
-function fallbackPricing(originalPrice: number, _condition: string, isB2B2C: boolean, tenureMonths: number) {
-  const mo = Math.max(3, Math.min(48, tenureMonths || 3))
-  const compRate = matchCompRate('General')
-  const compMonthly = calcCompMonthly(originalPrice, mo, compRate)
-  const emiMonthly = calcEmiMonthly(originalPrice, mo)
-  // P2P: min of EMI & competitor, then 6.5% undercut. B2B2C: match competitor.
-  const baseTarget = isB2B2C ? compMonthly : Math.min(compMonthly, emiMonthly)
-  const suggestedRent = Math.round(baseTarget * (1 - FINAL_UNDERCUT))
+  let viable: boolean
+  let need: number | null = null
+  let gap: number | null = null
 
-  const competitorRentLow = Math.round(originalPrice * compRate * 0.85)
-  const competitorRentHigh = Math.round(originalPrice * compRate * 1.15)
-
-  // EMI options for all standard tenures (including exact rental duration)
-  const emiOptions: Record<string, number> = {}
-  for (let n = 3; n <= 48; n++) {
-    emiOptions[String(n)] = calcEmiMonthly(originalPrice, n)
+  if (sellerType === 'A' && resellValue) {
+    need = Math.round(resellValue * TYPE_A_BEAT / n)
+    viable = sellerPayout >= need
+    gap = viable ? 0 : need - sellerPayout
+  } else {
+    // Type B: always viable (trust-focused, no financial floor)
+    viable = true
+    need = Math.round((resellValue || mrv) * TYPE_B_MONTHLY)
+    gap = null
   }
 
-  return {
-    suggestedRent,
-    competitorRentRange: { low: competitorRentLow, high: competitorRentHigh },
-    emiOptions,
-    conditionAdjustment: -FINAL_UNDERCUT,
-    marketSummary: `${mo}mo rental: Competitor ₹${compMonthly.toLocaleString('en-IN')}/mo | EMI ₹${emiMonthly.toLocaleString('en-IN')}/mo (incl. 15% APR). Lease beats min by ${(FINAL_UNDERCUT * 100).toFixed(1)}%.`,
-  }
+  return { n, rent, sellerPayout, platformTake, viable, need, gap, benchmark, compMonthly, emiMonthly }
 }
 
 router.post('/estimate', auth(true), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { title, originalPrice, condition, category, isB2B2C, tenureMonths } = req.body
-    const tenure = tenureMonths || 3
+    const { title, originalPrice, resellValue, sellerType, category, tenureMonths } = req.body
 
     if (!title || !originalPrice) {
       return res.status(400).json({ error: 'title and originalPrice required' })
     }
 
-    if (isGeminiAvailable()) {
-      try {
-        const result = await generatePricingResearch(title, originalPrice, condition || 'Like New', category || 'General', !!isB2B2C, tenure)
-        return res.json(result)
-      } catch (e) {
-        // Fall through to fallback
-      }
+    const mrv = originalPrice
+    const rv = resellValue || null
+    const st = sellerType || 'B'
+    const compRate = matchCompRate(category || 'General')
+
+    // Evaluate all durations 3-48
+    const allDurations = []
+    for (let n = 3; n <= 48; n++) {
+      allDurations.push(evaluateDuration(mrv, n, compRate, st, rv))
     }
 
-    const result = fallbackPricing(originalPrice, condition || 'Like New', !!isB2B2C, tenure)
-    res.json(result)
+    const viable = allDurations.filter(d => d.viable)
+    const best = viable.length > 0
+      ? viable.reduce((a, b) => a.platformTake * a.n >= b.platformTake * b.n ? a : b)
+      : null
+
+    // Current duration info
+    const currentN = Math.max(3, Math.min(48, tenureMonths || 3))
+    const current = allDurations.find(d => d.n === currentN)!
+
+    // Suggestions if not viable
+    const suggestions: any[] = []
+    if (!current.viable && viable.length > 0) {
+      suggestions.push({
+        text: `Try ${viable[0].n} months instead`,
+        newN: viable[0].n,
+        extraEarnings: viable[0].sellerPayout * viable[0].n - (rv || 0),
+      })
+    }
+    if (!current.viable && st === 'B' && rv) {
+      const recMonthly = Math.round(rv * TYPE_B_MONTHLY)
+      suggestions.push({
+        text: `You'd earn ~₹${recMonthly.toLocaleString('en-IN')}/mo — item stays safe with verified renters`,
+        newN: currentN,
+      })
+    }
+
+    // Free complementary suggestion: if they extend from their chosen N to best N
+    if (current.viable && best && best.n > currentN) {
+      const gapValue = Math.round((best.sellerPayout * best.n - current.sellerPayout * currentN) * 0.1)
+      suggestions.push({
+        text: `Extend to ${best.n}mo → get ₹${gapValue.toLocaleString('en-IN')} free credit toward renting another item`,
+        newN: best.n,
+        freeCredit: gapValue,
+      })
+    }
+
+    // Gemini for live competitor data (best effort)
+    let geminiData = null
+    if (isGeminiAvailable()) {
+      try {
+        geminiData = await generatePricingResearch(title, mrv, st, category || 'General', currentN)
+      } catch (e) { /* fall through */ }
+    }
+
+    const emiOptions: Record<string, number> = {}
+    for (let n = 3; n <= 48; n++) {
+      emiOptions[String(n)] = calcEmiMonthly(mrv, n)
+    }
+
+    res.json({
+      suggestedRent: best ? best.rent : current.rent,
+      current,
+      best,
+      viableDurations: viable.slice(0, 5), // top 5 viable
+      totalDurations: allDurations.length,
+      suggestions,
+      competitorRentRange: geminiData?.competitorRentRange || {
+        low: Math.round(mrv * compRate * 0.85),
+        high: Math.round(mrv * compRate * 1.15),
+      },
+      emiOptions,
+      conditionAdjustment: -RENTER_UNDERCUT,
+      marketSummary: geminiData?.marketSummary ||
+        `${currentN}mo rental: Competitor ₹${current.compMonthly.toLocaleString('en-IN')}/mo | EMI ₹${current.emiMonthly.toLocaleString('en-IN')}/mo. Lease beats min by ${(RENTER_UNDERCUT * 100).toFixed(0)}%.`,
+    })
   } catch (e) {
     next(e)
   }

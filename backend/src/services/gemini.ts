@@ -163,9 +163,8 @@ function calcEmiMonthly(mrv: number, months: number): number {
 export async function generatePricingResearch(
   title: string,
   originalPrice: number,
-  _condition: string,
+  sellerType: string,
   category: string,
-  isB2B2C: boolean,
   tenureMonths?: number,
 ): Promise<{
   suggestedRent: number
@@ -179,7 +178,7 @@ export async function generatePricingResearch(
   }
 
   const mo = Math.max(3, Math.min(48, tenureMonths || 3))
-  const mode = isB2B2C ? 'B2B2C (match competitor rates)' : `P2P (beat competitor rates and ${mo}mo EMI)`
+  const isB2B2C = false
 
   const genAI = getClient()
   const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
@@ -188,17 +187,17 @@ export async function generatePricingResearch(
   
 Product: "${title}" | Retail Price: ₹${originalPrice} | Category: ${category}
 Duration: ${mo} months
-Mode: ${mode}
 
 Return ONLY valid JSON (no markdown, no code fences):
 {
-  "competitorRentRange": { "low": <lowest competitor monthly rent for the SAME duration ${mo}mo>, "high": <highest competitor monthly for ${mo}mo> },
-  "marketSummary": "<1-2 sentence insight about this item's rental vs buy decision>"
+  "competitorRentRange": { "low": <lowest competitor monthly rent for exactly ${mo}mo duration from RentoMojo/Furlenco/OLX>, "high": <highest competitor monthly for ${mo}mo> },
+  "marketSummary": "<1-2 sentence Indian market insight>"
 }
 
 Rules:
-- Competitor monthly = total competitor charges for ${mo}mo rental divided by ${mo} (include setup fees, delivery, etc.)
-- Return realistic data for Indian market platforms like RentoMojo, Furlenco`
+- Competitor monthly = what RentoMojo/Furlenco charge for a ${mo}mo rental of this item divided by ${mo}
+- Include platform fees, delivery/setup charges in competitor total
+- OLX/Cashify resell data can inform the upper bound`
 
   const result = await model.generateContent([{ text: prompt }])
   const text = result.response.text()
@@ -207,25 +206,15 @@ Rules:
   if (jsonMatch) {
     const data = JSON.parse(jsonMatch[0])
 
-    // Fall back to formula-based competitor if Gemini doesn't give good data
     const compRate = 0.06
     const compMonthly = data.competitorRentRange?.low || Math.round(originalPrice * compRate)
-    const emiMonthly = calcEmiMonthly(originalPrice, mo)
-    const baseTarget = isB2B2C ? compMonthly : Math.min(compMonthly, emiMonthly)
-    const suggestedRent = Math.round(baseTarget * (1 - FINAL_UNDERCUT))
-
-    // EMI for every month from 3-48 (frontend picks exact match)
-    const emiOptions: Record<string, number> = {}
-    for (let n = 3; n <= 48; n++) {
-      emiOptions[String(n)] = calcEmiMonthly(originalPrice, n)
-    }
 
     return {
-      suggestedRent,
+      suggestedRent: 0, // pricing.ts computes the final rent
       competitorRentRange: data.competitorRentRange || { low: compMonthly, high: Math.round(compMonthly * 1.2) },
-      emiOptions,
-      conditionAdjustment: -FINAL_UNDERCUT,
-      marketSummary: data.marketSummary || `${mo}mo: Lease undercuts min(competitor ₹${compMonthly.toLocaleString('en-IN')}/mo, EMI ₹${emiMonthly.toLocaleString('en-IN')}/mo) by ${(FINAL_UNDERCUT * 100).toFixed(1)}%.`,
+      emiOptions: {},
+      conditionAdjustment: 0,
+      marketSummary: data.marketSummary || `${mo}mo: Competitor ~₹${compMonthly.toLocaleString('en-IN')}/mo.`,
     }
   }
 
