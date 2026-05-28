@@ -40,10 +40,12 @@ interface Item {
 
 // ─── v3 Pricing Engine Constants ─────────────────────────────────
 const CONDITION_RENT_FACTOR: Record<string, number> = {
-  'excellent': 0.95, 'good': 0.88, 'fair': 0.78, 'poor': 0.65,
+  'new': 1.00, 'mint': 0.95, 'excellent': 0.95,
+  'good': 0.88, 'fair': 0.78, 'poor': 0.65,
 }
 const CONDITION_UNDERCUT: Record<string, number> = {
-  'excellent': 0.03, 'good': 0, 'fair': 0, 'poor': 0,
+  'new': 0.02, 'mint': 0.03, 'excellent': 0.03,
+  'good': 0, 'fair': 0, 'poor': 0,
 }
 const EMI_ANNUAL_RATE = 0.15
 const TENURE_BANDS = [
@@ -166,7 +168,8 @@ export default function ItemDetailPage() {
   };
 
   const conditionLabel: Record<string, string> = {
-    excellent: 'Mint', good: 'Good', fair: 'Fair', poor: 'Poor'
+    'new': 'New', 'mint': 'Mint', 'excellent': 'Mint',
+    'good': 'Good', 'fair': 'Fair', 'poor': 'Poor',
   }
 
   if (loading) return (
@@ -317,8 +320,8 @@ export default function ItemDetailPage() {
                 </div>
                 {pricing && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Condition ({conditionLabel[item?.condition || 'good'] || item?.condition})</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{Math.round((CONDITION_RENT_FACTOR[item?.condition || 'good'] || 0.88) * 100)}% of base</span>
+                    <span className="text-gray-500">Condition ({conditionLabel[(item?.condition || 'good').toLowerCase()] || item?.condition})</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{Math.round((CONDITION_RENT_FACTOR[(item?.condition || 'good').toLowerCase()] || 0.88) * 100)}% of base</span>
                   </div>
                 )}
                 <div className="flex justify-between text-sm">

@@ -27,7 +27,56 @@ interface Item {
   resell_value: number;
   recoveryPct: number;
   recoveryTarget: number;
+  condition: string;
+  category_name: string;
   views?: number;
+}
+
+// ─── v3 Pricing Helpers ───────────────────────────────────────────
+const CONDITION_RENT_FACTOR: Record<string, number> = {
+  'new': 1.00, 'mint': 0.95, 'excellent': 0.95,
+  'good': 0.88, 'fair': 0.78, 'poor': 0.65,
+}
+const CONDITION_UNDERCUT: Record<string, number> = {
+  'new': 0.02, 'mint': 0.03, 'excellent': 0.03,
+  'good': 0, 'fair': 0, 'poor': 0,
+}
+const EMI_ANNUAL_RATE = 0.15
+const TENURE_BANDS = [
+  { id: 'flash', min: 1, max: 3, emiHorizon: 12 },
+  { id: 'semester', min: 4, max: 11, emiHorizon: 18 },
+  { id: 'annual', min: 12, max: 18, emiHorizon: 24 },
+  { id: 'extended', min: 19, max: 24, emiHorizon: 36 },
+  { id: 'lifecycle', min: 25, max: 48, emiHorizon: 48 },
+]
+const COMPETITOR_RATES: Record<string, number> = {
+  'Electronics & Entertainment': 0.060, Electronics: 0.060,
+  'Appliances & Cooling': 0.055, Appliance: 0.055,
+  'Study & Furniture': 0.040, Furniture: 0.040,
+  'Clothing & Accessories': 0.075, Lifestyle: 0.075,
+}
+
+function getTenureBand(months: number) {
+  return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[2]
+}
+
+function calcDepositMultiplier(mrv: number): number {
+  return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
+}
+
+function computePricing(mrv: number, condition: string, categoryName: string, months: number) {
+  const compRate = COMPETITOR_RATES[categoryName] || 0.060
+  const cond = condition.toLowerCase()
+  const condRentFactor = CONDITION_RENT_FACTOR[cond] || 0.88
+  const itemUndercut = CONDITION_UNDERCUT[cond] ?? 0
+  const depositMultiplier = calcDepositMultiplier(mrv)
+  const band = getTenureBand(months)
+  const compMonthly = Math.round(mrv * compRate)
+  const emiTotal = Math.round(mrv + mrv * EMI_ANNUAL_RATE * band.emiHorizon / 12)
+  const emiMonthly = Math.round(emiTotal / band.emiHorizon)
+  const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - itemUndercut))
+  const leaseRent = Math.round(baselineNew * condRentFactor)
+  return { leaseRent, deposit: Math.round(leaseRent * depositMultiplier), compMonthly, emiMonthly }
 }
 
 export default function SellerDashboard() {
@@ -165,6 +214,20 @@ export default function SellerDashboard() {
                           </Badge>
                           <span className="text-[9px] text-gray-400 font-bold uppercase">{item.seller_type === 'A' ? 'Type A' : 'Type B'}</span>
                         </div>
+                        {/* Payout by tenure */}
+                        {item.retail_price > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-semibold text-gray-500">
+                            {[3, 6, 12, 24].map((n) => {
+                              const p = computePricing(Number(item.retail_price), item.condition || 'good', item.category_name || 'Electronics', n)
+                              return (
+                                <span key={n}>
+                                  <span className="text-gray-400">{n}mo:</span> ₹{p.leaseRent.toLocaleString('en-IN')}/mo →
+                                  <span className="text-green-600"> ₹{Math.floor(p.leaseRent * 0.80).toLocaleString('en-IN')}</span>
+                                </span>
+                              )
+                            })}
+                          </div>
+                        )}
                         {/* Recovery Bar */}
                         {item.recoveryTarget > 0 && (
                           <div className="mt-2">

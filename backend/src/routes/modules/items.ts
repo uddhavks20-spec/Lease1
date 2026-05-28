@@ -74,6 +74,7 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
       videoUrl,
       sellerType,
       resellValue,
+      condition = 'Good',
       // Product verification fields
       purchaseReceiptUrl,
       serialNumber,
@@ -93,9 +94,9 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
 
     const status = process.env.TEST_MODE === 'true' ? 'approved' : 'pending'
     const result = await db.query(
-      `INSERT INTO items (seller_id, title, description, category_id, city_id, monthly_rent, deposit_amount, retail_price, sub_attributes, min_rent_duration, max_rent_duration, status, video_url, seller_type, resell_value)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING id`,
-      [sellerId, title, description, categoryId, cityId, monthlyRent, depositAmount, originalPrice, JSON.stringify(subAttributes), minRentDuration, maxRentDuration, status, videoUrl || null, sellerType || 'B', resellValue || null]
+      `INSERT INTO items (seller_id, title, description, category_id, city_id, monthly_rent, deposit_amount, retail_price, sub_attributes, min_rent_duration, max_rent_duration, status, video_url, seller_type, resell_value, condition)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
+      [sellerId, title, description, categoryId, cityId, monthlyRent, depositAmount, originalPrice, JSON.stringify(subAttributes), minRentDuration, maxRentDuration, status, videoUrl || null, sellerType || 'B', resellValue || null, condition]
     )
     const itemId = result.rows[0].id
 
@@ -141,8 +142,8 @@ router.get('/seller/my-items', auth(true), requireRoles('seller'), async (req: R
   try {
     const sellerId = req.user!.sub
     const result = await db.query(
-      `SELECT id, title, monthly_rent, status, seller_type, retail_price, resell_value, recovered_amount, created_at
-       FROM items WHERE seller_id=$1 ORDER BY created_at DESC`,
+      `SELECT i.id, i.title, i.monthly_rent, i.status, i.seller_type, i.retail_price, i.resell_value, i.recovered_amount, i.condition, i.category_id, c.name as category_name, i.created_at
+       FROM items i JOIN categories c ON c.id = i.category_id WHERE seller_id=$1 ORDER BY i.created_at DESC`,
       [sellerId]
     )
     // Compute recovery percentage for each item
