@@ -4,14 +4,19 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
-import { Search, SlidersHorizontal, ArrowUpDown, ArrowRight } from "lucide-react";
+import { Search, SlidersHorizontal, ArrowUpDown, ArrowRight, Star } from "lucide-react";
 import Image from "next/image";
 import api from '@/lib/api'
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency } from "@/lib/utils";
+import { SellerBadge } from '@/components/SellerBadge';
+import { WishlistButton } from '@/components/WishlistButton';
+import { ReviewStars } from '@/components/ReviewStars';
 
 const FALLBACK_IMG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f3f4f6" width="200" height="200"/><text fill="#9ca3af" font-family="Arial" font-size="14" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">No Image</text></svg>')
+
+const CONDITIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']
 
 type Item = {
   id: string
@@ -23,6 +28,13 @@ type Item = {
   category_id: string
   image_url?: string
   retail_price?: number
+  seller_id: string
+  seller_name: string
+  seller_avatar?: string
+  condition: string
+  is_featured?: boolean
+  seller_avg_rating?: number
+  seller_review_count?: number
 }
 
 export default function BrowsePage() {
@@ -42,13 +54,23 @@ export default function BrowsePage() {
     subCategory: '',
     sortBy: 'newest',
     minRent: '',
-    maxRent: ''
+    maxRent: '',
+    condition: '',
   });
 
   const [showFilters, setShowFilters] = useState(false);
 
   const activeCategory = categories.find(c => c.id === filters.categoryId);
   const subCategories = activeCategory?.items || [];
+
+  const selectedConditions = filters.condition ? filters.condition.split(',') : [];
+
+  const toggleCondition = (cond: string) => {
+    const current = new Set(selectedConditions)
+    if (current.has(cond)) current.delete(cond)
+    else current.add(cond)
+    setFilters({ ...filters, condition: Array.from(current).join(',') })
+  }
 
   useEffect(() => {
     api.get('/cities').then((r) => setCities(r.data.cities || []))
@@ -97,6 +119,7 @@ export default function BrowsePage() {
                 <option value="price_low">Price: Low to High</option>
                 <option value="price_high">Price: High to Low</option>
                 <option value="popular">Most Popular</option>
+                <option value="rating">Top Rated</option>
               </select>
               <ArrowUpDown className="absolute left-3.5 top-3.5 h-4 w-4 text-gray-400 pointer-events-none" />
             </div>
@@ -111,6 +134,11 @@ export default function BrowsePage() {
             >
               <SlidersHorizontal className="h-4 w-4" />
               Filters
+              {selectedConditions.length > 0 && (
+                <span className="bg-primary-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center ml-1">
+                  {selectedConditions.length}
+                </span>
+              )}
             </button>
           </div>
         </div>
@@ -188,6 +216,25 @@ export default function BrowsePage() {
               </div>
               
               <div className="space-y-3">
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Condition</label>
+                <div className="flex flex-wrap gap-2">
+                  {CONDITIONS.map((cond) => (
+                    <button
+                      key={cond}
+                      onClick={() => toggleCondition(cond)}
+                      className={`px-4 py-1.5 rounded-lg text-xs font-bold transition-all border ${
+                        selectedConditions.includes(cond)
+                          ? 'bg-primary-600 text-white border-primary-600 shadow-sm'
+                          : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-700 hover:border-primary-300'
+                      }`}
+                    >
+                      {cond}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="space-y-3">
                 <label className="text-xs font-black text-gray-400 uppercase tracking-widest">City</label>
                 <select 
                   className="w-full bg-white dark:bg-gray-800 border-none rounded-xl px-4 py-2.5 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 appearance-none"
@@ -199,11 +246,11 @@ export default function BrowsePage() {
                 </select>
               </div>
 
-              <div className="flex items-end">
+              <div className="flex items-end md:col-span-3">
                 <Button 
                   variant="ghost" 
                   className="text-gray-500 font-bold hover:text-primary-600"
-                  onClick={() => setFilters({ ...filters, minRent: '', maxRent: '', cityId: '', categoryId: '', subCategory: '', sortBy: 'newest' })}
+                  onClick={() => setFilters({ ...filters, minRent: '', maxRent: '', cityId: '', categoryId: '', subCategory: '', sortBy: 'newest', condition: '' })}
                 >
                   Reset All Filters
                 </Button>
@@ -229,18 +276,43 @@ export default function BrowsePage() {
                     {formatCurrency(it.deposit_amount)} Deposit
                   </Badge>
                 </div>
-                {it.retail_price && (
-                  <div className="absolute bottom-4 right-4">
-                    <Badge className="bg-green-500/90 text-white backdrop-blur-md border-none text-[10px] font-black uppercase tracking-tighter px-2 py-0.5">
-                      Mint Condition
+                <div className="absolute top-4 right-4 flex flex-col gap-2">
+                  <WishlistButton itemId={it.id} size="sm" />
+                </div>
+                {it.is_featured && (
+                  <div className="absolute top-4 left-1/2 -translate-x-1/2">
+                    <Badge className="bg-primary-600/90 text-white backdrop-blur-md border-none shadow-lg text-[9px] font-black uppercase tracking-widest px-3 py-1">
+                      Featured
                     </Badge>
                   </div>
                 )}
+                <div className="absolute bottom-4 right-4">
+                  <Badge className={`backdrop-blur-md border-none text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 ${
+                    it.condition === 'New' || it.condition === 'Mint'
+                      ? 'bg-green-500/90 text-white'
+                      : it.condition === 'Good'
+                      ? 'bg-blue-500/90 text-white'
+                      : 'bg-gray-500/90 text-white'
+                  }`}>
+                    {it.condition}
+                  </Badge>
+                </div>
               </div>
               <CardContent className="p-6">
                 <h3 className="font-black text-gray-900 dark:text-white mb-2 line-clamp-1 group-hover:text-primary-600 transition-colors uppercase tracking-tight">
                   {it.title}
                 </h3>
+                <div className="flex items-center gap-2 mb-3">
+                  <SellerBadge
+                    sellerId={it.seller_id}
+                    sellerName={it.seller_name}
+                    avatarUrl={it.seller_avatar}
+                    size="sm"
+                  />
+                  {it.seller_avg_rating != null && it.seller_avg_rating > 0 && (
+                    <ReviewStars rating={it.seller_avg_rating} size="sm" count={it.seller_review_count} />
+                  )}
+                </div>
                 <div className="flex items-end justify-between mt-4">
                   <div>
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-0.5">Monthly Rent</p>

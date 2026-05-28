@@ -20,7 +20,7 @@ function matchCompRate(category: string): number {
   if (cat.includes('electronics')) return COMPETITOR_RATES['Electronics']
   if (cat.includes('appliance')) return COMPETITOR_RATES['Appliance']
   if (cat.includes('furniture')) return COMPETITOR_RATES['Furniture']
-  if (cat.includes('lifestyle')) return COMPETITOR_RATES['Lifestyle']
+  if (cat.includes('lifestyle') || cat.includes('clothing')) return COMPETITOR_RATES['Lifestyle']
   return 0.060
 }
 

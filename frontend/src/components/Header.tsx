@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, MapPin, ShoppingCart, User, LogOut, Package } from 'lucide-react';
+import { Search, MapPin, ShoppingCart, User, LogOut, Package, Heart, Gift, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
@@ -17,9 +17,51 @@ export function Header() {
   const [cities, setCities] = useState<Array<{ id: string; name: string }>>([]);
   const [selectedCity, setSelectedCity] = useState(searchParams?.get('city') || '');
   const [searchQuery, setSearchQuery] = useState(searchParams?.get('q') || '');
+  const [detectingCity, setDetectingCity] = useState(true);
 
   useEffect(() => {
-    api.get('/cities').then(res => setCities(res.data.cities || []));
+    api.get('/cities').then(res => {
+      const allCities = res.data.cities || [];
+      setCities(allCities);
+
+      // Auto-detect city from browser geolocation
+      const saved = localStorage.getItem('detectedCity')
+      if (saved) {
+        setSelectedCity(saved)
+        setDetectingCity(false)
+        return
+      }
+
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            const { latitude, longitude } = pos.coords
+            // Reverse geocode using free API
+            fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`)
+              .then(r => r.json())
+              .then(data => {
+                const detectedName = data.city || data.locality || data.principalSubdivision
+                if (detectedName) {
+                  const match = allCities.find((c: any) =>
+                    detectedName.toLowerCase().includes(c.name.toLowerCase()) ||
+                    c.name.toLowerCase().includes(detectedName.toLowerCase())
+                  )
+                  if (match) {
+                    setSelectedCity(match.id)
+                    localStorage.setItem('detectedCity', match.id)
+                  }
+                }
+              })
+              .catch(() => {})
+              .finally(() => setDetectingCity(false))
+          },
+          () => setDetectingCity(false),
+          { timeout: 5000 }
+        )
+      } else {
+        setDetectingCity(false)
+      }
+    });
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
@@ -84,6 +126,21 @@ export function Header() {
           <Link href="/bookings">
             <Button variant="ghost" size="icon" className="relative">
               <Package className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/wishlist">
+            <Button variant="ghost" size="icon" className="relative">
+              <Heart className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/referrals">
+            <Button variant="ghost" size="icon" className="relative">
+              <Gift className="h-5 w-5" />
+            </Button>
+          </Link>
+          <Link href="/disputes">
+            <Button variant="ghost" size="icon" className="relative">
+              <AlertTriangle className="h-5 w-5" />
             </Button>
           </Link>
           <Link href="/cart">

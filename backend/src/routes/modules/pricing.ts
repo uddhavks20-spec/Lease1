@@ -14,7 +14,7 @@ const TYPE_A_BEAT = 1.15
 const TYPE_B_MONTHLY = 0.05
 
 const COMPETITOR_RATES: Record<string, number> = {
-  Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
+  Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075, Clothing: 0.075,
 }
 
 const CONDITION_RENT_FACTOR: Record<string, number> = {
@@ -169,7 +169,7 @@ router.post('/estimate', auth(true), async (req: Request, res: Response, next: N
       },
       emiOptions,
       conditionAdjustment: -(1 - (CONDITION_RENT_FACTOR[cond] ?? 0.88)),
-      marketSummary: res.data?.marketSummary ||
+      marketSummary: geminiData?.marketSummary ||
         `${currentN}mo rental: Competitor ₹${current.compMonthly.toLocaleString('en-IN')}/mo | EMI ₹${current.emiMonthly.toLocaleString('en-IN')}/mo. Lease priced at ₹${current.rent}/mo (${cond} condition).`,
     })
   } catch (e) {

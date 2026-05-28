@@ -5,14 +5,18 @@ import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
-import { formatCurrency } from '@/lib/utils'
+import { formatCurrency, formatDate } from '@/lib/utils'
 import { toast } from 'react-hot-toast'
 import { useCart } from '@/lib/cart-context'
 import { LeaseGuru } from '@/components/LeaseGuru'
+import { ReviewStars } from '@/components/ReviewStars'
+import { WishlistButton } from '@/components/WishlistButton'
+import { SellerBadge } from '@/components/SellerBadge'
+import { AvailabilityCalendar } from '@/components/AvailabilityCalendar'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Shield, Clock, MapPin, Info, ArrowRight, ShoppingCart, AlertTriangle } from 'lucide-react';
+import { Calendar, Shield, Clock, MapPin, Info, ArrowRight, ShoppingCart, AlertTriangle, Star, MessageSquare } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -36,6 +40,25 @@ interface Item {
     lastName: string
   }
   verified_status?: string
+  seller_id: string
+  seller_name: string
+  seller_avatar?: string
+  seller_display_name?: string
+}
+
+interface SellerStats {
+  avg_rating: number
+  review_count: number
+  completed_rentals: number
+}
+
+interface Review {
+  id: string
+  rating: number
+  title: string | null
+  body: string | null
+  created_at: string
+  reviewer_name: string
 }
 
 // ─── v3 Pricing Engine Constants ─────────────────────────────────
@@ -73,7 +96,7 @@ function computePricing(mrv: number, condition: string, categoryName: string, mo
     'Electronics & Entertainment': 0.060, Electronics: 0.060,
     'Appliances & Cooling': 0.055, Appliance: 0.055,
     'Study & Furniture': 0.040, Furniture: 0.040,
-    'Clothing & Accessories': 0.075, Lifestyle: 0.075,
+    'Clothing & Accessories': 0.075, Lifestyle: 0.075, Clothing: 0.075,
   }
   const compRate = COMPETITOR_RATES[categoryName] || 0.060
   const cond = condition.toLowerCase()
@@ -113,6 +136,8 @@ export default function ItemDetailPage() {
   const [loading, setLoading] = useState(true)
   const [duration, setDuration] = useState(12)
   const [categoryName, setCategoryName] = useState('Electronics')
+  const [sellerStats, setSellerStats] = useState<SellerStats | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
 
   useEffect(() => {
     let cancelled = false
@@ -123,12 +148,19 @@ export default function ItemDetailPage() {
         itemData.images = res.data.images;
       }
       setItem(itemData);
+      if (res.data.sellerStats) setSellerStats(res.data.sellerStats)
       if (itemData.category_id) {
         getCategoryName(itemData.category_id).then((name) => {
           if (!cancelled) setCategoryName(name)
         })
       }
     }).finally(() => { if (!cancelled) setLoading(false) })
+
+    // Fetch reviews for this item
+    api.get(`/reviews/item/${id}`).then(res => {
+      if (!cancelled) setReviews(res.data.reviews || [])
+    }).catch(() => {})
+
     return () => { cancelled = true }
   }, [id])
 
@@ -201,67 +233,33 @@ export default function ItemDetailPage() {
                 Save {savingsPercent}%
               </Badge>
             )}
-          </div>
-          
-          {/* Rent vs Buy Analysis */}
-          <Card className="border-none bg-gradient-to-br from-primary-50 to-secondary-50 dark:from-primary-950/20 dark:to-secondary-950/20">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Info className="h-5 w-5 text-primary-600" />
-                Rent vs. Buy Analysis
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid sm:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Retail Price</span>
-                  <span className="font-semibold line-through text-gray-400">{formatCurrency(item.retail_price)}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Total Rent ({duration} mo)</span>
-                  <span className="font-semibold text-primary-600">{formatCurrency(totalRentalCost)}</span>
-                </div>
-                <div className="pt-2 border-t flex justify-between items-center">
-                  <span className="font-bold text-gray-900 dark:text-white">You Save</span>
-                  <span className="text-xl font-black text-green-600">{formatCurrency(savings)}</span>
-                </div>
-              </div>
-              <div className="bg-white/50 dark:bg-black/20 p-4 rounded-xl space-y-3">
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Renting this item for {duration} months saves you <span className="font-bold text-green-600">{savingsPercent}%</span> of the retail cost. Plus, you don't have to worry about maintenance or resale!
-                </p>
-                <div className="flex items-center gap-2 text-primary-600 text-xs font-bold uppercase tracking-wider">
-                  Smart Student Choice <ArrowRight className="h-3 w-3" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Right: Info & Checkout */}
-        <div className="lg:col-span-5 space-y-6">
-          <div>
-            <Badge className={`mb-2 ${item.verified_status === 'verified' ? 'bg-green-500 hover:bg-green-600 text-white border-none' : item.verified_status === 'pending' ? 'bg-amber-500 hover:bg-amber-600 text-white border-none' : 'bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 border-none'}`}>
-              {item.verified_status === 'verified' ? '✓ Product Verified' : item.verified_status === 'pending' ? '⏳ Verification Pending' : '○ Unverified'}
-            </Badge>
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">{item.title}</h1>
-            <div className="flex flex-wrap items-center gap-4 text-gray-500 text-sm mb-4">
-              <div className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
-                <span>IIT Kanpur Campus</span>
-              </div>
-              {item.sub_attributes && Object.entries(item.sub_attributes).map(([key, val]) => (
-                <div key={key} className="flex items-center gap-2 bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter text-gray-600 dark:text-gray-400">
-                  <span className="text-gray-400">{key}:</span>
-                  <span>{val}</span>
-                </div>
-              ))}
+            <div className="absolute top-6 right-6 z-10">
+              <WishlistButton itemId={id} size="md" />
             </div>
           </div>
 
-          <p className="text-gray-600 dark:text-gray-400 leading-relaxed">
-            {item.description}
-          </p>
+          {/* Availability Calendar */}
+          <AvailabilityCalendar itemId={id} className="mb-6" />
+
+          {/* Seller Info */}
+          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
+            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Sold by</p>
+            <div className="flex items-center justify-between">
+              <SellerBadge
+                sellerId={item.seller_id}
+                sellerName={item.seller_name}
+                avatarUrl={item.seller_avatar}
+                avgRating={sellerStats?.avg_rating || 0}
+                reviewCount={sellerStats?.review_count || 0}
+                size="md"
+              />
+              {sellerStats && sellerStats.completed_rentals > 0 && (
+                <Badge variant="secondary" className="text-[9px] font-bold bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-none">
+                  {sellerStats.completed_rentals} rental{sellerStats.completed_rentals > 1 ? 's' : ''} completed
+                </Badge>
+              )}
+            </div>
+          </div>
 
           <div className="p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 space-y-6 shadow-xl shadow-gray-200/50 dark:shadow-none">
             <div className="space-y-4">
@@ -368,6 +366,43 @@ export default function ItemDetailPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Reviews Section */}
+      <div className="mt-12">
+        <div className="flex items-center gap-2 mb-6">
+          <Star className="h-5 w-5 text-amber-400" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Reviews</h2>
+          {reviews.length > 0 && (
+            <span className="text-gray-400 text-sm font-medium">({reviews.length})</span>
+          )}
+        </div>
+
+        {reviews.length === 0 ? (
+          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-10 text-center">
+            <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+            <p className="text-gray-500 font-medium">No reviews yet for this item</p>
+            <p className="text-gray-400 text-sm mt-1">Reviews appear after rental is completed</p>
+          </div>
+        ) : (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {reviews.map((review) => (
+              <div key={review.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-bold text-sm text-gray-900 dark:text-white">{review.reviewer_name}</span>
+                  <span className="text-[10px] text-gray-400">{formatDate(review.created_at)}</span>
+                </div>
+                <ReviewStars rating={review.rating} size="sm" />
+                {review.title && (
+                  <h4 className="font-semibold text-sm text-gray-900 dark:text-white mt-2">{review.title}</h4>
+                )}
+                {review.body && (
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-3">{review.body}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

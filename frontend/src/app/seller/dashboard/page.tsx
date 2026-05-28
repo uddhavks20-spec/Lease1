@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Package, IndianRupee, TrendingUp, AlertCircle, Edit2, Trash2, Eye } from 'lucide-react';
+import { Plus, Package, IndianRupee, TrendingUp, AlertCircle, Edit2, Trash2, Eye, Tag, Shield, Zap, Percent, Gift } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -53,7 +53,7 @@ const COMPETITOR_RATES: Record<string, number> = {
   'Electronics & Entertainment': 0.060, Electronics: 0.060,
   'Appliances & Cooling': 0.055, Appliance: 0.055,
   'Study & Furniture': 0.040, Furniture: 0.040,
-  'Clothing & Accessories': 0.075, Lifestyle: 0.075,
+  'Clothing & Accessories': 0.075, Lifestyle: 0.075, Clothing: 0.075,
 }
 
 function getTenureBand(months: number) {
@@ -190,10 +190,51 @@ export default function SellerDashboard() {
         </Card>
       </div>
 
+      {/* Quick Links */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Link href="/seller/coupons">
+          <Card className="hover:shadow-md transition-all cursor-pointer border-gray-100 dark:border-gray-800">
+            <CardContent className="py-4 flex flex-col items-center text-center">
+              <Percent className="h-6 w-6 text-primary-600 mb-1" />
+              <span className="text-sm font-bold">Coupons</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/referrals">
+          <Card className="hover:shadow-md transition-all cursor-pointer border-gray-100 dark:border-gray-800">
+            <CardContent className="py-4 flex flex-col items-center text-center">
+              <Gift className="h-6 w-6 text-yellow-600 mb-1" />
+              <span className="text-sm font-bold">Referrals</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/seller/kyc">
+          <Card className="hover:shadow-md transition-all cursor-pointer border-gray-100 dark:border-gray-800">
+            <CardContent className="py-4 flex flex-col items-center text-center">
+              <Shield className="h-6 w-6 text-green-600 mb-1" />
+              <span className="text-sm font-bold">KYC</span>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/disputes">
+          <Card className="hover:shadow-md transition-all cursor-pointer border-gray-100 dark:border-gray-800">
+            <CardContent className="py-4 flex flex-col items-center text-center">
+              <AlertCircle className="h-6 w-6 text-red-600 mb-1" />
+              <span className="text-sm font-bold">Disputes</span>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
       {/* Recent Listings */}
       <Card className="border-gray-100 dark:border-gray-800 shadow-sm">
         <CardHeader>
-          <CardTitle>Your Listings</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Your Listings</CardTitle>
+            <Link href="/seller/coupons" className="text-sm text-primary-600 font-bold flex items-center gap-1">
+              <Tag className="h-4 w-4" />Coupons
+            </Link>
+          </div>
         </CardHeader>
         <CardContent>
           {items.length > 0 ? (
@@ -250,7 +291,17 @@ export default function SellerDashboard() {
                       </div>
                     </div>
                   
-                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                  <div className="flex items-center gap-1 w-full sm:w-auto justify-end">
+                    <Button variant="ghost" size="sm" className={`${(item as any).is_boosted ? 'text-purple-500' : 'text-gray-400'}`} onClick={async () => {
+                      try {
+                        await api.patch(`/items/${item.id}/boost`);
+                        toast.success((item as any).is_boosted ? 'Boost removed' : 'Item boosted!');
+                        const res = await api.get('/items/seller/my-items');
+                        setItems(res.data.items);
+                      } catch { toast.error('Failed to toggle boost'); }
+                    }}>
+                      <Zap className={`h-4 w-4 ${(item as any).is_boosted ? 'fill-purple-500' : ''}`} />
+                    </Button>
                     <Link href={`/items/${item.id}`}>
                       <Button variant="ghost" size="sm">
                         <Eye className="h-4 w-4" />

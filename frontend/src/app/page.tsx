@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Home, Search, Shield, TrendingUp, Users, Calendar, ArrowRight, Zap, Sparkles, ShoppingBag, CreditCard, Percent, Smartphone } from 'lucide-react'
+import { Home, Search, Shield, TrendingUp, Users, Calendar, ArrowRight, Zap, Sparkles, ShoppingBag, CreditCard, Percent, Smartphone, MapPin } from 'lucide-react'
 import api from '@/lib/api'
 import { formatCurrency } from "@/lib/utils";
 import { useAuth } from '@/lib/auth-context'
@@ -32,6 +32,7 @@ export default function HomePage() {
   const [creditData, setCreditData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
+  const [nearbyItems, setNearbyItems] = useState<any[]>([]);
   const { user } = useAuth();
 
   const referralCode = user?.id
@@ -58,9 +59,16 @@ export default function HomePage() {
       api.get('/items?limit=8&sortBy=popular'),
       api.get('/categories'),
     ]).then(([itemsRes, popularRes, catRes]) => {
-      setLatestItems(itemsRes.data.items || []);
+      const allItems = itemsRes.data.items || [];
+      setLatestItems(allItems);
       setPopularItems(popularRes.data.items || []);
       setCategories(catRes.data.categories || []);
+
+      // Filter nearby items based on detected city
+      const detected = localStorage.getItem('detectedCity')
+      if (detected) {
+        setNearbyItems(allItems.filter((i: any) => String(i.city_id) === detected).slice(0, 4))
+      }
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
@@ -124,6 +132,54 @@ export default function HomePage() {
                     </Link>
                   )
                 })}
+              </div>
+            </section>
+
+            {/* Near You Section */}
+            <section>
+              <div className="flex justify-between items-end mb-8">
+                <div>
+                  <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tighter flex items-center gap-2">
+                    <MapPin className="w-5 h-5 text-primary-600" />
+                    Available in Your City
+                  </h2>
+                  <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-1">Items near you, ready to rent</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+                {nearbyItems.length > 0 ? nearbyItems.map((item: any) => (
+                  <Link key={item.id} href={`/items/${item.id}`}>
+                    <div className="group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl transform-gpu">
+                      <div className="aspect-square relative overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-10">
+                        <Image
+                          src={imgSrc(item.image_url)}
+                          alt={item.title}
+                          width={250}
+                          height={250}
+                          className="object-contain transition-transform duration-300 ease-out group-hover:scale-110 transform-gpu"
+                        />
+                        <Badge className="absolute top-4 left-4 bg-primary-600/90 text-white backdrop-blur-md border-none text-[10px] font-black uppercase px-3 py-1">
+                          Near You
+                        </Badge>
+                      </div>
+                      <div className="p-6">
+                        <h3 className="text-gray-900 dark:text-white font-black text-lg mb-1 leading-tight group-hover:text-primary-600 transition-colors">{item.title}</h3>
+                        <div className="flex items-center justify-between mt-4">
+                          <p className="text-primary-600 font-black text-xl">{formatCurrency(item.monthly_rent)}/mo</p>
+                          <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                            <ArrowRight className="w-5 h-5" />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </Link>
+                )) : (
+                  <div className="col-span-full text-center py-8 bg-gray-50 dark:bg-gray-900/50 rounded-[32px]">
+                    <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-2" />
+                    <p className="text-gray-500 text-sm">Select your city to see items available near you</p>
+                  </div>
+                )}
               </div>
             </section>
 

@@ -108,9 +108,9 @@ export default function RenterDashboard() {
                                 </Button>
                               </Link>
                             )}
-                            <Link href={`/vision/status/${rental.id}`}>
+                            <Link href={`/renter/rentals/${rental.id}`}>
                               <Button variant="ghost" size="sm" className="rounded-xl font-black text-[10px] uppercase tracking-widest group-hover:bg-primary-50 group-hover:text-primary-600">
-                                Details <ArrowRight className="ml-2 h-3 w-3" />
+                                Track <ArrowRight className="ml-2 h-3 w-3" />
                               </Button>
                             </Link>
                           </div>

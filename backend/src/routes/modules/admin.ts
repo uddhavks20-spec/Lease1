@@ -180,3 +180,88 @@ router.patch('/wholesaler-kyc/:userId/reject', async (req, res, next) => {
     res.json({ ok: true })
   } catch (e) { next(e) }
 })
+
+// ─── Phase 3: City Management ─────────────────────────────────────
+router.get('/cities', async (_req, res, next) => {
+  try {
+    const rows = (await db.query(
+      `SELECT * FROM cities ORDER BY name ASC`
+    )).rows
+    res.json({ cities: rows })
+  } catch (e) { next(e) }
+})
+
+router.post('/cities', async (req, res, next) => {
+  try {
+    const { name, state, is_active, coverage_area, colleges, estimated_users } = req.body
+    const result = await db.query(
+      `INSERT INTO cities (name, state, is_active, coverage_area, colleges, estimated_users)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING id`,
+      [name, state, is_active ?? true, coverage_area, colleges || [], estimated_users || 0]
+    )
+    res.status(201).json({ id: result.rows[0].id })
+  } catch (e) { next(e) }
+})
+
+router.patch('/cities/:id', async (req, res, next) => {
+  try {
+    const { name, state, is_active, coverage_area, colleges, estimated_users } = req.body
+    const sets: string[] = []
+    const vals: any[] = []
+    let idx = 1
+    if (name !== undefined) { sets.push(`name=$${idx++}`); vals.push(name) }
+    if (state !== undefined) { sets.push(`state=$${idx++}`); vals.push(state) }
+    if (is_active !== undefined) { sets.push(`is_active=$${idx++}`); vals.push(is_active) }
+    if (coverage_area !== undefined) { sets.push(`coverage_area=$${idx++}`); vals.push(coverage_area) }
+    if (colleges !== undefined) { sets.push(`colleges=$${idx++}`); vals.push(colleges) }
+    if (estimated_users !== undefined) { sets.push(`estimated_users=$${idx++}`); vals.push(estimated_users) }
+    if (sets.length) {
+      sets.push(`updated_at=NOW()`)
+      vals.push(req.params.id)
+      await db.query(`UPDATE cities SET ${sets.join(',')} WHERE id=$${idx}`, vals)
+    }
+    res.json({ ok: true })
+  } catch (e) { next(e) }
+})
+
+// ─── Phase 3: Coupon Analytics ────────────────────────────────────
+router.get('/coupons', async (_req, res, next) => {
+  try {
+    const rows = (await db.query(
+      `SELECT c.*, u.display_name as seller_name FROM coupons c LEFT JOIN users u ON c.seller_id=u.id ORDER BY c.created_at DESC`
+    )).rows
+    res.json({ coupons: rows })
+  } catch (e) { next(e) }
+})
+
+// ─── Phase 3: Referral Analytics ──────────────────────────────────
+router.get('/referrals/stats', async (_req, res, next) => {
+  try {
+    const totalReferrals = (await db.query(`SELECT COUNT(*) FROM referrals`)).rows[0].count
+    const completedReferrals = (await db.query(`SELECT COUNT(*) FROM referrals WHERE status='completed'`)).rows[0].count
+    const totalRewards = (await db.query(`SELECT COALESCE(SUM(reward_amount),0) FROM referrals WHERE status='completed'`)).rows[0].sum
+    const topReferrers = (await db.query(
+      `SELECT r.referrer_id, u.display_name, u.avatar_url, COUNT(*) as count, SUM(r.reward_amount) as total_reward
+       FROM referrals r JOIN users u ON r.referrer_id=u.id
+       WHERE r.status='completed'
+       GROUP BY r.referrer_id, u.display_name, u.avatar_url
+       ORDER BY count DESC LIMIT 10`
+    )).rows
+    res.json({ totalReferrals, completedReferrals, totalRewards, topReferrers })
+  } catch (e) { next(e) }
+})
+
+// ─── Phase 3: Dispute Management ─────────────────────────────────
+router.get('/disputes', async (_req, res, next) => {
+  try {
+    const rows = (await db.query(
+      `SELECT d.*, i.title as item_title, u1.display_name as raised_by_name, u2.display_name as resolved_by_name
+       FROM disputes d
+       JOIN items i ON d.rental_id IN (SELECT id FROM rentals WHERE item_id=i.id)
+       LEFT JOIN users u1 ON d.raised_by=u1.id
+       LEFT JOIN users u2 ON d.resolved_by=u2.id
+       ORDER BY d.created_at DESC`
+    )).rows
+    res.json({ disputes: rows })
+  } catch (e) { next(e) }
+})

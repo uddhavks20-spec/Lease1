@@ -18,6 +18,12 @@ import chatRouter from './modules/chat'
 import bookingsRouter from './modules/bookings'
 import visionRouter from './modules/vision'
 import pricingRouter from './modules/pricing'
+import availabilityRouter from './modules/availability'
+import reviewsRouter from './modules/reviews'
+import wishlistRouter from './modules/wishlist'
+import sellerProfileRouter from './modules/seller-profile'
+import couponsRouter from './modules/coupons'
+import referralsRouter from './modules/referrals'
 
 export const apiRouter = Router()
 
@@ -40,3 +46,9 @@ apiRouter.use('/chat', chatRouter)
 apiRouter.use('/bookings', bookingsRouter)
 apiRouter.use('/vision', visionRouter)
 apiRouter.use('/pricing', pricingRouter)
+apiRouter.use('/availability', availabilityRouter)
+apiRouter.use('/reviews', reviewsRouter)
+apiRouter.use('/wishlist', wishlistRouter)
+apiRouter.use('/seller-profile', sellerProfileRouter)
+apiRouter.use('/coupons', couponsRouter)
+apiRouter.use('/referrals', referralsRouter)

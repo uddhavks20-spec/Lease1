@@ -24,7 +24,7 @@ export const CONDITION_RENT_FACTOR: Record<string, number> = {
 }
 // Competitor monthly rate as % of MRV per category
 const COMPETITOR_RATES: Record<string, number> = {
-  Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
+  Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075, Clothing: 0.075,
 }
 // Per-condition undercut below min(competitor, EMI)
 // New: 2%, Mint: 3%, Good/Fair/Poor: 0% (condition already discounts rent enough)
@@ -440,7 +440,9 @@ async function generateLeaseGuruResponse(
           itemName, estimatedMRV, 'Good', category,
           '', session.tenureMonths,
         )
-      } catch { /* fall through to formula */ }
+      } catch (err) {
+        console.error('[Gemini] generateGeminiPricing failed:', err instanceof Error ? err.message : err)
+      }
     }
 
     // Fallback: formula-based pricing with estimated MRV
@@ -768,8 +770,8 @@ For completion-level chips (like "Start over" or "Talk to a human"), follow the 
           'Seller': l.seller_name,
         })) : undefined,
       }
-    } catch {
-      // Gemini failed — graceful minimal fallback
+    } catch (err) {
+      console.error('[Gemini] generateChatResponse failed:', err instanceof Error ? err.message : err)
       return { reply: "I hit a snag. Can you repeat that?" }
     }
   }
@@ -777,6 +779,36 @@ For completion-level chips (like "Start over" or "Talk to a human"), follow the 
   // No API key — dead simple fallback
   return { reply: 'Hi! My AI brain isn\'t connected right now (GEMINI_API_KEY not set). Ask about pricing, listings, or how the platform works.' }
 }
+
+// ─── TEST GEMINI CONNECTION ─────────────────────────────────────────
+router.get('/test-gemini', async (_req: Request, res: Response) => {
+  try {
+    const keySet = isGeminiAvailable()
+    if (!keySet) {
+      return res.json({ ok: false, error: 'GEMINI_API_KEY not set in environment' })
+    }
+
+    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
+    const modelsToTry = [process.env.GEMINI_MODEL || 'gemini-2.5-flash', 'gemini-2.0-flash']
+    const results: { model: string; ok: boolean; error?: string }[] = []
+
+    for (const modelName of [...new Set(modelsToTry)]) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName })
+        const result = await model.generateContent([{ text: 'Reply with only the word OK.' }])
+        const text = result.response.text()
+        results.push({ model: modelName, ok: text.trim().toLowerCase().includes('ok') })
+      } catch (err) {
+        results.push({ model: modelName, ok: false, error: err instanceof Error ? err.message : String(err) })
+      }
+    }
+
+    const anyOk = results.some(r => r.ok)
+    res.json({ ok: anyOk, results })
+  } catch (err) {
+    res.json({ ok: false, error: err instanceof Error ? err.message : String(err) })
+  }
+})
 
 // ─── IDENTIFY ITEM FROM IMAGE ─────────────────────────────────────
 router.post('/identify-item', auth(false), async (req: Request, res: Response, next: NextFunction) => {
@@ -789,7 +821,8 @@ router.post('/identify-item', auth(false), async (req: Request, res: Response, n
     // Use Gemini vision to identify the item
     if (isGeminiAvailable()) {
       const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!)
-      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+      const modelName = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+      const model = genAI.getGenerativeModel({ model: modelName })
 
       const prompt = `Identify the main item in this image. Return ONLY valid JSON (no markdown):
 {
@@ -821,7 +854,11 @@ router.post('/identify-item', auth(false), async (req: Request, res: Response, n
       specs: [], confidence: 'low',
     })
   } catch (e) {
-    next(e)
+    console.error('[Gemini] identify-item failed:', e instanceof Error ? e.message : e)
+    res.json({
+      itemName: null, category: 'Other', estimatedRetailPrice: null, condition: 'Good',
+      specs: [], confidence: 'low',
+    })
   }
 })
 

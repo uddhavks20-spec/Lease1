@@ -6,7 +6,7 @@ const router = Router()
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { categoryId, cityId, minRent, maxRent, status, sortBy, q, limit } = req.query
+    const { categoryId, cityId, minRent, maxRent, status, sortBy, q, limit, condition } = req.query
     const conditions: string[] = []
     const params: any[] = []
     
@@ -30,6 +30,11 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       params.push(maxRent)
       conditions.push(`monthly_rent <= $${params.length}`)
     }
+    if (condition) {
+      const conditions_list = (condition as string).split(',')
+      params.push(conditions_list)
+      conditions.push(`condition = ANY($${params.length}::varchar[])`)
+    }
     if (status) {
       params.push(status)
       conditions.push(`status = $${params.length}`)
@@ -37,17 +42,23 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       conditions.push(`status IN ('approved','active') AND is_available=true`)
     }
 
-    let orderClause = 'ORDER BY created_at DESC'
-    if (sortBy === 'price_low') orderClause = 'ORDER BY monthly_rent ASC'
-    else if (sortBy === 'price_high') orderClause = 'ORDER BY monthly_rent DESC'
-    else if (sortBy === 'popular') orderClause = 'ORDER BY view_count DESC'
+    let orderClause = 'ORDER BY i.is_featured DESC, i.created_at DESC'
+    if (sortBy === 'price_low') orderClause = 'ORDER BY i.is_featured DESC, i.monthly_rent ASC'
+    else if (sortBy === 'price_high') orderClause = 'ORDER BY i.is_featured DESC, i.monthly_rent DESC'
+    else if (sortBy === 'popular') orderClause = 'ORDER BY i.is_featured DESC, i.view_count DESC'
+    else if (sortBy === 'rating') orderClause = 'ORDER BY i.is_featured DESC, COALESCE(ss.avg_rating, 0) DESC, i.created_at DESC'
 
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const finalLimit = limit ? parseInt(limit as string) : 50
     const result = await db.query(
-      `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.category_id, i.city_id, i.status, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url,
+      `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.category_id, i.city_id, i.status, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url, i.seller_id, i.is_featured,
+              u.first_name || ' ' || u.last_name as seller_name, u.avatar_url as seller_avatar,
+              COALESCE(ss.avg_rating, 0) as seller_avg_rating, COALESCE(ss.review_count, 0) as seller_review_count,
               (SELECT image_url FROM item_images WHERE item_id = i.id AND is_primary = true LIMIT 1) as image_url
-       FROM items i ${where} ${orderClause} LIMIT $${params.length + 1}`,
+       FROM items i
+       JOIN users u ON u.id = i.seller_id
+       LEFT JOIN seller_stats ss ON ss.user_id = i.seller_id
+       ${where} ${orderClause} LIMIT $${params.length + 1}`,
       [...params, finalLimit]
     )
     res.json({ items: result.rows })
@@ -138,11 +149,28 @@ router.patch('/:id/pause', auth(true), requireRoles('seller'), async (req: Reque
   }
 })
 
+router.patch('/:id/boost', auth(true), requireRoles('seller'), async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const sellerId = req.user!.sub
+    const itemId = req.params.id
+    const item = (await db.query(`SELECT is_boosted FROM items WHERE id=$1 AND seller_id=$2`, [itemId, sellerId])).rows[0]
+    if (!item) { res.status(404).json({ error: 'Item not found' }); return }
+    const newBoosted = !item.is_boosted
+    await db.query(
+      `UPDATE items SET is_boosted=$1, boost_start=CASE WHEN $1 THEN NOW() ELSE NULL END, is_featured=$1 WHERE id=$2 AND seller_id=$3`,
+      [newBoosted, itemId, sellerId]
+    )
+    res.json({ ok: true, is_boosted: newBoosted })
+  } catch (e) {
+    next(e)
+  }
+})
+
 router.get('/seller/my-items', auth(true), requireRoles('seller'), async (req: Request, res: Response, next: NextFunction) => {
   try {
     const sellerId = req.user!.sub
     const result = await db.query(
-      `SELECT i.id, i.title, i.monthly_rent, i.status, i.seller_type, i.retail_price, i.resell_value, i.recovered_amount, i.condition, i.category_id, c.name as category_name, i.created_at
+      `SELECT i.id, i.title, i.monthly_rent, i.status, i.seller_type, i.retail_price, i.resell_value, i.recovered_amount, i.condition, i.category_id, c.name as category_name, i.created_at, i.is_boosted, i.is_featured
        FROM items i JOIN categories c ON c.id = i.category_id WHERE seller_id=$1 ORDER BY i.created_at DESC`,
       [sellerId]
     )
@@ -167,8 +195,10 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
     const row = (
       await db.query(
         `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.status, i.category_id, i.city_id, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url,
-                i.seller_type, i.resell_value, i.recovered_amount,
-                u.first_name || ' ' || u.last_name as seller_name
+                i.seller_type, i.resell_value, i.recovered_amount, i.seller_id,
+                u.first_name || ' ' || u.last_name as seller_name,
+                u.avatar_url as seller_avatar,
+                u.display_name as seller_display_name
          FROM items i JOIN users u ON u.id=i.seller_id
          WHERE i.id=$1`,
         [id]
@@ -190,7 +220,12 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
        FROM item_verifications WHERE item_id=$1 ORDER BY created_at DESC LIMIT 1`,
       [id]
     )).rows[0] || null
-    res.json({ item: row, images, verification })
+    // Get seller stats for trust display
+    const sellerStats = (await db.query(
+      `SELECT avg_rating, review_count, completed_rentals FROM seller_stats WHERE user_id=$1`,
+      [row.seller_id]
+    )).rows[0] || null
+    res.json({ item: row, images, verification, sellerStats })
   } catch (e) {
     next(e)
   }

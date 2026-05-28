@@ -1,10 +1,31 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const API_KEY = process.env.GEMINI_API_KEY
+const MODEL_PREFERRED = process.env.GEMINI_MODEL || 'gemini-2.5-flash'
+const MODEL_FALLBACK = 'gemini-2.0-flash'
 
 function getClient() {
   if (!API_KEY) throw new Error('GEMINI_API_KEY not set')
   return new GoogleGenerativeAI(API_KEY)
+}
+
+async function generateWithFallback(contents: any[]): Promise<any> {
+  const models = [MODEL_PREFERRED, MODEL_FALLBACK]
+  const seen = new Set<string>()
+  for (const modelName of models) {
+    if (seen.has(modelName)) continue
+    seen.add(modelName)
+    try {
+      const genAI = getClient()
+      const model = genAI.getGenerativeModel({ model: modelName })
+      const result = await model.generateContent(contents)
+      return result
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err)
+      console.warn(`[Gemini] model "${modelName}" failed: ${msg}`)
+    }
+  }
+  throw new Error(`Gemini unavailable — tried ${[...seen].join(', ')}`)
 }
 
 // ─── TEXT GENERATION (for chatbot specialist agents) ──────────────
@@ -17,10 +38,7 @@ export async function generateChatResponse(
     return `[MOCK] System: ${systemPrompt.slice(0, 80)}... | Context: ${dbContext.slice(0, 80)}... | User: ${userMessage}`
   }
 
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
-  const result = await model.generateContent([
+  const result = await generateWithFallback([
     { text: `${systemPrompt}\n\n${dbContext}\n\nUser message: ${userMessage}` },
   ])
 
@@ -52,9 +70,6 @@ export async function analyzeImages(
     }
   }
 
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
   const prompt = `You are a production vision analytics engine for a rental marketplace.
 Compare the CHECKOUT (handover baseline) images against the CHECKIN (return) images.
 Follow this strict pipeline:
@@ -82,7 +97,7 @@ Return ONLY valid JSON (no markdown, no code fences):
     ...checkinImages.map(url => ({ inlineData: { data: url.split(',')[1] || '', mimeType: 'image/jpeg' } })),
   ]
 
-  const result = await model.generateContent([
+  const result = await generateWithFallback([
     { text: prompt },
     { text: `Checkout baseline count: ${checkoutImages.length}, Return images count: ${checkinImages.length}` },
     ...imageParts,
@@ -114,10 +129,7 @@ export async function classifyIntentWithLLM(userMessage: string, role?: string):
     }
   }
 
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
-  const result = await model.generateContent([
+  const result = await generateWithFallback([
     {
       text: `You are the Lease orchestrator router. Classify this user message into exactly one segment.
 Return ONLY valid JSON:
@@ -174,9 +186,6 @@ export async function generateGeminiPricing(
     }
   }
 
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
   const prompt = `You are a pricing analyst for Lease, a P2P rental marketplace in India.
 Given an item, its retail price, condition, category, specifications, and rental tenure,
 estimate realistic monthly rent, deposit, and competitor price.
@@ -211,7 +220,7 @@ Rules:
 - For Furniture (sofa, bed), rent is typically 2-4% of retail per month
 `
 
-  const result = await model.generateContent([{ text: prompt }])
+  const result = await generateWithFallback([{ text: prompt }])
   const text = result.response.text()
   const jsonMatch = text.match(/\{[\s\S]*\}/)
 
@@ -262,9 +271,6 @@ export async function generatePricingResearch(
   const mo = Math.max(3, Math.min(48, tenureMonths || 3))
   const isB2B2C = false
 
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
   const prompt = `You are a pricing analyst for a P2P rental marketplace in India.
   
 Product: "${title}" | Retail Price: ₹${originalPrice} | Category: ${category}
@@ -281,7 +287,7 @@ Rules:
 - Include platform fees, delivery/setup charges in competitor total
 - OLX/Cashify resell data can inform the upper bound`
 
-  const result = await model.generateContent([{ text: prompt }])
+  const result = await generateWithFallback([{ text: prompt }])
   const text = result.response.text()
   const jsonMatch = text.match(/\{[\s\S]*\}/)
 
@@ -331,9 +337,6 @@ export async function estimateResellValue(
     }
   }
 
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
   const specsText = Object.entries(attributes)
     .map(([k, v]) => `${k}: ${v}`)
     .join(', ')
@@ -361,7 +364,7 @@ Rules:
 - A "Poor" condition item should retain ~15-30% of retail value
 - Factor in the specified condition and specifications explicitly`
 
-  const result = await model.generateContent([{ text: prompt }])
+  const result = await generateWithFallback([{ text: prompt }])
   const text = result.response.text()
   const jsonMatch = text.match(/\{[\s\S]*\}/)
 
@@ -390,9 +393,6 @@ export async function assessItemCondition(
     return assessFromQuestionnaireOnly(answers)
   }
 
-  const genAI = getClient()
-  const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
-
   const qText = Object.entries(answers)
     .map(([k, v]) => `${k}: ${v}`)
     .join('\n')
@@ -417,7 +417,7 @@ Rules:
     inlineData: { data: img.includes(',') ? img.split(',')[1] : img, mimeType: 'image/jpeg' },
   }))
 
-  const result = await model.generateContent([{ text: prompt }, ...imageParts])
+  const result = await generateWithFallback([{ text: prompt }, ...imageParts])
   const text = result.response.text()
   const jsonMatch = text.match(/\{[\s\S]*\}/)
 
