@@ -5,13 +5,28 @@ import { generatePricingResearch, estimateResellValue, isGeminiAvailable } from 
 const router = Router()
 
 const EMI_ANNUAL_RATE = 0.15
-const RENTER_UNDERCUT = 0.04
-const PLATFORM_TAKE = 0.15
+const PLATFORM_TAKE = 0.20
 const TYPE_A_BEAT = 1.15
 const TYPE_B_MONTHLY = 0.05
 
 const COMPETITOR_RATES: Record<string, number> = {
   Electronics: 0.060, Appliance: 0.055, Furniture: 0.040, Lifestyle: 0.075,
+}
+
+const CONDITION_RENT_FACTOR: Record<string, number> = {
+  'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65,
+}
+
+const TENURE_BANDS = [
+  { min: 1, max: 3, emiHorizon: 12 },
+  { min: 4, max: 11, emiHorizon: 18 },
+  { min: 12, max: 18, emiHorizon: 24 },
+  { min: 19, max: 24, emiHorizon: 36 },
+  { min: 25, max: 48, emiHorizon: 48 },
+]
+
+function getTenureBand(months: number) {
+  return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[2]
 }
 
 function matchCompRate(category: string): number {
@@ -25,8 +40,9 @@ function matchCompRate(category: string): number {
 
 function calcEmiMonthly(mrv: number, months: number): number {
   const n = Math.max(3, Math.min(48, months))
-  const totalPayable = mrv + mrv * EMI_ANNUAL_RATE * n / 12
-  return Math.round(totalPayable / n)
+  const band = getTenureBand(n)
+  const totalPayable = mrv + mrv * EMI_ANNUAL_RATE * band.emiHorizon / 12
+  return Math.round(totalPayable / band.emiHorizon)
 }
 
 function evaluateDuration(
@@ -34,12 +50,14 @@ function evaluateDuration(
   n: number,
   compRate: number,
   sellerType: string,
-  resellValue: number | null
+  resellValue: number | null,
+  condition = 'Good'
 ) {
   const compMonthly = Math.round(mrv * compRate)
   const emiMonthly = calcEmiMonthly(mrv, n)
   const benchmark = Math.min(compMonthly, emiMonthly)
-  const rent = Math.round(benchmark * (1 - RENTER_UNDERCUT))
+  const condFactor = CONDITION_RENT_FACTOR[condition] ?? 0.88
+  const rent = Math.round(benchmark * condFactor)
   const sellerPayout = Math.round(rent * (1 - PLATFORM_TAKE))
   const platformTake = rent - sellerPayout
 
@@ -52,7 +70,6 @@ function evaluateDuration(
     viable = sellerPayout >= need
     gap = viable ? 0 : need - sellerPayout
   } else {
-    // Type B: always viable (trust-focused, no financial floor)
     viable = true
     need = Math.round((resellValue || mrv) * TYPE_B_MONTHLY)
     gap = null
@@ -63,7 +80,7 @@ function evaluateDuration(
 
 router.post('/estimate', auth(true), async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { title, originalPrice, resellValue, sellerType, category, tenureMonths } = req.body
+    const { title, originalPrice, resellValue, sellerType, category, tenureMonths, condition } = req.body
 
     if (!title || !originalPrice) {
       return res.status(400).json({ error: 'title and originalPrice required' })
@@ -73,11 +90,12 @@ router.post('/estimate', auth(true), async (req: Request, res: Response, next: N
     const rv = resellValue || null
     const st = sellerType || 'B'
     const compRate = matchCompRate(category || 'General')
+    const cond = condition || 'Good'
 
     // Evaluate all durations 3-48
     const allDurations = []
     for (let n = 3; n <= 48; n++) {
-      allDurations.push(evaluateDuration(mrv, n, compRate, st, rv))
+      allDurations.push(evaluateDuration(mrv, n, compRate, st, rv, cond))
     }
 
     const viable = allDurations.filter(d => d.viable)
@@ -141,9 +159,9 @@ router.post('/estimate', auth(true), async (req: Request, res: Response, next: N
         high: Math.round(mrv * compRate * 1.15),
       },
       emiOptions,
-      conditionAdjustment: -RENTER_UNDERCUT,
-      marketSummary: geminiData?.marketSummary ||
-        `${currentN}mo rental: Competitor ₹${current.compMonthly.toLocaleString('en-IN')}/mo | EMI ₹${current.emiMonthly.toLocaleString('en-IN')}/mo. Lease beats min by ${(RENTER_UNDERCUT * 100).toFixed(0)}%.`,
+      conditionAdjustment: -(1 - (CONDITION_RENT_FACTOR[cond] ?? 0.88)),
+      marketSummary: res.data?.marketSummary ||
+        `${currentN}mo rental: Competitor ₹${current.compMonthly.toLocaleString('en-IN')}/mo | EMI ₹${current.emiMonthly.toLocaleString('en-IN')}/mo. Lease priced at ₹${current.rent}/mo (${cond} condition).`,
     })
   } catch (e) {
     next(e)

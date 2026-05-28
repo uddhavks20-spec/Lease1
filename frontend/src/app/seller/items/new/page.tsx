@@ -25,22 +25,48 @@ function matchCompRate(category: string): number {
 }
 
 const EMI_ANNUAL_RATE = 0.15
-const RENTER_UNDERCUT = 0.04
-const PLATFORM_TAKE = 0.15
+const PLATFORM_TAKE = 0.20
 const TYPE_A_BEAT = 1.15
 const TYPE_B_MONTHLY = 0.05
 
-function calcEmiMonthly(mrv: number, months: number): number {
-  const n = Math.max(3, Math.min(48, months))
-  const totalPayable = mrv + mrv * EMI_ANNUAL_RATE * n / 12
-  return Math.round(totalPayable / n)
+const CONDITION_UNDERCUT: Record<string, number> = {
+  'New': 0.02, 'Mint': 0.03, 'Good': 0, 'Fair': 0, 'Poor': 0,
+}
+const CONDITION_RENT_FACTOR: Record<string, number> = {
+  'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65,
 }
 
-function evaluateDuration(mrv: number, n: number, compRate: number, st: string, rv: number | null) {
+function getTenureBand(months: number) {
+  const BANDS = [
+    { min: 1, max: 3, emiHorizon: 12 },
+    { min: 4, max: 11, emiHorizon: 18 },
+    { min: 12, max: 18, emiHorizon: 24 },
+    { min: 19, max: 24, emiHorizon: 36 },
+    { min: 25, max: 48, emiHorizon: 48 },
+  ]
+  return BANDS.find(b => months >= b.min && months <= b.max) || BANDS[2]
+}
+
+function calcDepositMultiplier(mrv: number): number {
+  return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
+}
+
+function calcEmiMonthly(mrv: number, months: number): number {
+  const n = Math.max(3, Math.min(48, months))
+  const band = getTenureBand(n)
+  const totalPayable = mrv + mrv * EMI_ANNUAL_RATE * band.emiHorizon / 12
+  return Math.round(totalPayable / band.emiHorizon)
+}
+
+function evaluateDuration(mrv: number, n: number, compRate: number, st: string, rv: number | null, condition: string) {
   const compMonthly = Math.round(mrv * compRate)
   const emiMonthly = calcEmiMonthly(mrv, n)
+  const undC = CONDITION_UNDERCUT[condition] ?? 0
+  const condFactor = CONDITION_RENT_FACTOR[condition] ?? 0.88
   const benchmark = Math.min(compMonthly, emiMonthly)
-  const rent = Math.round(benchmark * (1 - RENTER_UNDERCUT))
+  const rent = Math.round(benchmark * (1 - undC) * condFactor)
+  const depositMultiplier = calcDepositMultiplier(mrv)
+  const deposit = Math.round(rent * depositMultiplier)
   const sellerPayout = Math.round(rent * (1 - PLATFORM_TAKE))
   const platformTake = rent - sellerPayout
   let viable: boolean
@@ -52,7 +78,7 @@ function evaluateDuration(mrv: number, n: number, compRate: number, st: string, 
     viable = true
     need = Math.round((rv || mrv) * TYPE_B_MONTHLY)
   }
-  return { n, rent, sellerPayout, platformTake, viable, need, benchmark, compMonthly, emiMonthly }
+  return { n, rent, sellerPayout, platformTake, viable, need, deposit, benchmark, compMonthly, emiMonthly }
 }
 
 const CONDITION_OPTIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']
@@ -149,15 +175,14 @@ export default function NewItemPage() {
     }
   }, [selectedProduct, categories])
 
-  // Background Pricing Logic
+  // Background Pricing Logic (v3)
   useEffect(() => {
     if (!form.originalPrice || !selectedProduct) return
 
     const mo = Math.max(3, Math.min(48, form.minRentDuration || 3))
     const compRate = matchCompRate(selectedProduct.category)
     const rv = sellerType === 'A' && resellValue ? resellValue : sellerType === 'B' ? Math.round(form.originalPrice * 0.5) : null
-    const durationResult = evaluateDuration(form.originalPrice, mo, compRate, sellerType, rv)
-    const deposit = durationResult.rent
+    const durationResult = evaluateDuration(form.originalPrice, mo, compRate, sellerType, rv, form.condition)
 
     let dynamicImage = selectedProduct.imageUrl
     selectedProduct.attributes.forEach(attr => {
@@ -168,11 +193,11 @@ export default function NewItemPage() {
 
     setForm(prev => ({
       ...prev,
-      depositAmount: deposit,
+      depositAmount: durationResult.deposit,
       monthlyRent: manualRentOverride || pricingEstimate ? prev.monthlyRent : durationResult.rent,
       imageUrl: dynamicImage,
     }))
-  }, [form.originalPrice, form.minRentDuration, form.subAttributes, selectedProduct, manualRentOverride, customAttributes, pricingEstimate, sellerType, resellValue])
+  }, [form.originalPrice, form.minRentDuration, form.subAttributes, selectedProduct, manualRentOverride, customAttributes, pricingEstimate, sellerType, resellValue, form.condition])
 
   // Pricing estimate via API
   useEffect(() => {
@@ -188,6 +213,7 @@ export default function NewItemPage() {
           sellerType,
           category: selectedProduct.category,
           tenureMonths: form.minRentDuration || 3,
+          condition: form.condition,
         })
         setPricingEstimate(res.data)
         if (!manualRentOverride && res.data.suggestedRent) {
@@ -767,7 +793,7 @@ export default function NewItemPage() {
                 {/* Your Earnings at Current Duration */}
                 {(() => {
                   const mo = Math.max(3, Math.min(48, form.minRentDuration || 3))
-                  const totalEarning = Math.floor(form.monthlyRent * 0.85 * mo)
+                  const totalEarning = Math.floor(form.monthlyRent * 0.80 * mo)
                   return (
                   <div className="bg-blue-50 dark:bg-blue-900/10 p-4 rounded-3xl border border-blue-200 dark:border-blue-900/30 space-y-2">
                     <div className="flex items-center gap-2 text-[10px] font-black text-blue-700 dark:text-blue-400 uppercase tracking-widest">
@@ -775,12 +801,12 @@ export default function NewItemPage() {
                     </div>
                     <div className="text-[10px] space-y-1.5">
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Your monthly payout (85%)</span>
-                        <span className="font-black text-green-600">₹{Math.floor(form.monthlyRent * 0.85).toLocaleString('en-IN')}/mo</span>
+                        <span className="text-gray-500">Your monthly payout (80%)</span>
+                        <span className="font-black text-green-600">₹{Math.floor(form.monthlyRent * 0.80).toLocaleString('en-IN')}/mo</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Platform fee (15%)</span>
-                        <span className="font-black text-gray-500">₹{Math.ceil(form.monthlyRent * 0.15).toLocaleString('en-IN')}/mo</span>
+                        <span className="text-gray-500">Platform fee (20%)</span>
+                        <span className="font-black text-gray-500">₹{Math.ceil(form.monthlyRent * 0.20).toLocaleString('en-IN')}/mo</span>
                       </div>
                       <div className="pt-1.5 border-t border-blue-200 dark:border-blue-800 flex justify-between">
                         <span className="font-black text-blue-700 dark:text-blue-400">Total you earn over {mo}mo</span>
@@ -895,7 +921,7 @@ export default function NewItemPage() {
                 <div className="flex justify-between items-center bg-blue-50 dark:bg-blue-900/10 p-5 rounded-3xl border border-blue-100 dark:border-blue-900/30">
                   <div>
                     <label className="text-[10px] font-black text-blue-900 uppercase tracking-[0.2em] block">Security Deposit</label>
-                    <p className="text-[10px] font-bold text-blue-600 uppercase mt-0.5 italic">1 Month Rent (Auto-calculated)</p>
+                    <p className="text-[10px] font-bold text-blue-600 uppercase mt-0.5 italic">MRV-based multiplier ({calcDepositMultiplier(form.originalPrice || 1).toFixed(2)}x rent)</p>
                   </div>
                   <input className="w-36 bg-white/50 dark:bg-black/20 border-none rounded-2xl px-5 py-3 text-right font-black text-2xl text-blue-900 outline-none cursor-not-allowed"
                     type="number" value={form.depositAmount || ''} disabled readOnly />
@@ -907,12 +933,12 @@ export default function NewItemPage() {
                   <Calculator className="w-3 h-3" /> Step 4: Payout Summary
                 </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  <span>Your Monthly Payout (85%)</span>
-                  <span className="text-green-600">₹{Math.floor(form.monthlyRent * 0.85).toLocaleString('en-IN')}</span>
+                  <span>Your Monthly Payout (80%)</span>
+                  <span className="text-green-600">₹{Math.floor(form.monthlyRent * 0.80).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-500">
-                  <span>Platform Fee (15%)</span>
-                  <span>₹{Math.ceil(form.monthlyRent * 0.15).toLocaleString('en-IN')}</span>
+                  <span>Platform Fee (20%)</span>
+                  <span>₹{Math.ceil(form.monthlyRent * 0.20).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
                   <span>Renter Pays (Monthly Rent)</span>
