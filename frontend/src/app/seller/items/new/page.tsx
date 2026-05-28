@@ -195,7 +195,7 @@ export default function NewItemPage() {
     setForm(prev => ({
       ...prev,
       depositAmount: durationResult.deposit,
-      monthlyRent: manualRentOverride || pricingEstimate ? prev.monthlyRent : durationResult.rent,
+      monthlyRent: manualRentOverride ? prev.monthlyRent : durationResult.rent,
       imageUrl: dynamicImage,
     }))
   }, [form.originalPrice, form.minRentDuration, form.subAttributes, selectedProduct, manualRentOverride, customAttributes, pricingEstimate, sellerType, resellValue, form.condition])
@@ -217,13 +217,6 @@ export default function NewItemPage() {
           condition: form.condition,
         })
         setPricingEstimate(res.data)
-        if (!manualRentOverride && res.data.suggestedRent) {
-          setForm(prev => ({
-            ...prev,
-            monthlyRent: res.data.suggestedRent,
-            depositAmount: res.data.suggestedRent,
-          }))
-        }
       } catch (e) {
         // Silently fail — existing pricing engine handles it
       }
@@ -818,10 +811,10 @@ export default function NewItemPage() {
                   )
                 })()}
 
-                {/* Best Duration Recommendation */}
+                {/* Duration Comparison — Alternative Tenures */}
                 <div className="bg-purple-50 dark:bg-purple-900/10 p-4 rounded-3xl border border-purple-200 dark:border-purple-900/30">
                   <div className="flex items-center gap-2 text-[10px] font-black text-purple-700 uppercase tracking-widest mb-2">
-                    <TrendingUp className="w-3 h-3" /> Best Duration Recommendation
+                    <TrendingUp className="w-3 h-3" /> Top Earning Duration (highest monthly payout)
                   </div>
                   {pricingEstimate.best ? (
                     <>

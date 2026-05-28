@@ -105,7 +105,7 @@ router.post('/estimate', auth(true), async (req: Request, res: Response, next: N
 
     const viable = allDurations.filter(d => d.viable)
     const best = viable.length > 0
-      ? viable.reduce((a, b) => a.platformTake * a.n >= b.platformTake * b.n ? a : b)
+      ? viable.reduce((a, b) => a.sellerPayout > b.sellerPayout ? a : b)
       : null
 
     // Current duration info
