@@ -169,32 +169,6 @@ export default function ItemDetailPage() {
     excellent: 'Mint', good: 'Good', fair: 'Fair', poor: 'Poor'
   }
 
-  const handleAddToCart = () => {
-    if (!item) return;
-    addToCart({
-      id: item.id,
-      title: item.title,
-      monthly_rent: renterMonthlyRent,
-      deposit_amount: dynamicDeposit,
-      image: item.images?.[0]?.image_url || '/images/placeholder.png',
-      duration: duration
-    });
-    toast.success('Added to cart');
-  };
-
-  const startRental = () => {
-    if (!item) return;
-    addToCart({
-      id: item.id,
-      title: item.title,
-      monthly_rent: renterMonthlyRent,
-      deposit_amount: dynamicDeposit,
-      image: item.images?.[0]?.image_url || "/images/placeholder.png",
-      duration: duration
-    });
-    router.push("/checkout");
-  };
-
   if (loading) return (
     <div className="container py-20 flex justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
