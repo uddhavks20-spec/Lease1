@@ -17,6 +17,7 @@ interface AvailabilityCalendarProps {
   itemId: string
   onSelect?: (start: Date, end: Date) => void
   className?: string
+  compact?: boolean
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
@@ -33,7 +34,7 @@ function isPastDate(date: Date): boolean {
   return date < today
 }
 
-export function AvailabilityCalendar({ itemId, onSelect, className }: AvailabilityCalendarProps) {
+export function AvailabilityCalendar({ itemId, onSelect, className, compact }: AvailabilityCalendarProps) {
   const [viewDate, setViewDate] = useState(new Date())
   const [ranges, setRanges] = useState<UnavailableRange[]>([])
   const [loading, setLoading] = useState(true)
@@ -60,26 +61,26 @@ export function AvailabilityCalendar({ itemId, onSelect, className }: Availabili
   for (let d = 1; d <= daysInMonth; d++) cells.push(d)
 
   return (
-    <div className={cn('bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm', className)}>
-      <div className="flex items-center justify-between mb-4">
+    <div className={cn('bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 shadow-sm', compact ? 'p-3' : 'p-4', className)}>
+      <div className={cn('flex items-center justify-between', compact ? 'mb-2' : 'mb-4')}>
         <button onClick={prevMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-          <ChevronLeft className="h-4 w-4 text-gray-500" />
+          <ChevronLeft className={compact ? 'h-3 w-3' : 'h-4 w-4'} />
         </button>
-        <span className="font-bold text-sm text-gray-900 dark:text-white">
+        <span className={cn('font-bold text-gray-900 dark:text-white', compact ? 'text-[11px]' : 'text-sm')}>
           {MONTHS[month]} {year}
         </span>
         <button onClick={nextMonth} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-          <ChevronRight className="h-4 w-4 text-gray-500" />
+          <ChevronRight className={compact ? 'h-3 w-3' : 'h-4 w-4'} />
         </button>
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5 mb-1">
+      <div className="grid grid-cols-7 gap-px mb-0.5">
         {DAYS.map(d => (
-          <div key={d} className="text-center text-[9px] font-bold text-gray-400 uppercase tracking-wider py-1">{d.slice(0, 2)}</div>
+          <div key={d} className={cn('text-center font-bold text-gray-400 uppercase tracking-wider', compact ? 'text-[7px] py-0.5' : 'text-[9px] py-1')}>{d.slice(0, 2)}</div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-0.5">
+      <div className="grid grid-cols-7 gap-px">
         {cells.map((day, i) => {
           if (day === null) return <div key={`e-${i}`} />
           const date = new Date(year, month, day)
@@ -98,7 +99,8 @@ export function AvailabilityCalendar({ itemId, onSelect, className }: Availabili
                 }
               }}
               className={cn(
-                'w-full aspect-square rounded-lg text-xs font-bold transition-all flex items-center justify-center',
+                'rounded-sm transition-all flex items-center justify-center',
+                compact ? 'h-6 w-full text-[9px]' : 'w-full aspect-square text-xs',
                 past && 'text-gray-200 dark:text-gray-700 cursor-not-allowed',
                 !past && unavailable && 'bg-red-50 dark:bg-red-900/20 text-red-400 dark:text-red-500 cursor-not-allowed',
                 !past && !unavailable && 'text-gray-700 dark:text-gray-300 hover:bg-primary-50 dark:hover:bg-primary-900/30 hover:text-primary-600 dark:hover:text-primary-400 cursor-pointer',
@@ -110,17 +112,17 @@ export function AvailabilityCalendar({ itemId, onSelect, className }: Availabili
         })}
       </div>
 
-      <div className="flex items-center gap-4 mt-4 text-[10px] font-bold text-gray-400">
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800" />
+      <div className={cn('flex items-center gap-3 font-bold text-gray-400', compact ? 'mt-3 text-[8px]' : 'mt-4 text-[10px]')}>
+        <div className="flex items-center gap-1">
+          <div className={cn('rounded-sm', compact ? 'w-2 h-2' : 'w-3 h-3', 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800')} />
           Booked
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-gray-200 dark:bg-gray-700" />
+        <div className="flex items-center gap-1">
+          <div className={cn('rounded-sm', compact ? 'w-2 h-2' : 'w-3 h-3', 'bg-gray-200 dark:bg-gray-700')} />
           Past
         </div>
-        <div className="flex items-center gap-1.5">
-          <div className="w-3 h-3 rounded-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600" />
+        <div className="flex items-center gap-1">
+          <div className={cn('rounded-sm', compact ? 'w-2 h-2' : 'w-3 h-3', 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600')} />
           Available
         </div>
       </div>

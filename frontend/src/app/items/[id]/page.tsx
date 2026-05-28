@@ -1,6 +1,7 @@
 "use client"
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import api from '@/lib/api'
@@ -14,9 +15,9 @@ import { WishlistButton } from '@/components/WishlistButton'
 import { SellerBadge } from '@/components/SellerBadge'
 import { AvailabilityCalendar } from '@/components/AvailabilityCalendar'
 
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, Shield, Clock, MapPin, Info, ArrowRight, ShoppingCart, AlertTriangle, Star, MessageSquare } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Calendar, Shield, Clock, MapPin, Info, ArrowRight, ShoppingCart, AlertTriangle, Star, MessageSquare, ChevronDown, ChevronUp, CheckCircle, Tag, Package, RefreshCw, Truck, Zap, Heart, Percent, HelpCircle } from 'lucide-react'
 
 declare global {
   interface Window {
@@ -35,10 +36,7 @@ interface Item {
   category_id: string
   sub_attributes?: Record<string, string>
   images?: Array<{ image_url: string }>
-  seller?: {
-    firstName: string
-    lastName: string
-  }
+  seller?: { firstName: string; lastName: string }
   verified_status?: string
   seller_id: string
   seller_name: string
@@ -61,7 +59,15 @@ interface Review {
   reviewer_name: string
 }
 
-// ─── v3 Pricing Engine Constants ─────────────────────────────────
+interface RelatedItem {
+  id: string
+  title: string
+  monthly_rent: number
+  deposit_amount: number
+  image_url: string
+  condition: string
+}
+
 const CONDITION_RENT_FACTOR: Record<string, number> = {
   'new': 1.00, 'mint': 0.95, 'excellent': 0.95,
   'good': 0.88, 'fair': 0.78, 'poor': 0.65,
@@ -82,15 +88,12 @@ const TENURE_BANDS = [
 function getTenureBand(months: number) {
   return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[2]
 }
-
 function calcDepositMultiplier(mrv: number): number {
   return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
 }
-
 function tenureFactor(n: number): number {
   return 0.6 + 0.4 * Math.pow(12 / Math.max(3, Math.min(48, n)), 0.5)
 }
-
 function computePricing(mrv: number, condition: string, categoryName: string, months: number) {
   const COMPETITOR_RATES: Record<string, number> = {
     'Electronics & Entertainment': 0.060, Electronics: 0.060,
@@ -104,20 +107,16 @@ function computePricing(mrv: number, condition: string, categoryName: string, mo
   const itemUndercut = CONDITION_UNDERCUT[cond] ?? 0
   const depositMultiplier = calcDepositMultiplier(mrv)
   const band = getTenureBand(months)
-
   const compMonthly = Math.round(mrv * compRate)
   const emiTotal = Math.round(mrv + mrv * EMI_ANNUAL_RATE * band.emiHorizon / 12)
   const emiMonthly = Math.round(emiTotal / band.emiHorizon)
   const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - itemUndercut))
   const leaseRent = Math.round(baselineNew * condRentFactor * tenureFactor(months))
   const deposit = Math.round(leaseRent * depositMultiplier)
-
   return { leaseRent, deposit, compMonthly, emiMonthly, band: band.id, baselineNew, tenureFactor: tenureFactor(months) }
 }
 
-// ─── Category name cache ─────────────────────────────────────────
 let categoryCache: Record<string, string> | null = null
-
 async function getCategoryName(id: string): Promise<string> {
   if (!categoryCache) {
     const res = await api.get('/categories')
@@ -125,6 +124,28 @@ async function getCategoryName(id: string): Promise<string> {
     categoryCache = Object.fromEntries(cats.map((c: any) => [c.id, c.name]))
   }
   return categoryCache[id] || 'Electronics'
+}
+
+const FAQ_ITEMS = [
+  { q: 'How does leasing work?', a: 'You pay a small monthly fee instead of buying the product upfront. Choose your tenure (3–48 months), pay the first month\'s rent + refundable security deposit, and the item is delivered to your door.' },
+  { q: 'What if the item gets damaged?', a: 'Minor wear and tear is expected and covered. For accidental damage, we offer affordable protection plans. Theft protection is included with every lease.' },
+  { q: 'Can I extend or cancel early?', a: 'Yes — extend anytime from your dashboard. Early cancellation is available with a small fee depending on how long you\'ve had the item.' },
+  { q: 'Is there a buy option?', a: 'Absolutely. After 6+ months of rental, you can purchase the item at a reduced residual value. The amount you\'ve already paid is deducted from the buy price.' },
+  { q: 'What happens at the end of the lease?', a: 'We schedule a free pickup. Just pack the item and accessories, and our delivery partner collects it from your doorstep. Your security deposit is refunded within 7 days.' },
+]
+
+const WHY_LEASE = [
+  { icon: Zap, title: 'No Upfront Cost', desc: 'Get the latest products without paying the full price upfront' },
+  { icon: RefreshCw, title: 'Free Upgrades', desc: 'Swap to newer models anytime — always stay current' },
+  { icon: Shield, title: 'Theft Protected', desc: 'Every lease includes theft protection at no extra cost' },
+  { icon: Truck, title: 'Free Delivery', desc: 'Free doorstep delivery and pickup when you return' },
+  { icon: Clock, title: 'Flexible Tenure', desc: 'Choose 3–48 months — extend or cancel as needed' },
+  { icon: Heart, title: 'Try Before Commit', desc: 'Use it for months before deciding to buy or return' },
+]
+
+const CONDITION_LABEL: Record<string, string> = {
+  'new': 'New', 'mint': 'Mint', 'excellent': 'Mint',
+  'good': 'Good', 'fair': 'Fair', 'poor': 'Poor',
 }
 
 export default function ItemDetailPage() {
@@ -138,25 +159,33 @@ export default function ItemDetailPage() {
   const [categoryName, setCategoryName] = useState('Electronics')
   const [sellerStats, setSellerStats] = useState<SellerStats | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
+  const [relatedItems, setRelatedItems] = useState<RelatedItem[]>([])
+  const [openFaq, setOpenFaq] = useState<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
     api.get(`/items/${id}`).then((res) => {
       if (cancelled) return
-      const itemData = res.data.item;
+      const itemData = res.data.item
       if (res.data.images && res.data.images.length > 0) {
-        itemData.images = res.data.images;
+        itemData.images = res.data.images
       }
-      setItem(itemData);
+      setItem(itemData)
       if (res.data.sellerStats) setSellerStats(res.data.sellerStats)
-      if (itemData.category_id) {
-        getCategoryName(itemData.category_id).then((name) => {
-          if (!cancelled) setCategoryName(name)
-        })
+      if (itemData.verified_status || itemData.sub_attributes) {
+        if (itemData.sub_attributes && typeof itemData.sub_attributes === 'object' && !Array.isArray(itemData.sub_attributes)) {
+          setItem(prev => prev ? { ...prev, sub_attributes: itemData.sub_attributes } : prev)
+        }
       }
+      if (itemData.category_id) {
+        getCategoryName(itemData.category_id).then(name => { if (!cancelled) setCategoryName(name) })
+      }
+      // Fetch other items from same seller
+      api.get(`/items?seller_id=${itemData.seller_id}&exclude=${id}&limit=6`).then(relRes => {
+        if (!cancelled) setRelatedItems(relRes.data.items || [])
+      }).catch(() => {})
     }).finally(() => { if (!cancelled) setLoading(false) })
 
-    // Fetch reviews for this item
     api.get(`/reviews/item/${id}`).then(res => {
       if (!cancelled) setReviews(res.data.reviews || [])
     }).catch(() => {})
@@ -178,52 +207,39 @@ export default function ItemDetailPage() {
   const savingsPercent = item && item.retail_price > 0 ? Math.round((savings / Number(item.retail_price)) * 100) : 0
 
   const handleAddToCart = () => {
-    if (!item) return;
-    addToCart({
-      id: item.id,
-      title: item.title,
-      monthly_rent: monthlyRent,
-      deposit_amount: depositAmount,
-      image: item.images?.[0]?.image_url || '/images/placeholder.png',
-      duration: duration
-    });
-    toast.success('Added to cart');
-  };
+    if (!item) return
+    addToCart({ id: item.id, title: item.title, monthly_rent: monthlyRent, deposit_amount: depositAmount, image: item.images?.[0]?.image_url || '/images/placeholder.png', duration })
+    toast.success('Added to cart')
+  }
 
   const startRental = () => {
-    if (!item) return;
-    addToCart({
-      id: item.id,
-      title: item.title,
-      monthly_rent: monthlyRent,
-      deposit_amount: depositAmount,
-      image: item.images?.[0]?.image_url || "/images/placeholder.png",
-      duration: duration
-    });
-    router.push("/checkout");
-  };
-
-  const conditionLabel: Record<string, string> = {
-    'new': 'New', 'mint': 'Mint', 'excellent': 'Mint',
-    'good': 'Good', 'fair': 'Fair', 'poor': 'Poor',
+    if (!item) return
+    addToCart({ id: item.id, title: item.title, monthly_rent: monthlyRent, deposit_amount: depositAmount, image: item.images?.[0]?.image_url || "/images/placeholder.png", duration })
+    router.push("/checkout")
   }
 
   if (loading) return (
     <div className="container py-20 flex justify-center">
-      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
+      <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" />
     </div>
   )
   if (!item) return <div className="container py-10">Item not found</div>
 
+  const specs = item.sub_attributes && typeof item.sub_attributes === 'object' && !Array.isArray(item.sub_attributes)
+    ? Object.entries(item.sub_attributes as Record<string, string>).filter(([, v]) => v)
+    : []
+
   return (
     <div className="container py-10">
       <LeaseGuru role="buyer" />
-      <div className="grid lg:grid-cols-12 gap-10">
-        {/* Left: Images, Seller, Description */}
-        <div className="lg:col-span-7 space-y-6">
+      <div className="grid lg:grid-cols-12 gap-8">
+        {/* ─── LEFT COLUMN ───────────────────────────────────────────── */}
+        <div className="lg:col-span-6 space-y-6">
+
+          {/* Image */}
           <div className="aspect-square bg-white dark:bg-gray-800 rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center p-10 shadow-sm relative group">
-            <Image 
-              src={item.images?.[0]?.image_url || '/images/placeholder.png'} 
+            <Image
+              src={item.images?.[0]?.image_url || '/images/placeholder.png'}
               alt={item.title}
               fill
               className="object-contain group-hover:scale-105 transition-transform duration-500 p-10"
@@ -238,78 +254,138 @@ export default function ItemDetailPage() {
             </div>
           </div>
 
-          {/* Title + Description */}
-          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
-            <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{item.title}</h1>
-            {item.description && (
-              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{item.description}</p>
-            )}
-          </div>
-
-          {/* Seller Info */}
-          <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
-            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Sold by</p>
-            <div className="flex items-center justify-between">
-              <SellerBadge
-                sellerId={item.seller_id}
-                sellerName={item.seller_name}
-                avatarUrl={item.seller_avatar}
-                avgRating={sellerStats?.avg_rating || 0}
-                reviewCount={sellerStats?.review_count || 0}
-                size="md"
-              />
-              {sellerStats && sellerStats.completed_rentals > 0 && (
-                <Badge variant="secondary" className="text-[9px] font-bold bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-none">
-                  {sellerStats.completed_rentals} rental{sellerStats.completed_rentals > 1 ? 's' : ''} completed
-                </Badge>
-              )}
-            </div>
-          </div>
-
-          {/* Availability Calendar */}
-          <AvailabilityCalendar itemId={id} />
-
-          {/* Reviews Section */}
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <Star className="h-5 w-5 text-amber-400" />
-              <h2 className="text-lg font-black text-gray-900 dark:text-white">Reviews</h2>
-              {reviews.length > 0 && (
-                <span className="text-gray-400 text-sm font-medium">({reviews.length})</span>
-              )}
-            </div>
-
-            {reviews.length === 0 ? (
-              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-10 text-center">
-                <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-gray-500 font-medium">No reviews yet for this item</p>
-                <p className="text-gray-400 text-sm mt-1">Reviews appear after rental is completed</p>
+          {/* Product Details */}
+          <Card className="border-gray-100 dark:border-gray-800">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2 mb-2">
+                {item.condition && (
+                  <Badge variant="secondary" className="text-[9px] font-bold uppercase tracking-wider bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 border-none">
+                    {CONDITION_LABEL[item.condition.toLowerCase()] || item.condition}
+                  </Badge>
+                )}
+                {item.verified_status === 'verified' && (
+                  <Badge variant="secondary" className="text-[9px] font-bold uppercase tracking-wider bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-none">
+                    <CheckCircle className="h-3 w-3 mr-1" />Verified
+                  </Badge>
+                )}
+                {categoryName && (
+                  <Badge variant="secondary" className="text-[9px] font-bold uppercase tracking-wider bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400 border-none">
+                    {categoryName}
+                  </Badge>
+                )}
               </div>
-            ) : (
-              <div className="space-y-3">
-                {reviews.map((review) => (
-                  <div key={review.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-bold text-sm text-gray-900 dark:text-white">{review.reviewer_name}</span>
-                      <span className="text-[10px] text-gray-400">{formatDate(review.created_at)}</span>
+              <CardTitle className="text-2xl font-black text-gray-900 dark:text-white">{item.title}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {item.description && (
+                <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{item.description}</p>
+              )}
+              <div className="flex items-center gap-4 mt-4 text-xs text-gray-500">
+                <div className="flex items-center gap-1.5">
+                  <Tag className="h-3.5 w-3.5" />
+                  Retail Price: <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(item.retail_price || 0)}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <Package className="h-3.5 w-3.5" />
+                  SKU: <span className="font-mono text-[10px]">{item.id.slice(0, 8)}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Specifications Stickers */}
+          {specs.length > 0 && (
+            <Card className="border-gray-100 dark:border-gray-800">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <Tag className="h-4 w-4 text-primary-500" />
+                  <CardTitle className="text-xs font-black uppercase tracking-widest">Specifications</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-2">
+                  {specs.map(([key, val]) => (
+                    <span key={key} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 dark:bg-gray-900/50 border border-gray-100 dark:border-gray-700 rounded-xl text-[11px] font-medium text-gray-700 dark:text-gray-300">
+                      <span className="text-[9px] uppercase tracking-wider text-gray-400">{key}</span>
+                      <span className="font-bold">{val}</span>
+                    </span>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Compact Availability Calendar */}
+          <Card className="border-gray-100 dark:border-gray-800">
+            <CardHeader className="pb-3 flex flex-row items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Calendar className="h-4 w-4 text-primary-500" />
+                <CardTitle className="text-xs font-black uppercase tracking-widest">Availability</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <AvailabilityCalendar itemId={id} compact />
+            </CardContent>
+          </Card>
+
+          {/* FAQ */}
+          <Card className="border-gray-100 dark:border-gray-800">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-2">
+                <HelpCircle className="h-4 w-4 text-primary-500" />
+                <CardTitle className="text-xs font-black uppercase tracking-widest">Frequently Asked Questions</CardTitle>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-1">
+              {FAQ_ITEMS.map((faq, i) => (
+                <div key={i} className="border-b border-gray-100 dark:border-gray-800 last:border-0">
+                  <button
+                    onClick={() => setOpenFaq(openFaq === i ? null : i)}
+                    className="flex items-center justify-between w-full py-3 text-left"
+                  >
+                    <span className="text-sm font-bold text-gray-900 dark:text-white">{faq.q}</span>
+                    {openFaq === i ? <ChevronUp className="h-4 w-4 text-gray-400 flex-shrink-0" /> : <ChevronDown className="h-4 w-4 text-gray-400 flex-shrink-0" />}
+                  </button>
+                  {openFaq === i && (
+                    <p className="text-sm text-gray-500 pb-3 leading-relaxed">{faq.a}</p>
+                  )}
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+
+          {/* Why Lease */}
+          <Card className="border-gray-100 dark:border-gray-800 bg-gradient-to-br from-primary-50/50 to-transparent dark:from-primary-900/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-xs font-black uppercase tracking-widest flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary-500" />
+                Why Lease with Lease1?
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-3">
+                {WHY_LEASE.map((w, i) => (
+                  <div key={i} className="flex gap-3 p-3 rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700">
+                    <div className="w-9 h-9 rounded-xl bg-primary-50 dark:bg-primary-900/20 flex items-center justify-center flex-shrink-0">
+                      <w.icon className="h-4 w-4 text-primary-600" />
                     </div>
-                    <ReviewStars rating={review.rating} size="sm" />
-                    {review.title && (
-                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mt-2">{review.title}</h4>
-                    )}
-                    {review.body && (
-                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-3">{review.body}</p>
-                    )}
+                    <div>
+                      <p className="text-[11px] font-black text-gray-900 dark:text-white">{w.title}</p>
+                      <p className="text-[9px] text-gray-500 leading-tight mt-0.5">{w.desc}</p>
+                    </div>
                   </div>
                 ))}
               </div>
-            )}
-          </div>
+            </CardContent>
+          </Card>
+
         </div>
 
-        {/* Right: Pricing Card (sticky) */}
-        <div className="lg:col-span-5">
+        {/* ─── RIGHT COLUMN ──────────────────────────────────────────── */}
+        <div className="lg:col-span-6">
           <div className="lg:sticky lg:top-24 space-y-6">
+
+            {/* Pricing Card */}
             <div className="p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 space-y-6 shadow-xl shadow-gray-200/50 dark:shadow-none">
               <div className="space-y-4">
                 {pricing && (
@@ -371,7 +447,7 @@ export default function ItemDetailPage() {
                   </div>
                   {pricing && (
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Condition ({conditionLabel[(item?.condition || 'good').toLowerCase()] || item?.condition})</span>
+                      <span className="text-gray-500">Condition ({CONDITION_LABEL[(item?.condition || 'good').toLowerCase()] || item?.condition})</span>
                       <span className="font-bold text-gray-900 dark:text-white">{Math.round((CONDITION_RENT_FACTOR[(item?.condition || 'good').toLowerCase()] || 0.88) * 100)}% of base</span>
                     </div>
                   )}
@@ -414,6 +490,94 @@ export default function ItemDetailPage() {
                 </div>
               </div>
             </div>
+
+            {/* Seller Info */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
+              <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Sold by</p>
+              <div className="flex items-center justify-between">
+                <SellerBadge
+                  sellerId={item.seller_id}
+                  sellerName={item.seller_name}
+                  avatarUrl={item.seller_avatar}
+                  avgRating={sellerStats?.avg_rating || 0}
+                  reviewCount={sellerStats?.review_count || 0}
+                  size="md"
+                />
+                {sellerStats && sellerStats.completed_rentals > 0 && (
+                  <Badge variant="secondary" className="text-[9px] font-bold bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-none">
+                    {sellerStats.completed_rentals} rental{sellerStats.completed_rentals > 1 ? 's' : ''} completed
+                  </Badge>
+                )}
+              </div>
+            </div>
+
+            {/* Other Items from this Seller */}
+            {relatedItems.length > 0 && (
+              <div className="space-y-4">
+                <div className="flex items-center gap-2">
+                  <Package className="h-4 w-4 text-primary-500" />
+                  <h2 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">More from this Seller</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  {relatedItems.map((rel) => (
+                    <Link key={rel.id} href={`/items/${rel.id}`} className="group">
+                      <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 overflow-hidden shadow-sm hover:shadow-md hover:border-primary-200 dark:hover:border-primary-800 transition-all">
+                        <div className="aspect-square relative bg-gray-50 dark:bg-gray-900/50">
+                          <Image
+                            src={rel.image_url || '/images/placeholder.png'}
+                            alt={rel.title}
+                            fill
+                            className="object-contain p-3 group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
+                        <div className="p-3">
+                          <p className="text-[11px] font-bold text-gray-900 dark:text-white truncate">{rel.title}</p>
+                          <p className="text-[10px] text-primary-600 font-black mt-1">{formatCurrency(Number(rel.monthly_rent))}/mo</p>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Reviews */}
+            <div>
+              <div className="flex items-center gap-2 mb-4">
+                <Star className="h-5 w-5 text-amber-400" />
+                <h2 className="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">Reviews</h2>
+                {reviews.length > 0 && (
+                  <span className="text-gray-400 text-sm font-medium">({reviews.length})</span>
+                )}
+              </div>
+
+              {reviews.length === 0 ? (
+                <div className="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-10 text-center">
+                  <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                  <p className="text-gray-500 font-medium">No reviews yet for this item</p>
+                  <p className="text-gray-400 text-sm mt-1">Reviews appear after rental is completed</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {reviews.map((review) => (
+                    <div key={review.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-bold text-sm text-gray-900 dark:text-white">{review.reviewer_name}</span>
+                        <span className="text-[10px] text-gray-400">{formatDate(review.created_at)}</span>
+                      </div>
+                      <ReviewStars rating={review.rating} size="sm" />
+                      {review.title && (
+                        <h4 className="font-semibold text-sm text-gray-900 dark:text-white mt-2">{review.title}</h4>
+                      )}
+                      {review.body && (
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-3">{review.body}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       </div>

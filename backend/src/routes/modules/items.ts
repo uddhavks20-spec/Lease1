@@ -6,7 +6,7 @@ const router = Router()
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { categoryId, cityId, minRent, maxRent, status, sortBy, q, limit, condition } = req.query
+    const { categoryId, cityId, minRent, maxRent, status, sortBy, q, limit, condition, sellerId, exclude } = req.query
     const conditions: string[] = []
     const params: any[] = []
     
@@ -34,6 +34,14 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
       const conditions_list = (condition as string).split(',')
       params.push(conditions_list)
       conditions.push(`condition = ANY($${params.length}::varchar[])`)
+    }
+    if (sellerId) {
+      params.push(sellerId)
+      conditions.push(`i.seller_id = $${params.length}`)
+    }
+    if (exclude) {
+      params.push(exclude)
+      conditions.push(`i.id != $${params.length}`)
     }
     if (status) {
       params.push(status)
