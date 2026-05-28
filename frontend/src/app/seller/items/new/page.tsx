@@ -51,6 +51,10 @@ function calcDepositMultiplier(mrv: number): number {
   return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
 }
 
+function tenureFactor(n: number): number {
+  return 0.6 + 0.4 * Math.pow(12 / Math.max(3, Math.min(48, n)), 0.5)
+}
+
 function calcEmiMonthly(mrv: number, months: number): number {
   const n = Math.max(3, Math.min(48, months))
   const band = getTenureBand(n)
@@ -65,7 +69,7 @@ function evaluateDuration(mrv: number, n: number, compRate: number, st: string, 
   const condFactor = CONDITION_RENT_FACTOR[condition] ?? 0.88
   const benchmark = Math.min(compMonthly, emiMonthly)
   const baseline = Math.round(benchmark * (1 - undC))
-  const rent = Math.round(baseline * condFactor)
+  const rent = Math.round(baseline * condFactor * tenureFactor(n))
   const depositMultiplier = calcDepositMultiplier(mrv)
   const deposit = Math.round(rent * depositMultiplier)
   const sellerPayout = Math.round(rent * (1 - PLATFORM_TAKE))
@@ -79,7 +83,7 @@ function evaluateDuration(mrv: number, n: number, compRate: number, st: string, 
     viable = true
     need = Math.round((rv || mrv) * TYPE_B_MONTHLY)
   }
-  return { n, rent, sellerPayout, platformTake, viable, need, deposit, benchmark, compMonthly, emiMonthly }
+  return { n, rent, sellerPayout, platformTake, viable, need, deposit, benchmark, compMonthly, emiMonthly, tenureFactor: tenureFactor(n) }
 }
 
 const CONDITION_OPTIONS = ['New', 'Mint', 'Good', 'Fair', 'Poor']

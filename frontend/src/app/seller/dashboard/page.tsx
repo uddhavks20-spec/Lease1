@@ -64,6 +64,10 @@ function calcDepositMultiplier(mrv: number): number {
   return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
 }
 
+function tenureFactor(n: number): number {
+  return 0.6 + 0.4 * Math.pow(12 / Math.max(3, Math.min(48, n)), 0.5)
+}
+
 function computePricing(mrv: number, condition: string, categoryName: string, months: number) {
   const compRate = COMPETITOR_RATES[categoryName] || 0.060
   const cond = condition.toLowerCase()
@@ -75,8 +79,8 @@ function computePricing(mrv: number, condition: string, categoryName: string, mo
   const emiTotal = Math.round(mrv + mrv * EMI_ANNUAL_RATE * band.emiHorizon / 12)
   const emiMonthly = Math.round(emiTotal / band.emiHorizon)
   const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - itemUndercut))
-  const leaseRent = Math.round(baselineNew * condRentFactor)
-  return { leaseRent, deposit: Math.round(leaseRent * depositMultiplier), compMonthly, emiMonthly }
+  const leaseRent = Math.round(baselineNew * condRentFactor * tenureFactor(months))
+  return { leaseRent, deposit: Math.round(leaseRent * depositMultiplier), compMonthly, emiMonthly, tenureFactor: tenureFactor(months) }
 }
 
 export default function SellerDashboard() {
@@ -217,12 +221,14 @@ export default function SellerDashboard() {
                         {/* Payout by tenure */}
                         {item.retail_price > 0 && (
                           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[10px] font-semibold text-gray-500">
-                            {[3, 6, 12, 24].map((n) => {
+                            {[3, 6, 12, 18, 24, 36, 48].map((n) => {
                               const p = computePricing(Number(item.retail_price), item.condition || 'good', item.category_name || 'Electronics', n)
                               return (
                                 <span key={n}>
-                                  <span className="text-gray-400">{n}mo:</span> ₹{p.leaseRent.toLocaleString('en-IN')}/mo →
-                                  <span className="text-green-600"> ₹{Math.floor(p.leaseRent * 0.80).toLocaleString('en-IN')}</span>
+                                  <span className="text-gray-400">{n}mo</span>
+                                  <span className="text-[8px] text-gray-300">×{p.tenureFactor.toFixed(2)}</span>
+                                  <span> ₹{p.leaseRent.toLocaleString('en-IN')}</span>
+                                  <span className="text-green-600">/₹{Math.floor(p.leaseRent * 0.80).toLocaleString('en-IN')}</span>
                                 </span>
                               )
                             })}

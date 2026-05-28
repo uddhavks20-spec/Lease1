@@ -67,6 +67,10 @@ export function calcDepositMultiplier(mrv: number): number {
   return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
 }
 
+export function tenureFactor(n: number): number {
+  return 0.6 + 0.4 * Math.pow(12 / Math.max(3, Math.min(48, n)), 0.5)
+}
+
 // ─── SESSION STORE ────────────────────────────────────────────────
 interface SessionState {
   role: string | null
@@ -324,6 +328,7 @@ interface PricingResult {
   platformTakePct: number
   insurancePool: number
   months: number
+  tenureFactor: number
 }
 
 function calcEffectiveTakeRate(sellerScore?: string): number {
@@ -367,8 +372,8 @@ function computePricing(
   // Step 3: Baseline New rent = min(comp, emi) × (1 - undercut)
   const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - itemUndercut))
 
-  // Step 4: Apply condition factor to get final rent
-  const leaseRent = Math.round(baselineNew * condRentFactor)
+  // Step 4: Apply condition factor × tenure factor to get final rent
+  const leaseRent = Math.round(baselineNew * condRentFactor * tenureFactor(months))
 
   // Step 5: Deposit = monthly rent × MRV-based multiplier (1.0x + 0.065 per ₹10K above ₹10K)
   const deposit = Math.round(leaseRent * depositMultiplier)
@@ -388,7 +393,7 @@ function computePricing(
     leaseRent, deposit, renterTotal, competitorTotal,
     emiTotal: emiTotalForTenure, savingVsEmi, savingVsComp,
     band: band.label, sellerPayout, platformTake: platformTakeCalc, platformTakePct: takeRate,
-    insurancePool: 0, months,
+    insurancePool: 0, months, tenureFactor: tenureFactor(months),
   }
 }
 

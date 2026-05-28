@@ -64,6 +64,10 @@ function calcDepositMultiplier(mrv: number): number {
   return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
 }
 
+function tenureFactor(n: number): number {
+  return 0.6 + 0.4 * Math.pow(12 / Math.max(3, Math.min(48, n)), 0.5)
+}
+
 function computePricing(mrv: number, condition: string, categoryName: string, months: number) {
   const COMPETITOR_RATES: Record<string, number> = {
     'Electronics & Entertainment': 0.060, Electronics: 0.060,
@@ -82,10 +86,10 @@ function computePricing(mrv: number, condition: string, categoryName: string, mo
   const emiTotal = Math.round(mrv + mrv * EMI_ANNUAL_RATE * band.emiHorizon / 12)
   const emiMonthly = Math.round(emiTotal / band.emiHorizon)
   const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - itemUndercut))
-  const leaseRent = Math.round(baselineNew * condRentFactor)
+  const leaseRent = Math.round(baselineNew * condRentFactor * tenureFactor(months))
   const deposit = Math.round(leaseRent * depositMultiplier)
 
-  return { leaseRent, deposit, compMonthly, emiMonthly, band: band.id, baselineNew }
+  return { leaseRent, deposit, compMonthly, emiMonthly, band: band.id, baselineNew, tenureFactor: tenureFactor(months) }
 }
 
 // ─── Category name cache ─────────────────────────────────────────

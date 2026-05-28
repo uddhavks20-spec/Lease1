@@ -6,6 +6,10 @@ const router = Router()
 
 const EMI_ANNUAL_RATE = 0.15
 const PLATFORM_TAKE = 0.20
+
+function tenureFactor(n: number): number {
+  return 0.6 + 0.4 * Math.pow(12 / Math.max(3, Math.min(48, n)), 0.5)
+}
 const TYPE_A_BEAT = 1.15
 const TYPE_B_MONTHLY = 0.05
 
@@ -62,7 +66,7 @@ function evaluateDuration(
   const undC = CONDITION_UNDERCUT[condition] ?? 0
   const condFactor = CONDITION_RENT_FACTOR[condition] ?? 0.88
   const baseline = Math.round(benchmark * (1 - undC))
-  const rent = Math.round(baseline * condFactor)
+  const rent = Math.round(baseline * condFactor * tenureFactor(n))
   const sellerPayout = Math.round(rent * (1 - PLATFORM_TAKE))
   const platformTake = rent - sellerPayout
 
@@ -80,7 +84,7 @@ function evaluateDuration(
     gap = null
   }
 
-  return { n, rent, sellerPayout, platformTake, viable, need, gap, benchmark, compMonthly, emiMonthly }
+  return { n, rent, sellerPayout, platformTake, viable, need, gap, benchmark, compMonthly, emiMonthly, tenureFactor: tenureFactor(n) }
 }
 
 router.post('/estimate', auth(true), async (req: Request, res: Response, next: NextFunction) => {
