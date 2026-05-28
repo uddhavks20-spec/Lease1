@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Send, Bot, Zap, MapPin, Star, AlertTriangle, ShoppingCart, LifeBuoy, BookOpen, Camera } from 'lucide-react';
+import { X, Send, Bot, Zap, MapPin, Star, AlertTriangle, ShoppingCart, LifeBuoy, BookOpen, Camera, UserCheck, ExternalLink, Package } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
@@ -62,6 +62,10 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
   const [error, setError] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [identifying, setIdentifying] = useState(false);
+  const [bookingAction, setBookingAction] = useState<any>(null);
+  const [guarantorForm, setGuarantorForm] = useState(false);
+  const [gName, setGName] = useState('');
+  const [gEmail, setGEmail] = useState('');
   const scrollRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -121,6 +125,8 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
       setCurrentIntent(data.intent);
       if (data.sessionState) setSessionState(data.sessionState);
       if (data.suggestions) setSuggestions(data.suggestions);
+      if (data.bookingAction) setBookingAction(data.bookingAction);
+      else setBookingAction(null);
 
       const delay = data.table && data.table.length > 0 ? 200 : 200;
       setTimeout(() => addBotMsg(data.reply, data.table || undefined, undefined, data.escalationTicket), delay);
@@ -155,6 +161,30 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
   const handleSuggestionClick = useCallback((text: string) => {
     sendMessage(text);
   }, [sendMessage]);
+
+  const handleGuarantorSubmit = useCallback(async () => {
+    if (!gName.trim() || !gEmail.trim() || !bookingAction) return;
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const res = await fetch(`${API_BASE}/bookings/${bookingAction.id}/guarantor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify({ name: gName, email: gEmail }),
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      addBotMsg(`✅ Guarantor **${gName}** added! Your booking is now **active**.\n\nYou can track check-ins and manage your rental from the bookings page.`);
+      setBookingAction(null);
+      setGuarantorForm(false);
+      setGName('');
+      setGEmail('');
+    } catch {
+      addBotMsg("Couldn't add guarantor — try again or add from the bookings page.");
+    }
+  }, [bookingAction, gName, gEmail, addBotMsg]);
 
   const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -346,6 +376,82 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
                     {s}
                   </button>
                 ))}
+              </div>
+            )}
+
+            {/* Booking action card */}
+            {!isTyping && bookingAction && (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl p-4 border-2 border-primary-200 dark:border-primary-800 shadow-sm space-y-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 bg-primary-100 dark:bg-primary-900/30 rounded-lg flex items-center justify-center">
+                    <Package className="w-4 h-4 text-primary-600" />
+                  </div>
+                  <div>
+                    <p className="font-black text-xs uppercase tracking-widest text-gray-900 dark:text-white">Booking Ready</p>
+                    <p className="text-[9px] font-bold text-gray-400">ID: {bookingAction.id}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-3 gap-2 text-center">
+                  <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                    <p className="text-[9px] font-black text-gray-400 uppercase">Rent</p>
+                    <p className="font-black text-sm text-gray-900 dark:text-white">₹{bookingAction.monthlyRent.toLocaleString('en-IN')}</p>
+                  </div>
+                  <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                    <p className="text-[9px] font-black text-gray-400 uppercase">Deposit</p>
+                    <p className="font-black text-sm text-gray-900 dark:text-white">₹{bookingAction.deposit.toLocaleString('en-IN')}</p>
+                  </div>
+                  <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-xl">
+                    <p className="text-[9px] font-black text-gray-400 uppercase">Tenure</p>
+                    <p className="font-black text-sm text-gray-900 dark:text-white">{bookingAction.tenureMonths}mo</p>
+                  </div>
+                </div>
+
+                {guarantorForm ? (
+                  <div className="space-y-2">
+                    <input
+                      className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Guarantor's name"
+                      value={gName}
+                      onChange={(e) => setGName(e.target.value)}
+                    />
+                    <input
+                      className="w-full bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl px-3 py-2 text-xs font-medium outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="Guarantor's email"
+                      value={gEmail}
+                      onChange={(e) => setGEmail(e.target.value)}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleGuarantorSubmit}
+                        className="flex-1 text-[10px] font-bold px-3 py-2 rounded-xl bg-primary-600 text-white hover:bg-primary-700 transition-colors flex items-center justify-center gap-1"
+                      >
+                        <UserCheck className="w-3 h-3" /> Confirm Guarantor
+                      </button>
+                      <button
+                        onClick={() => setGuarantorForm(false)}
+                        className="text-[10px] font-bold px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setGuarantorForm(true)}
+                      className="flex-1 text-[10px] font-bold px-3 py-2 rounded-xl bg-amber-600 text-white hover:bg-amber-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <UserCheck className="w-3 h-3" /> Add Guarantor
+                    </button>
+                    <a
+                      href="/bookings"
+                      target="_blank"
+                      className="flex-1 text-[10px] font-bold px-3 py-2 rounded-xl bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center justify-center gap-1"
+                    >
+                      <ExternalLink className="w-3 h-3" /> Dashboard
+                    </a>
+                  </div>
+                )}
               </div>
             )}
             {isTyping && (

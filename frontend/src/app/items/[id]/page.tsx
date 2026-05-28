@@ -1,6 +1,6 @@
 "use client"
 
-import Image from 'next/image' // Import Image
+import Image from 'next/image'
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import api from '@/lib/api'
@@ -12,7 +12,7 @@ import { LeaseGuru } from '@/components/LeaseGuru'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Shield, Clock, MapPin, Info, ArrowRight, ShoppingCart } from 'lucide-react';
+import { Calendar, Shield, Clock, MapPin, Info, ArrowRight, ShoppingCart, AlertTriangle } from 'lucide-react';
 
 declare global {
   interface Window {
@@ -27,6 +27,8 @@ interface Item {
   monthly_rent: number
   deposit_amount: number
   retail_price: number
+  condition: string
+  category_id: string
   sub_attributes?: Record<string, string>
   images?: Array<{ image_url: string }>
   seller?: {
@@ -34,6 +36,66 @@ interface Item {
     lastName: string
   }
   verified_status?: string
+}
+
+// ─── v3 Pricing Engine Constants ─────────────────────────────────
+const CONDITION_RENT_FACTOR: Record<string, number> = {
+  'excellent': 0.95, 'good': 0.88, 'fair': 0.78, 'poor': 0.65,
+}
+const CONDITION_UNDERCUT: Record<string, number> = {
+  'excellent': 0.03, 'good': 0, 'fair': 0, 'poor': 0,
+}
+const EMI_ANNUAL_RATE = 0.15
+const TENURE_BANDS = [
+  { id: 'flash', min: 1, max: 3, emiHorizon: 12 },
+  { id: 'semester', min: 4, max: 11, emiHorizon: 18 },
+  { id: 'annual', min: 12, max: 18, emiHorizon: 24 },
+  { id: 'extended', min: 19, max: 24, emiHorizon: 36 },
+  { id: 'lifecycle', min: 25, max: 48, emiHorizon: 48 },
+]
+
+function getTenureBand(months: number) {
+  return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[2]
+}
+
+function calcDepositMultiplier(mrv: number): number {
+  return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
+}
+
+function computePricing(mrv: number, condition: string, categoryName: string, months: number) {
+  const COMPETITOR_RATES: Record<string, number> = {
+    'Electronics & Entertainment': 0.060, Electronics: 0.060,
+    'Appliances & Cooling': 0.055, Appliance: 0.055,
+    'Study & Furniture': 0.040, Furniture: 0.040,
+    'Clothing & Accessories': 0.075, Lifestyle: 0.075,
+  }
+  const compRate = COMPETITOR_RATES[categoryName] || 0.060
+  const cond = condition.toLowerCase()
+  const condRentFactor = CONDITION_RENT_FACTOR[cond] || 0.88
+  const itemUndercut = CONDITION_UNDERCUT[cond] ?? 0
+  const depositMultiplier = calcDepositMultiplier(mrv)
+  const band = getTenureBand(months)
+
+  const compMonthly = Math.round(mrv * compRate)
+  const emiTotal = Math.round(mrv + mrv * EMI_ANNUAL_RATE * band.emiHorizon / 12)
+  const emiMonthly = Math.round(emiTotal / band.emiHorizon)
+  const baselineNew = Math.round(Math.min(compMonthly, emiMonthly) * (1 - itemUndercut))
+  const leaseRent = Math.round(baselineNew * condRentFactor)
+  const deposit = Math.round(leaseRent * depositMultiplier)
+
+  return { leaseRent, deposit, compMonthly, emiMonthly, band: band.id, baselineNew }
+}
+
+// ─── Category name cache ─────────────────────────────────────────
+let categoryCache: Record<string, string> | null = null
+
+async function getCategoryName(id: string): Promise<string> {
+  if (!categoryCache) {
+    const res = await api.get('/categories')
+    const cats = res.data.categories || []
+    categoryCache = Object.fromEntries(cats.map((c: any) => [c.id, c.name]))
+  }
+  return categoryCache[id] || 'Electronics'
 }
 
 export default function ItemDetailPage() {
@@ -44,39 +106,68 @@ export default function ItemDetailPage() {
   const [item, setItem] = useState<Item | null>(null)
   const [loading, setLoading] = useState(true)
   const [duration, setDuration] = useState(12)
+  const [categoryName, setCategoryName] = useState('Electronics')
 
   useEffect(() => {
-    api
-      .get(`/items/${id}`)
-      .then((res) => {
-        const itemData = res.data.item;
-        // Map images from the separate images array returned by the API
-        if (res.data.images && res.data.images.length > 0) {
-          itemData.images = res.data.images;
-        }
-        setItem(itemData);
-      })
-      .finally(() => setLoading(false))
+    let cancelled = false
+    api.get(`/items/${id}`).then((res) => {
+      if (cancelled) return
+      const itemData = res.data.item;
+      if (res.data.images && res.data.images.length > 0) {
+        itemData.images = res.data.images;
+      }
+      setItem(itemData);
+      if (itemData.category_id) {
+        getCategoryName(itemData.category_id).then((name) => {
+          if (!cancelled) setCategoryName(name)
+        })
+      }
+    }).finally(() => { if (!cancelled) setLoading(false) })
+    return () => { cancelled = true }
   }, [id])
 
-  const getTenureMultiplier = (months: number) => {
-    if (months <= 3) return 1.50; // Ultra Short-Term
-    if (months <= 11) return 1.15; // Mid-Term
-    if (months <= 18) return 1.00; // Long-Term (12-Month Anchor)
-    return 0.80; // Multi-Year
+  const pricing = item && item.retail_price > 0
+    ? computePricing(Number(item.retail_price), item.condition || 'good', categoryName, duration)
+    : null
+
+  const monthlyRent = pricing?.leaseRent ?? Number(item?.monthly_rent ?? 0)
+  const depositAmount = pricing?.deposit ?? Number(item?.deposit_amount ?? 0)
+  const totalFirstPayment = monthlyRent + depositAmount
+  const totalRentalCost = monthlyRent * duration
+  const vsCompetitor = pricing ? Math.round((pricing.compMonthly - monthlyRent) * duration) : 0
+  const vsEmi = pricing ? Math.round((pricing.emiMonthly - monthlyRent) * duration) : 0
+  const savings = item && item.retail_price > 0 ? Number(item.retail_price) - totalRentalCost : 0
+  const savingsPercent = item && item.retail_price > 0 ? Math.round((savings / Number(item.retail_price)) * 100) : 0
+
+  const handleAddToCart = () => {
+    if (!item) return;
+    addToCart({
+      id: item.id,
+      title: item.title,
+      monthly_rent: monthlyRent,
+      deposit_amount: depositAmount,
+      image: item.images?.[0]?.image_url || '/images/placeholder.png',
+      duration: duration
+    });
+    toast.success('Added to cart');
   };
 
-  const baseRent = item ? Number(item.monthly_rent) : 0;
-  const tenureMultiplier = getTenureMultiplier(duration);
-  const finalMonthlyRent = Math.round(baseRent * tenureMultiplier);
-  
-  const renterMonthlyRent = Math.round(finalMonthlyRent * 1.05); // 5% Guest Fee
-  const dynamicDeposit = finalMonthlyRent; // 1:1 Security Deposit (v3.1)
-  
-  const totalFirstPayment = renterMonthlyRent + dynamicDeposit;
-  const totalRentalCost = renterMonthlyRent * duration;
-  const savings = item && item.retail_price > 0 ? Number(item.retail_price) - totalRentalCost : 0;
-  const savingsPercent = item && item.retail_price > 0 ? Math.round((savings / Number(item.retail_price)) * 100) : 0;
+  const startRental = () => {
+    if (!item) return;
+    addToCart({
+      id: item.id,
+      title: item.title,
+      monthly_rent: monthlyRent,
+      deposit_amount: depositAmount,
+      image: item.images?.[0]?.image_url || "/images/placeholder.png",
+      duration: duration
+    });
+    router.push("/checkout");
+  };
+
+  const conditionLabel: Record<string, string> = {
+    excellent: 'Mint', good: 'Good', fair: 'Fair', poor: 'Poor'
+  }
 
   const handleAddToCart = () => {
     if (!item) return;
@@ -193,15 +284,31 @@ export default function ItemDetailPage() {
 
           <div className="p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 space-y-6 shadow-xl shadow-gray-200/50 dark:shadow-none">
             <div className="space-y-4">
-              {/* Dynamic Breakdown */}
+              {pricing && (
+                <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-2xl space-y-1.5 border border-gray-100 dark:border-gray-800">
+                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <span>vs Competitor</span>
+                    <span className={vsCompetitor > 0 ? 'text-green-600' : 'text-gray-400'}>{formatCurrency(vsCompetitor)} saved</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <span>vs EMI (15% APR)</span>
+                    <span className={vsEmi > 0 ? 'text-green-600' : 'text-gray-400'}>{formatCurrency(vsEmi)} saved</span>
+                  </div>
+                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                    <span>Deposit Multiplier</span>
+                    <span>{calcDepositMultiplier(item!.retail_price).toFixed(2)}x</span>
+                  </div>
+                </div>
+              )}
+
               <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-2xl space-y-3 border border-primary-100 dark:border-primary-900/30">
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary-900 dark:text-primary-300">Monthly Rent</span>
-                  <span className="text-xl font-black text-primary-600">{formatCurrency(renterMonthlyRent)}</span>
+                  <span className="text-xl font-black text-primary-600">{formatCurrency(monthlyRent)}</span>
                 </div>
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-widest text-primary-900 dark:text-primary-300">Security Deposit</span>
-                  <span className="text-xl font-black text-primary-600">{formatCurrency(dynamicDeposit)}</span>
+                  <span className="text-xl font-black text-primary-600">{formatCurrency(depositAmount)}</span>
                 </div>
               </div>
 
@@ -219,11 +326,7 @@ export default function ItemDetailPage() {
                       }`}
                     >
                       {m}mo
-                      <div className="text-[8px] opacity-60">
-                        {getTenureMultiplier(m) === 1.5 ? '1.5x' : 
-                         getTenureMultiplier(m) === 1.15 ? '1.15x' : 
-                         getTenureMultiplier(m) === 1.0 ? 'Base' : '0.8x'}
-                      </div>
+                      <div className="text-[8px] opacity-60">{getTenureBand(m).id}</div>
                     </button>
                   ))}
                 </div>
@@ -232,12 +335,18 @@ export default function ItemDetailPage() {
               <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Monthly Rent</span>
-                  <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(renterMonthlyRent)}/mo</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(monthlyRent)}/mo</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-500">Security Deposit (Refundable)</span>
-                  <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(dynamicDeposit)}</span>
+                  <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(depositAmount)}</span>
                 </div>
+                {pricing && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Condition ({conditionLabel[item?.condition || 'good'] || item?.condition})</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{Math.round((CONDITION_RENT_FACTOR[item?.condition || 'good'] || 0.88) * 100)}% of base</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <div className="flex items-center gap-1 text-gray-500">
                     One-time Service Fee
@@ -262,7 +371,7 @@ export default function ItemDetailPage() {
               </Button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
+            <div className="grid grid-cols-3 gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
               <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
                 <Shield className="h-4 w-4 text-green-500" />
                 Secure Payment
@@ -270,6 +379,10 @@ export default function ItemDetailPage() {
               <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
                 <Clock className="h-4 w-4 text-blue-500" />
                 72hr Delivery
+              </div>
+              <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
+                <AlertTriangle className="h-4 w-4 text-amber-500" />
+                Theft Protected
               </div>
             </div>
           </div>

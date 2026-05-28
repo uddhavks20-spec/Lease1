@@ -4,11 +4,12 @@ import { auth } from '../../middleware/auth'
 import { db } from '../../utils/db'
 import { generateChatResponse, generateGeminiPricing, assessItemCondition, isGeminiAvailable } from '../../services/gemini'
 import { checkInput, guardOutput } from '../../services/guardrails'
+import { v4 as uuidv4 } from 'uuid'
 
 const router = Router()
 
 // ─── TENURE BANDS ──────────────────────────────────────────────────
-const TENURE_BANDS = [
+export const TENURE_BANDS = [
   { id: 'flash', label: 'Flash', min: 1, max: 3, tier: 1.50, depositPct: 0.35, emiHorizon: 12 },
   { id: 'semester', label: 'Semester', min: 4, max: 11, tier: 1.10, depositPct: 0.30, emiHorizon: 18 },
   { id: 'annual', label: 'Annual', min: 12, max: 18, tier: 1.00, depositPct: 0.25, emiHorizon: 24 },
@@ -18,7 +19,7 @@ const TENURE_BANDS = [
 
 // Condition rent factor: New is baseline (best condition = highest rent)
 // Other conditions are relative to New — worse condition = cheaper rent
-const CONDITION_RENT_FACTOR: Record<string, number> = {
+export const CONDITION_RENT_FACTOR: Record<string, number> = {
   'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65,
 }
 // Competitor monthly rate as % of MRV per category
@@ -51,7 +52,7 @@ const ITEM_MRV: Record<string, number> = {
 }
 
 const EMI_ANNUAL_RATE = 0.15
-const PLATFORM_TAKE = 0.20
+export const PLATFORM_TAKE = 0.20
 
 function getTenureBand(months: number) {
   return TENURE_BANDS.find(b => months >= b.min && months <= b.max) || TENURE_BANDS[0]
@@ -62,7 +63,7 @@ function calcEmiTotal(mrv: number, months: number): number {
 }
 
 // MRV-based deposit multiplier: 1.0x for ≤₹10K, +0.065 per each additional ₹10K
-function calcDepositMultiplier(mrv: number): number {
+export function calcDepositMultiplier(mrv: number): number {
   return 1.0 + Math.max(0, Math.floor((mrv - 1) / 10000)) * 0.065
 }
 
@@ -81,6 +82,7 @@ interface SessionState {
   monthsAlreadyPaid: number
   suggestionPath: string[]
   conversationHistory: { role: 'user' | 'assistant'; text: string }[]
+  bookingCreated: boolean
 }
 
 const sessions = new Map<string, SessionState>()
@@ -93,6 +95,7 @@ function getSession(userId: string): SessionState {
       emiTemptation: false, hinglishMode: false,
       messagesInSession: 0, unresolvedQuestions: [],
       monthsAlreadyPaid: 0, suggestionPath: [], conversationHistory: [],
+      bookingCreated: false,
     })
   }
   return sessions.get(userId)!
@@ -840,6 +843,70 @@ router.post('/', auth(false), async (req: Request, res: Response, next: NextFunc
     }
 
     const session = getSession(userId)
+
+    // Check for booking intent
+    const bookingIntent = message.toLowerCase().includes('start booking')
+      || message.toLowerCase().includes('book now')
+      || message.toLowerCase().includes('confirm booking')
+
+    if (bookingIntent && session.itemOfInterest && session.tenureMonths) {
+      // Create booking from session state
+      const estimatedMRV = estimateItemMRV(session.itemOfInterest)
+      const category = 'Electronics'
+      const pricing = computePricing(estimatedMRV, 'Good', category, session.tenureMonths)
+
+      const bookingId = uuidv4().slice(0, 12)
+      const deposit = pricing.deposit
+      const booking = {
+        id: bookingId,
+        itemName: session.itemOfInterest,
+        monthlyRent: pricing.leaseRent,
+        deposit,
+        tenureMonths: session.tenureMonths,
+        status: 'pending_guarantor',
+        estimatedCompMonthly: Math.round(estimatedMRV * 0.060),
+        sellerPayout: pricing.sellerPayout,
+        platformTake: pricing.platformTake,
+        guarantorRequired: true,
+      }
+
+      const reply = `Your booking is ready!\n\n` +
+        `**${session.itemOfInterest}** for **${session.tenureMonths} months**\n` +
+        `Rent: **₹${pricing.leaseRent.toLocaleString('en-IN')}/mo**\n` +
+        `Deposit: **₹${deposit.toLocaleString('en-IN')}**\n` +
+        `Booking ID: **${bookingId}**\n\n` +
+        `To activate, add a peer guarantor (a friend who can vouch for you). ` +
+        `Share their name and email and I'll set it up.`
+
+      session.bookingCreated = true
+      session.conversationHistory.push({ role: 'user', text: message })
+      session.conversationHistory.push({ role: 'assistant', text: reply })
+      if (session.conversationHistory.length > 20) {
+        session.conversationHistory = session.conversationHistory.slice(-20)
+      }
+
+      return res.json({
+        reply,
+        intent: 'TRANSACTIONAL_SALES',
+        entities: { itemCategory: session.itemOfInterest, locationAnchor: session.campus, targetUserId: null },
+        table: null,
+        escalationTicket: null,
+        sessionState: {
+          role: session.role,
+          itemOfInterest: session.itemOfInterest,
+          tenure: session.tenureMonths,
+          budgetSignal: session.budgetSignal,
+          hinglishMode: session.hinglishMode,
+        },
+        suggestions: [
+          `My guarantor is [name] - [email]`,
+          `📊 Show pricing breakdown again`,
+          `❓ What is a peer guarantor?`,
+          `🔄 Start over`,
+        ],
+        bookingAction: booking,
+      })
+    }
 
     // Fetch listings for transactional context
     const itemCategory = session.itemOfInterest

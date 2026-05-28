@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, MapPin, ShoppingCart, User, LogOut } from 'lucide-react';
+import { Search, MapPin, ShoppingCart, User, LogOut, Package } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
@@ -81,6 +81,11 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          <Link href="/bookings">
+            <Button variant="ghost" size="icon" className="relative">
+              <Package className="h-5 w-5" />
+            </Button>
+          </Link>
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />

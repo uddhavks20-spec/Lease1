@@ -10,6 +10,7 @@ interface CartItem {
   deposit_amount: number;
   image: string;
   duration: number;
+  damageWaiver?: boolean;
 }
 
 interface CartContextType {
@@ -17,8 +18,10 @@ interface CartContextType {
   addToCart: (item: CartItem) => void;
   removeFromCart: (id: string) => void;
   clearCart: () => void;
+  updateDamageWaiver: (id: string, opted: boolean) => void;
   totalMonthlyRent: number;
   totalDeposit: number;
+  totalDamageWaiver: number;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -41,13 +44,15 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem('lease_cart', JSON.stringify(cart));
   }, [cart]);
 
+  const DAMAGE_WAIVER_FEE = 200
+
   const addToCart = (item: CartItem) => {
     const exists = cart.find((i) => i.id === item.id);
     if (exists) {
       toast.error('Item already in cart');
       return;
     }
-    setCart((prev) => [...prev, item]);
+    setCart((prev) => [...prev, { ...item, damageWaiver: false }]);
     toast.success('Added to cart');
   };
 
@@ -60,11 +65,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     setCart([]);
   };
 
+  const updateDamageWaiver = (id: string, opted: boolean) => {
+    setCart((prev) => prev.map((item) => item.id === id ? { ...item, damageWaiver: opted } : item))
+  }
+
   const totalMonthlyRent = cart.reduce((acc, item) => acc + Number(item.monthly_rent), 0);
   const totalDeposit = cart.reduce((acc, item) => acc + Number(item.deposit_amount), 0);
+  const totalDamageWaiver = cart.reduce((acc, item) => acc + (item.damageWaiver ? DAMAGE_WAIVER_FEE : 0), 0);
 
   return (
-    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, totalMonthlyRent, totalDeposit }}>
+    <CartContext.Provider value={{ cart, addToCart, removeFromCart, clearCart, updateDamageWaiver, totalMonthlyRent, totalDeposit, totalDamageWaiver }}>
       {children}
     </CartContext.Provider>
   );

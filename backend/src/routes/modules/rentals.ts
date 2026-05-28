@@ -15,10 +15,13 @@ router.post(
   async (req: Request, res: Response, next: NextFunction) => {
     try {
       const renterId = req.user!.sub
-      const { itemId, durationMonths, deliveryAddress, deliveryNotes } = req.body
+      const { itemId, durationMonths, deliveryAddress, deliveryNotes, damageWaiver, theftAcknowledged } = req.body
+      const damageWaiverOpted = !!damageWaiver
+      const damageWaiverFee = damageWaiverOpted ? 200 : 0
+      const theftAck = !!theftAcknowledged
       const allowPending = process.env.TEST_MODE === 'true'
       const itemRes = await db.query(
-        `SELECT id, seller_id, monthly_rent, deposit_amount FROM items WHERE id=$1 AND (status IN ('approved','active') OR ($2 AND status='pending'))`,
+        `SELECT id, seller_id, monthly_rent, deposit_amount, retail_price FROM items WHERE id=$1 AND (status IN ('approved','active') OR ($2 AND status='pending'))`,
         [itemId, allowPending]
       )
       if (!itemRes.rowCount) return res.status(404).json({ error: 'Item not available' })
@@ -31,9 +34,9 @@ router.post(
 
       const result = await withTransaction(async (client) => {
         const rentalIns = await client.query(
-          `INSERT INTO rentals (item_id, renter_id, duration_months, total_rent, deposit_amount, platform_commission, status, delivery_address, delivery_notes, created_by)
-           VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8,$2) RETURNING id`,
-          [itemId, renterId, durationMonths, totalRent, depositAmount, platformCommission, deliveryAddress, deliveryNotes]
+          `INSERT INTO rentals (item_id, renter_id, duration_months, total_rent, deposit_amount, platform_commission, status, delivery_address, delivery_notes, created_by, damage_waiver_opted, damage_waiver_fee, theft_protection_acknowledged)
+           VALUES ($1,$2,$3,$4,$5,$6,'pending',$7,$8,$2,$9,$10,$11) RETURNING id`,
+          [itemId, renterId, durationMonths, totalRent, depositAmount, platformCommission, deliveryAddress, deliveryNotes, damageWaiverOpted, damageWaiverFee, theftAck]
         )
         const rentalId = rentalIns.rows[0].id
 

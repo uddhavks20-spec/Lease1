@@ -15,6 +15,7 @@ import kycRouter from './modules/kyc'
 import creditRouter from './modules/credit'
 import wholesalerRouter from './modules/wholesaler'
 import chatRouter from './modules/chat'
+import bookingsRouter from './modules/bookings'
 import visionRouter from './modules/vision'
 import pricingRouter from './modules/pricing'
 
@@ -36,5 +37,6 @@ apiRouter.use('/kyc', kycRouter)
 apiRouter.use('/credit', creditRouter)
 apiRouter.use('/wholesaler', wholesalerRouter)
 apiRouter.use('/chat', chatRouter)
+apiRouter.use('/bookings', bookingsRouter)
 apiRouter.use('/vision', visionRouter)
 apiRouter.use('/pricing', pricingRouter)
