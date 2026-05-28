@@ -16,6 +16,9 @@ const COMPETITOR_RATES: Record<string, number> = {
 const CONDITION_RENT_FACTOR: Record<string, number> = {
   'New': 1.00, 'Mint': 0.95, 'Good': 0.88, 'Fair': 0.78, 'Poor': 0.65,
 }
+const CONDITION_UNDERCUT: Record<string, number> = {
+  'New': 0.02, 'Mint': 0.03, 'Good': 0, 'Fair': 0, 'Poor': 0,
+}
 
 const TENURE_BANDS = [
   { min: 1, max: 3, emiHorizon: 12 },
@@ -56,8 +59,10 @@ function evaluateDuration(
   const compMonthly = Math.round(mrv * compRate)
   const emiMonthly = calcEmiMonthly(mrv, n)
   const benchmark = Math.min(compMonthly, emiMonthly)
+  const undC = CONDITION_UNDERCUT[condition] ?? 0
   const condFactor = CONDITION_RENT_FACTOR[condition] ?? 0.88
-  const rent = Math.round(benchmark * condFactor)
+  const baseline = Math.round(benchmark * (1 - undC))
+  const rent = Math.round(baseline * condFactor)
   const sellerPayout = Math.round(rent * (1 - PLATFORM_TAKE))
   const platformTake = rent - sellerPayout
 

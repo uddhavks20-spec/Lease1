@@ -64,7 +64,8 @@ function evaluateDuration(mrv: number, n: number, compRate: number, st: string, 
   const undC = CONDITION_UNDERCUT[condition] ?? 0
   const condFactor = CONDITION_RENT_FACTOR[condition] ?? 0.88
   const benchmark = Math.min(compMonthly, emiMonthly)
-  const rent = Math.round(benchmark * (1 - undC) * condFactor)
+  const baseline = Math.round(benchmark * (1 - undC))
+  const rent = Math.round(baseline * condFactor)
   const depositMultiplier = calcDepositMultiplier(mrv)
   const deposit = Math.round(rent * depositMultiplier)
   const sellerPayout = Math.round(rent * (1 - PLATFORM_TAKE))
