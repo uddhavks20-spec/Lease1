@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, MapPin, ShoppingCart, User, LogOut, Package, Heart, Gift, AlertTriangle } from 'lucide-react';
+import { Search, MapPin, ShoppingCart, User, LogOut, Package, Heart, Gift, AlertTriangle, Bell } from 'lucide-react';
+import { NotificationPanel } from './NotificationPanel';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
@@ -133,6 +134,7 @@ export function Header() {
               <Heart className="h-5 w-5" />
             </Button>
           </Link>
+          <NotificationPanel />
           <Link href="/referrals">
             <Button variant="ghost" size="icon" className="relative">
               <Gift className="h-5 w-5" />

@@ -1,6 +1,7 @@
 import { Router } from 'express'
 import { auth, requireRoles } from '../../middleware/auth'
 import { db } from '../../utils/db'
+import { notifyUser } from '../../services/notifications'
 
 const router = Router()
 
@@ -81,6 +82,18 @@ router.patch('/kyc/:userId/approve', async (req, res, next) => {
       `UPDATE kycs SET status='approved', verified_by=$1, verified_at=NOW(), updated_at=NOW() WHERE user_id=$2`,
       [adminId, userId]
     )
+    await notifyUser({
+      userId,
+      title: '✅ KYC Verified',
+      message: 'Your KYC documents have been approved. You can now list items and rent on Lease!',
+      type: 'success',
+      actionUrl: '/seller/kyc',
+      relatedEntityType: 'kyc',
+      relatedEntityId: userId,
+      sendEmail: true,
+      emailTemplate: 'kyc',
+      emailData: { status: 'approved' },
+    })
     res.json({ ok: true })
   } catch (e) {
     next(e)
@@ -96,6 +109,18 @@ router.patch('/kyc/:userId/reject', async (req, res, next) => {
       `UPDATE kycs SET status='rejected', rejection_reason=$1, verified_by=$2, verified_at=NOW(), updated_at=NOW() WHERE user_id=$3`,
       [reason || 'Rejected', adminId, userId]
     )
+    await notifyUser({
+      userId,
+      title: '❌ KYC Update Required',
+      message: `Your KYC verification was rejected. ${reason ? `Reason: ${reason}` : 'Please resubmit your documents.'}`,
+      type: 'error',
+      actionUrl: '/seller/kyc',
+      relatedEntityType: 'kyc',
+      relatedEntityId: userId,
+      sendEmail: true,
+      emailTemplate: 'kyc',
+      emailData: { status: 'rejected', reason },
+    })
     res.json({ ok: true })
   } catch (e) {
     next(e)
@@ -263,5 +288,49 @@ router.get('/disputes', async (_req, res, next) => {
        ORDER BY d.created_at DESC`
     )).rows
     res.json({ disputes: rows })
+  } catch (e) { next(e) }
+})
+
+// ─── Phase 3: Dashboard Summary ──────────────────────────────────
+router.get('/dashboard', async (_req, res, next) => {
+  try {
+    const totalUsers = (await db.query(`SELECT COUNT(*) FROM users`)).rows[0].count
+    const totalSellers = (await db.query(`SELECT COUNT(*) FROM users WHERE role='seller'`)).rows[0].count
+    const totalRenters = (await db.query(`SELECT COUNT(*) FROM users WHERE role='renter'`)).rows[0].count
+    const totalItems = (await db.query(`SELECT COUNT(*) FROM items`)).rows[0].count
+    const activeItems = (await db.query(`SELECT COUNT(*) FROM items WHERE status IN ('approved','active')`)).rows[0].count
+    const totalRentals = (await db.query(`SELECT COUNT(*) FROM rentals`)).rows[0].count
+    const activeRentals = (await db.query(`SELECT COUNT(*) FROM rentals WHERE status='active'`)).rows[0].count
+    const revenue = (await db.query(`SELECT COALESCE(SUM(amount),0) FROM payments WHERE status='completed'`)).rows[0].sum
+    const commission = (await db.query(`SELECT COALESCE(SUM(platform_commission),0) FROM rentals WHERE status IN ('active','completed')`)).rows[0].sum
+    const pendingItems = (await db.query(`SELECT COUNT(*) FROM items WHERE status='pending'`)).rows[0].count
+    const pendingKycs = (await db.query(`SELECT COUNT(*) FROM kycs WHERE status='pending'`)).rows[0].count
+    const openDisputes = (await db.query(`SELECT COUNT(*) FROM disputes WHERE status NOT IN ('resolved')`)).rows[0].count
+    const totalReviews = (await db.query(`SELECT COUNT(*) FROM reviews`)).rows[0].count
+    const totalCities = (await db.query(`SELECT COUNT(*) FROM cities WHERE is_active=true`)).rows[0].count
+    const totalCoupons = (await db.query(`SELECT COUNT(*) FROM coupons`)).rows[0].count
+    const totalReferrals = (await db.query(`SELECT COUNT(*) FROM referrals`)).rows[0].count
+
+    // Monthly revenue chart data (last 6 months)
+    const monthlyRevenue = (await db.query(
+      `SELECT DATE_TRUNC('month', created_at) as month, COALESCE(SUM(amount),0) as revenue
+       FROM payments WHERE status='completed' AND created_at > NOW() - INTERVAL '6 months'
+       GROUP BY month ORDER BY month`
+    )).rows
+
+    // Recent signups
+    const recentUsers = (await db.query(
+      `SELECT id, email, role, created_at FROM users ORDER BY created_at DESC LIMIT 10`
+    )).rows
+
+    res.json({
+      totalUsers, totalSellers, totalRenters,
+      totalItems, activeItems,
+      totalRentals, activeRentals,
+      revenue, commission,
+      pendingItems, pendingKycs, openDisputes,
+      totalReviews, totalCities, totalCoupons, totalReferrals,
+      monthlyRevenue, recentUsers,
+    })
   } catch (e) { next(e) }
 })

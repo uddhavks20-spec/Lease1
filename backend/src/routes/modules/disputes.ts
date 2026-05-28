@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { body, param } from 'express-validator'
 import { auth } from '../../middleware/auth'
 import { db } from '../../utils/db'
+import { notifyUser } from '../../services/notifications'
 
 const router = Router()
 
@@ -54,6 +55,25 @@ router.post(
          VALUES ($1,$2,$3,$4,$5,$6,'open') RETURNING id`,
         [rentalId, userId, type, description, title || type, amount_involved]
       )
+
+      // Notify rental participants
+      const rentalInfo = (await db.query(`SELECT r.renter_id, i.seller_id, i.title as item_title FROM rentals r JOIN items i ON r.item_id=i.id WHERE r.id=$1`, [rentalId])).rows[0]
+      if (rentalInfo) {
+        const otherPartyId = rentalInfo.renter_id === userId ? rentalInfo.seller_id : rentalInfo.renter_id
+        await notifyUser({
+          userId: otherPartyId,
+          title: '⚠️ Dispute Raised',
+          message: `A dispute has been raised on rental: ${title || type}`,
+          type: 'warning',
+          actionUrl: '/disputes',
+          relatedEntityType: 'dispute',
+          relatedEntityId: result.rows[0].id,
+          sendEmail: true,
+          emailTemplate: 'disputeMessage',
+          emailData: { disputeTitle: title || type, message: description.slice(0, 100), disputeId: result.rows[0].id },
+        })
+      }
+
       res.status(201).json({ id: result.rows[0].id })
     } catch (e) {
       next(e)
@@ -116,6 +136,28 @@ router.post(
       )
       await db.query(`UPDATE disputes SET updated_by=$1 WHERE id=$2`, [userId, req.params.id])
 
+      // Notify other party
+      const disputeInfo = (await db.query(
+        `SELECT d.raised_by, r.renter_id, i.seller_id, d.title, d.id
+         FROM disputes d JOIN rentals r ON d.rental_id=r.id JOIN items i ON r.item_id=i.id
+         WHERE d.id=$1`, [req.params.id]
+      )).rows[0]
+      if (disputeInfo) {
+        const otherPartyId = disputeInfo.raised_by === userId ? (disputeInfo.renter_id === userId ? disputeInfo.seller_id : disputeInfo.renter_id) : disputeInfo.raised_by
+        await notifyUser({
+          userId: otherPartyId,
+          title: '💬 New Message on Dispute',
+          message: message.slice(0, 120),
+          type: 'info',
+          actionUrl: '/disputes',
+          relatedEntityType: 'dispute',
+          relatedEntityId: req.params.id,
+          sendEmail: true,
+          emailTemplate: 'disputeMessage',
+          emailData: { disputeTitle: disputeInfo.title, message: message.slice(0, 100), disputeId: req.params.id },
+        })
+      }
+
       res.status(201).json({ ok: true })
     } catch (e) {
       next(e)
@@ -138,6 +180,29 @@ router.patch(
         `UPDATE disputes SET status=$1, resolution=COALESCE($2, resolution), updated_by=$3, resolved_at=CASE WHEN $1 IN ('resolved') THEN NOW() ELSE resolved_at END WHERE id=$4`,
         [status, resolution, userId, req.params.id]
       )
+
+      // Notify the other party
+      const disputeParties = (await db.query(
+        `SELECT d.raised_by, r.renter_id, i.seller_id
+         FROM disputes d JOIN rentals r ON d.rental_id=r.id JOIN items i ON r.item_id=i.id
+         WHERE d.id=$1`, [req.params.id]
+      )).rows[0]
+      if (disputeParties) {
+        const notifyIds = [disputeParties.raised_by, disputeParties.renter_id, disputeParties.seller_id]
+          .filter((id, idx, arr) => id !== userId && arr.indexOf(id) === idx)
+        for (const nid of notifyIds) {
+          await notifyUser({
+            userId: nid,
+            title: status === 'resolved' ? '✅ Dispute Resolved' : status === 'escalated' ? '🔺 Dispute Escalated' : '🔍 Dispute Under Review',
+            message: `Status updated to ${status}.${resolution ? ` Resolution: ${resolution}` : ''}`,
+            type: status === 'resolved' ? 'success' : 'info',
+            actionUrl: '/disputes',
+            relatedEntityType: 'dispute',
+            relatedEntityId: req.params.id,
+          })
+        }
+      }
+
       res.json({ ok: true })
     } catch (e) {
       next(e)

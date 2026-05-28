@@ -89,3 +89,21 @@ FROM users
 WHERE id NOT IN (SELECT user_id FROM referral_codes)
 ON CONFLICT (user_id) DO NOTHING;
 
+-- ─── 10. SEED ADDITIONAL CITIES ───────────────────────────────────
+INSERT INTO cities (name, state, country, is_active, colleges, estimated_users) VALUES
+  ('Lucknow', 'Uttar Pradesh', 'India', true, ARRAY['IIT Kanpur', 'Lucknow University', 'Amity University Lucknow'], 50000),
+  ('Delhi', 'Delhi', 'India', true, ARRAY['Delhi University', 'IIT Delhi', 'JNU', 'NSIT'], 200000),
+  ('Mumbai', 'Maharashtra', 'India', true, ARRAY['IIT Bombay', 'Mumbai University', 'NMIMS', 'SP Jain'], 250000),
+  ('Bangalore', 'Karnataka', 'India', true, ARRAY['IISc', 'Christ University', 'RV College', 'PES University'], 300000),
+  ('Pune', 'Maharashtra', 'India', true, ARRAY['COEP', 'PICT', 'Symbiosis', 'MIT WPU'], 150000),
+  ('Hyderabad', 'Telangana', 'India', true, ARRAY['IIT Hyderabad', 'OU', 'BITS Hyderabad', 'IIIT Hyderabad'], 180000),
+  ('Chennai', 'Tamil Nadu', 'India', true, ARRAY['IIT Madras', 'Anna University', 'SRM', 'VIT Chennai'], 200000),
+  ('Kolkata', 'West Bengal', 'India', true, ARRAY['IIT Kharagpur', 'Jadavpur University', 'Calcutta University'], 120000),
+  ('Jaipur', 'Rajasthan', 'India', true, ARRAY['MNIT Jaipur', 'Jaipur University', 'Amity Jaipur'], 60000),
+  ('Ahmedabad', 'Gujarat', 'India', true, ARRAY['NID', 'CEPT', 'Ahmedabad University', 'IIM Ahmedabad'], 80000),
+  ('Chandigarh', 'Chandigarh', 'India', true, ARRAY['PU Chandigarh', 'PEC', 'Chandigarh University'], 40000),
+  ('Indore', 'Madhya Pradesh', 'India', true, ARRAY['IIT Indore', 'DAVV', 'IIITM'], 30000)
+ON CONFLICT (name) DO NOTHING;
+
+UPDATE cities SET coverage_area = colleges[1] || ' & surrounding areas' WHERE coverage_area IS NULL;
+

@@ -3,6 +3,7 @@ import { body } from 'express-validator'
 import { auth, requireRoles } from '../../middleware/auth'
 import { db, withTransaction } from '../../utils/db'
 import { razorpay, calculateCommission } from '../../services/payments'
+import { notifyUser } from '../../services/notifications'
 
 const router = Router()
 
@@ -247,6 +248,39 @@ router.patch('/:id/status', auth(true), async (req: Request, res: Response, next
        VALUES ($1, $2, $3, $4, $5)`,
       [id, rental.status, status, userId, notes || null]
     )
+
+    // Get item title for notifications
+    const itemRes = await db.query(`SELECT i.title FROM rentals r JOIN items i ON r.item_id=i.id WHERE r.id=$1`, [id])
+    const itemTitle = itemRes.rows[0]?.title || 'Item'
+
+    // Notify involved users
+    const statusEmoji: Record<string, string> = { approved: '✅', rejected: '❌', scheduled: '📦', active: '🚀', completed: '🎉', cancelled: '🚫', disputed: '⚠️' }
+    const statusMessages: Record<string, string> = {
+      approved: 'Your rental has been approved!', rejected: 'Your rental was rejected.',
+      scheduled: 'Your rental is scheduled for delivery!', active: 'Your rental is now active!',
+      completed: 'Your rental has been completed. Thank you!', cancelled: 'Your rental was cancelled.',
+      disputed: 'A dispute has been raised on your rental.',
+    }
+    const emoji = statusEmoji[status] || '📋'
+    const msg = statusMessages[status] || `Status changed to ${status}`
+
+    const notifyTargets = [rental.renter_id]
+    if (rental.seller_id !== rental.renter_id) notifyTargets.push(rental.seller_id)
+
+    for (const targetId of notifyTargets) {
+      await notifyUser({
+        userId: targetId,
+        title: `${emoji} Rental ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        message: `${itemTitle}: ${msg}`,
+        type: status === 'completed' || status === 'approved' ? 'success' : status === 'rejected' || status === 'cancelled' ? 'error' : 'info',
+        actionUrl: `/renter/rentals/${id}`,
+        relatedEntityType: 'rental',
+        relatedEntityId: id,
+        sendEmail: true,
+        emailTemplate: 'rentalStatus',
+        emailData: { prevStatus: rental.status, newStatus: status, itemTitle, rentalId: id },
+      })
+    }
 
     res.json({ ok: true, status })
   } catch (e) {

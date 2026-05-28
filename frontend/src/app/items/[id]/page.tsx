@@ -219,8 +219,8 @@ export default function ItemDetailPage() {
     <div className="container py-10">
       <LeaseGuru role="buyer" />
       <div className="grid lg:grid-cols-12 gap-10">
-        {/* Left: Images */}
-        <div className="lg:col-span-7 space-y-4">
+        {/* Left: Images, Seller, Description */}
+        <div className="lg:col-span-7 space-y-6">
           <div className="aspect-square bg-white dark:bg-gray-800 rounded-3xl overflow-hidden border border-gray-100 dark:border-gray-700 flex items-center justify-center p-10 shadow-sm relative group">
             <Image 
               src={item.images?.[0]?.image_url || '/images/placeholder.png'} 
@@ -238,8 +238,13 @@ export default function ItemDetailPage() {
             </div>
           </div>
 
-          {/* Availability Calendar */}
-          <AvailabilityCalendar itemId={id} className="mb-6" />
+          {/* Title + Description */}
+          <div className="bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 p-6 shadow-sm">
+            <h1 className="text-2xl font-black text-gray-900 dark:text-white mb-2">{item.title}</h1>
+            {item.description && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed whitespace-pre-line">{item.description}</p>
+            )}
+          </div>
 
           {/* Seller Info */}
           <div className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
@@ -261,148 +266,156 @@ export default function ItemDetailPage() {
             </div>
           </div>
 
-          <div className="p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 space-y-6 shadow-xl shadow-gray-200/50 dark:shadow-none">
-            <div className="space-y-4">
-              {pricing && (
-                <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-2xl space-y-1.5 border border-gray-100 dark:border-gray-800">
-                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    <span>vs Competitor</span>
-                    <span className={vsCompetitor > 0 ? 'text-green-600' : 'text-gray-400'}>{formatCurrency(vsCompetitor)} saved</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    <span>vs EMI (15% APR)</span>
-                    <span className={vsEmi > 0 ? 'text-green-600' : 'text-gray-400'}>{formatCurrency(vsEmi)} saved</span>
-                  </div>
-                  <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-                    <span>Deposit Multiplier</span>
-                    <span>{calcDepositMultiplier(item!.retail_price).toFixed(2)}x</span>
-                  </div>
-                </div>
+          {/* Availability Calendar */}
+          <AvailabilityCalendar itemId={id} />
+
+          {/* Reviews Section */}
+          <div>
+            <div className="flex items-center gap-2 mb-4">
+              <Star className="h-5 w-5 text-amber-400" />
+              <h2 className="text-lg font-black text-gray-900 dark:text-white">Reviews</h2>
+              {reviews.length > 0 && (
+                <span className="text-gray-400 text-sm font-medium">({reviews.length})</span>
               )}
+            </div>
 
-              <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-2xl space-y-3 border border-primary-100 dark:border-primary-900/30">
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary-900 dark:text-primary-300">Monthly Rent</span>
-                  <span className="text-xl font-black text-primary-600">{formatCurrency(monthlyRent)}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-widest text-primary-900 dark:text-primary-300">Security Deposit</span>
-                  <span className="text-xl font-black text-primary-600">{formatCurrency(depositAmount)}</span>
-                </div>
+            {reviews.length === 0 ? (
+              <div className="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-10 text-center">
+                <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-gray-500 font-medium">No reviews yet for this item</p>
+                <p className="text-gray-400 text-sm mt-1">Reviews appear after rental is completed</p>
               </div>
+            ) : (
+              <div className="space-y-3">
+                {reviews.map((review) => (
+                  <div key={review.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-4 shadow-sm">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-bold text-sm text-gray-900 dark:text-white">{review.reviewer_name}</span>
+                      <span className="text-[10px] text-gray-400">{formatDate(review.created_at)}</span>
+                    </div>
+                    <ReviewStars rating={review.rating} size="sm" />
+                    {review.title && (
+                      <h4 className="font-semibold text-sm text-gray-900 dark:text-white mt-2">{review.title}</h4>
+                    )}
+                    {review.body && (
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-3">{review.body}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
+        {/* Right: Pricing Card (sticky) */}
+        <div className="lg:col-span-5">
+          <div className="lg:sticky lg:top-24 space-y-6">
+            <div className="p-6 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 space-y-6 shadow-xl shadow-gray-200/50 dark:shadow-none">
               <div className="space-y-4">
-                <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Tenure</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[3, 6, 12, 24].map((m) => (
-                    <button
-                      key={m}
-                      onClick={() => setDuration(m)}
-                      className={`py-3 rounded-xl text-xs font-black transition-all border-2 ${
-                        duration === m
-                          ? "bg-gray-900 border-gray-900 text-white shadow-xl"
-                          : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800 text-gray-500 hover:border-gray-900"
-                      }`}
-                    >
-                      {m}mo
-                      <div className="text-[8px] opacity-60">{getTenureBand(m).id}</div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Monthly Rent</span>
-                  <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(monthlyRent)}/mo</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-500">Security Deposit (Refundable)</span>
-                  <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(depositAmount)}</span>
-                </div>
                 {pricing && (
+                  <div className="bg-gray-50 dark:bg-gray-900/50 p-3 rounded-2xl space-y-1.5 border border-gray-100 dark:border-gray-800">
+                    <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      <span>vs Competitor</span>
+                      <span className={vsCompetitor > 0 ? 'text-green-600' : 'text-gray-400'}>{formatCurrency(vsCompetitor)} saved</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      <span>vs EMI (15% APR)</span>
+                      <span className={vsEmi > 0 ? 'text-green-600' : 'text-gray-400'}>{formatCurrency(vsEmi)} saved</span>
+                    </div>
+                    <div className="flex justify-between text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+                      <span>Deposit Multiplier</span>
+                      <span>{calcDepositMultiplier(item!.retail_price).toFixed(2)}x</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-2xl space-y-3 border border-primary-100 dark:border-primary-900/30">
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary-900 dark:text-primary-300">Monthly Rent</span>
+                    <span className="text-xl font-black text-primary-600">{formatCurrency(monthlyRent)}</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-[10px] font-black uppercase tracking-widest text-primary-900 dark:text-primary-300">Security Deposit</span>
+                    <span className="text-xl font-black text-primary-600">{formatCurrency(depositAmount)}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <label className="text-xs font-bold text-gray-500 uppercase tracking-widest">Select Tenure</label>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[3, 6, 12, 24].map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setDuration(m)}
+                        className={`py-3 rounded-xl text-xs font-black transition-all border-2 ${
+                          duration === m
+                            ? "bg-gray-900 border-gray-900 text-white shadow-xl"
+                            : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-800 text-gray-500 hover:border-gray-900"
+                        }`}
+                      >
+                        {m}mo
+                        <div className="text-[8px] opacity-60">{getTenureBand(m).id}</div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-4 border-t border-gray-100 dark:border-gray-800">
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-500">Condition ({conditionLabel[(item?.condition || 'good').toLowerCase()] || item?.condition})</span>
-                    <span className="font-bold text-gray-900 dark:text-white">{Math.round((CONDITION_RENT_FACTOR[(item?.condition || 'good').toLowerCase()] || 0.88) * 100)}% of base</span>
+                    <span className="text-gray-500">Monthly Rent</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(monthlyRent)}/mo</span>
                   </div>
-                )}
-                <div className="flex justify-between text-sm">
-                  <div className="flex items-center gap-1 text-gray-500">
-                    One-time Service Fee
-                    <Info className="h-3 w-3 cursor-help" />
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-500">Security Deposit (Refundable)</span>
+                    <span className="font-bold text-gray-900 dark:text-white">{formatCurrency(depositAmount)}</span>
                   </div>
-                  <span className="font-bold text-green-600">FREE</span>
+                  {pricing && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-500">Condition ({conditionLabel[(item?.condition || 'good').toLowerCase()] || item?.condition})</span>
+                      <span className="font-bold text-gray-900 dark:text-white">{Math.round((CONDITION_RENT_FACTOR[(item?.condition || 'good').toLowerCase()] || 0.88) * 100)}% of base</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <div className="flex items-center gap-1 text-gray-500">
+                      One-time Service Fee
+                      <Info className="h-3 w-3 cursor-help" />
+                    </div>
+                    <span className="font-bold text-green-600">FREE</span>
+                  </div>
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                    <div className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tighter">Initial Payment</div>
+                    <div className="text-2xl font-black text-primary-600">{formatCurrency(totalFirstPayment)}</div>
+                  </div>
                 </div>
-                <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                  <div className="text-sm font-black text-gray-900 dark:text-white uppercase tracking-tighter">Initial Payment</div>
-                  <div className="text-2xl font-black text-primary-600">{formatCurrency(totalFirstPayment)}</div>
+              </div>
+
+              <div className="flex flex-col gap-3 pt-2">
+                <Button onClick={startRental} className="w-full h-14 text-lg font-black shadow-lg shadow-primary-200 uppercase tracking-widest">
+                  Rent Now
+                </Button>
+                <Button onClick={handleAddToCart} variant="outline" className="w-full h-12 font-bold border-2 border-primary-600 text-primary-600 hover:bg-primary-50">
+                  <ShoppingCart className="h-4 w-4 mr-2" />
+                  Add to Cart
+                </Button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
+                <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
+                  <Shield className="h-4 w-4 text-green-500" />
+                  Secure Payment
                 </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col gap-3 pt-2">
-              <Button onClick={startRental} className="w-full h-14 text-lg font-black shadow-lg shadow-primary-200 uppercase tracking-widest">
-                Rent Now
-              </Button>
-              <Button onClick={handleAddToCart} variant="outline" className="w-full h-12 font-bold border-2 border-primary-600 text-primary-600 hover:bg-primary-50">
-                <ShoppingCart className="h-4 w-4 mr-2" />
-                Add to Cart
-              </Button>
-            </div>
-
-            <div className="grid grid-cols-3 gap-3 text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center">
-              <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
-                <Shield className="h-4 w-4 text-green-500" />
-                Secure Payment
-              </div>
-              <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
-                <Clock className="h-4 w-4 text-blue-500" />
-                72hr Delivery
-              </div>
-              <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
-                <AlertTriangle className="h-4 w-4 text-amber-500" />
-                Theft Protected
+                <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
+                  <Clock className="h-4 w-4 text-blue-500" />
+                  72hr Delivery
+                </div>
+                <div className="flex flex-col items-center gap-1 p-2 rounded-xl bg-gray-50 dark:bg-gray-900/50">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  Theft Protected
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
-
-      {/* Reviews Section */}
-      <div className="mt-12">
-        <div className="flex items-center gap-2 mb-6">
-          <Star className="h-5 w-5 text-amber-400" />
-          <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Reviews</h2>
-          {reviews.length > 0 && (
-            <span className="text-gray-400 text-sm font-medium">({reviews.length})</span>
-          )}
-        </div>
-
-        {reviews.length === 0 ? (
-          <div className="bg-gray-50 dark:bg-gray-900/50 rounded-3xl p-10 text-center">
-            <MessageSquare className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500 font-medium">No reviews yet for this item</p>
-            <p className="text-gray-400 text-sm mt-1">Reviews appear after rental is completed</p>
-          </div>
-        ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {reviews.map((review) => (
-              <div key={review.id} className="bg-white dark:bg-gray-800 rounded-2xl border border-gray-100 dark:border-gray-700 p-5 shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="font-bold text-sm text-gray-900 dark:text-white">{review.reviewer_name}</span>
-                  <span className="text-[10px] text-gray-400">{formatDate(review.created_at)}</span>
-                </div>
-                <ReviewStars rating={review.rating} size="sm" />
-                {review.title && (
-                  <h4 className="font-semibold text-sm text-gray-900 dark:text-white mt-2">{review.title}</h4>
-                )}
-                {review.body && (
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 line-clamp-3">{review.body}</p>
-                )}
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </div>
   )

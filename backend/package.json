@@ -12,6 +12,7 @@
     "e2e": "cross-env TEST_MODE=true API_BASE_URL=http://localhost:4000/api ts-node ./scripts/e2e.ts"
   },
   "dependencies": {
+    "@google/generative-ai": "^0.21.0",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
@@ -23,8 +24,8 @@
     "morgan": "^1.10.0",
     "pg": "^8.11.3",
     "pg-format": "^1.0.4",
-    "@google/generative-ai": "^0.21.0",
     "razorpay": "^2.9.5",
+    "resend": "^6.12.4",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
