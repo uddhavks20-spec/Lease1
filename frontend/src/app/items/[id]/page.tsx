@@ -17,7 +17,8 @@ import { AvailabilityCalendar } from '@/components/AvailabilityCalendar'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Calendar, Shield, Clock, MapPin, Info, ArrowRight, ShoppingCart, AlertTriangle, Star, MessageSquare, ChevronDown, ChevronUp, CheckCircle, Tag, Package, RefreshCw, Truck, Zap, Heart, Percent, HelpCircle } from 'lucide-react'
+import { Calendar, Shield, Clock, MapPin, Info, ArrowRight, ShoppingCart, AlertTriangle, Star, MessageSquare, ChevronDown, ChevronUp, CheckCircle, Tag, Package, RefreshCw, Truck, Zap, Heart, Percent, HelpCircle, Sparkles } from 'lucide-react'
+import { PersonalityBadge, PersonalityRibbon } from '@/components/PersonalityBadge'
 
 declare global {
   interface Window {
@@ -42,6 +43,9 @@ interface Item {
   seller_name: string
   seller_avatar?: string
   seller_display_name?: string
+  seller_personality?: string
+  seller_personality_answers?: Record<string, any>
+  personality_match?: number
 }
 
 interface SellerStats {
@@ -146,6 +150,24 @@ const WHY_LEASE = [
 const CONDITION_LABEL: Record<string, string> = {
   'new': 'New', 'mint': 'Mint', 'excellent': 'Mint',
   'good': 'Good', 'fair': 'Fair', 'poor': 'Poor',
+}
+
+const SELLER_PERSONALITY_INFO: Record<string, { name: string; motto: string; icon: string }> = {
+  declutterer: { name: 'The Declutterer', motto: 'Dusting it off for cash', icon: '🧹' },
+  upgrader:    { name: 'The Upgrader',    motto: 'Rent this, fund the next', icon: '⬆️' },
+  collector:   { name: 'The Collector',   motto: 'My collection, your experience', icon: '🎨' },
+  mogul:       { name: 'The Mogul',       motto: 'Building a rental empire', icon: '💼' },
+  hobbyist:    { name: 'The Hobbyist',    motto: 'Share when I don\'t use', icon: '🎸' },
+  seasonal:    { name: 'The Seasonal',    motto: 'Ride the wave', icon: '🎪' },
+}
+
+const RENTER_PERSONALITY_INFO: Record<string, { name: string; motto: string; icon: string }> = {
+  saver:      { name: 'The Saver',      motto: 'Best value over time', icon: '🏦' },
+  trialler:   { name: 'The Trialler',   motto: 'Try before I buy', icon: '🧪' },
+  flexer:     { name: 'The Flexer',     motto: 'On a budget, need it now', icon: '💪' },
+  switcher:   { name: 'The Switcher',   motto: 'Always want the latest', icon: '🔄' },
+  missionary: { name: 'The Missionary', motto: 'Need it for a specific purpose', icon: '🎯' },
+  aspirer:    { name: 'The Aspirer',    motto: 'Live the luxury life', icon: '✨' },
 }
 
 export default function ItemDetailPage() {
@@ -379,6 +401,9 @@ export default function ItemDetailPage() {
             </CardContent>
           </Card>
 
+          {/* Renter Personality */}
+          <RenterPersonalitySection />
+
         </div>
 
         {/* ─── RIGHT COLUMN ──────────────────────────────────────────── */}
@@ -509,6 +534,33 @@ export default function ItemDetailPage() {
                   </Badge>
                 )}
               </div>
+              {/* Seller Personality */}
+              {item.seller_personality && SELLER_PERSONALITY_INFO[item.seller_personality] && (
+                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-800 flex items-center gap-4">
+                  <PersonalityBadge
+                    type={item.seller_personality}
+                    info={{ id: item.seller_personality, ...SELLER_PERSONALITY_INFO[item.seller_personality] }}
+                    size="sm"
+                    showRibbon
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-black uppercase tracking-widest text-gray-400">Seller Style</p>
+                    <p className="text-sm font-bold text-gray-900 dark:text-white">{SELLER_PERSONALITY_INFO[item.seller_personality].name}</p>
+                    <p className="text-[10px] text-gray-400 italic">"{SELLER_PERSONALITY_INFO[item.seller_personality].motto}"</p>
+                    {item.personality_match != null && (
+                      <div className={`inline-block mt-1 text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full ${
+                        item.personality_match >= 3 ? 'bg-green-50 text-green-700 dark:bg-green-900/20 dark:text-green-400' :
+                        item.personality_match >= 2 ? 'bg-blue-50 text-blue-700 dark:bg-blue-900/20 dark:text-blue-400' :
+                        'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-400'
+                      }`}>
+                        {item.personality_match >= 3 ? '★ Perfect Match for You' :
+                         item.personality_match >= 2 ? '→ Good Fit for You' :
+                         item.personality_match >= 1 ? '· Fair Match' : '✕ Not Your Style'}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Other Items from this Seller */}
@@ -582,5 +634,56 @@ export default function ItemDetailPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+function RenterPersonalitySection() {
+  const [renterInfo, setRenterInfo] = useState<{ id: string; name: string; motto: string; icon: string } | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get('/personality/renter').then(res => {
+      if (res.data?.personality && RENTER_PERSONALITY_INFO[res.data.personality]) {
+        setRenterInfo({ id: res.data.personality, ...RENTER_PERSONALITY_INFO[res.data.personality] })
+      }
+    }).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  if (loading) return null
+
+  return renterInfo ? (
+    <Card className="border-gray-100 dark:border-gray-800">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <Sparkles className="h-4 w-4 text-primary-500" />
+          <CardTitle className="text-xs font-black uppercase tracking-widest">Your Renter Style</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="flex items-center gap-4">
+        <PersonalityBadge type={renterInfo.id} info={renterInfo} size="sm" />
+        <div>
+          <p className="text-sm font-bold text-gray-900 dark:text-white">{renterInfo.name}</p>
+          <p className="text-xs text-gray-400 italic">"{renterInfo.motto}"</p>
+          <Link href="/profile/personality" className="text-[9px] font-bold text-primary-600 hover:underline mt-1 inline-block">
+            Edit style
+          </Link>
+        </div>
+      </CardContent>
+    </Card>
+  ) : (
+    <Card className="border-gray-100 dark:border-gray-800 border-dashed">
+      <CardContent className="p-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Sparkles className="h-5 w-5 text-gray-300" />
+          <div>
+            <p className="text-xs font-bold text-gray-500">Discover your renter style</p>
+            <p className="text-[9px] text-gray-400">Get matched with the perfect sellers</p>
+          </div>
+        </div>
+        <Link href="/profile/personality">
+          <Button size="sm" variant="outline" className="rounded-xl text-[10px]">Take Quiz</Button>
+        </Link>
+      </CardContent>
+    </Card>
   )
 }

@@ -1,12 +1,13 @@
 import { Router, type Request, type Response, type NextFunction } from 'express'
 import { auth, requireRoles } from '../../middleware/auth'
 import { db } from '../../utils/db'
+import { computeMatchScore } from './personality'
 
 const router = Router()
 
 router.get('/', async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { categoryId, cityId, minRent, maxRent, status, sortBy, q, limit, condition, sellerId, exclude } = req.query
+    const { categoryId, cityId, minRent, maxRent, status, sortBy, q, limit, condition, sellerId, exclude, renterType } = req.query
     const conditions: string[] = []
     const params: any[] = []
     
@@ -59,8 +60,9 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
     const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : ''
     const finalLimit = limit ? parseInt(limit as string) : 50
     const result = await db.query(
-      `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.category_id, i.city_id, i.status, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url, i.seller_id, i.is_featured,
+      `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.category_id, i.city_id, i.status, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url, i.seller_id, i.is_featured, i.seller_personality, i.seller_personality_answers,
               u.first_name || ' ' || u.last_name as seller_name, u.avatar_url as seller_avatar,
+              u.renter_personality,
               COALESCE(ss.avg_rating, 0) as seller_avg_rating, COALESCE(ss.review_count, 0) as seller_review_count,
               (SELECT image_url FROM item_images WHERE item_id = i.id AND is_primary = true LIMIT 1) as image_url
        FROM items i
@@ -69,7 +71,19 @@ router.get('/', async (req: Request, res: Response, next: NextFunction) => {
        ${where} ${orderClause} LIMIT $${params.length + 1}`,
       [...params, finalLimit]
     )
-    res.json({ items: result.rows })
+
+    // Compute match scores if a renter type is provided
+    const items = result.rows.map(row => {
+      const item: any = { ...row }
+      if (renterType && item.seller_personality) {
+        item.personality_match = computeMatchScore(renterType as string, item.seller_personality)
+      } else {
+        item.personality_match = null
+      }
+      return item
+    })
+
+    res.json({ items })
   } catch (e) {
     next(e)
   }
@@ -204,6 +218,7 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       await db.query(
         `SELECT i.id, i.title, i.description, i.monthly_rent, i.deposit_amount, i.status, i.category_id, i.city_id, i.retail_price, i.sub_attributes, i.condition, i.verified_status, i.video_url,
                 i.seller_type, i.resell_value, i.recovered_amount, i.seller_id,
+                i.seller_personality, i.seller_personality_answers,
                 u.first_name || ' ' || u.last_name as seller_name,
                 u.avatar_url as seller_avatar,
                 u.display_name as seller_display_name
@@ -233,7 +248,20 @@ router.get('/:id', async (req: Request, res: Response, next: NextFunction) => {
       `SELECT avg_rating, review_count, completed_rentals FROM seller_stats WHERE user_id=$1`,
       [row.seller_id]
     )).rows[0] || null
-    res.json({ item: row, images, verification, sellerStats })
+
+    // Compute match score if renterType query param or logged in user
+    let personalityMatch = null
+    const { renterType } = req.query
+    if (renterType && row.seller_personality) {
+      personalityMatch = computeMatchScore(renterType as string, row.seller_personality)
+    } else if (req.user?.sub && row.seller_personality) {
+      const uRow = (await db.query(`SELECT renter_personality FROM users WHERE id=$1`, [req.user.sub])).rows[0]
+      if (uRow?.renter_personality) {
+        personalityMatch = computeMatchScore(uRow.renter_personality, row.seller_personality)
+      }
+    }
+
+    res.json({ item: { ...row, personality_match: personalityMatch }, images, verification, sellerStats })
   } catch (e) {
     next(e)
   }

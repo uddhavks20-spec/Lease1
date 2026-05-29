@@ -24,6 +24,7 @@ import wishlistRouter from './modules/wishlist'
 import sellerProfileRouter from './modules/seller-profile'
 import couponsRouter from './modules/coupons'
 import referralsRouter from './modules/referrals'
+import personalityRouter from './modules/personality'
 
 export const apiRouter = Router()
 
@@ -52,3 +53,4 @@ apiRouter.use('/wishlist', wishlistRouter)
 apiRouter.use('/seller-profile', sellerProfileRouter)
 apiRouter.use('/coupons', couponsRouter)
 apiRouter.use('/referrals', referralsRouter)
+apiRouter.use('/personality', personalityRouter)

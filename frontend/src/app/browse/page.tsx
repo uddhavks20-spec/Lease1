@@ -13,6 +13,7 @@ import { formatCurrency } from "@/lib/utils";
 import { SellerBadge } from '@/components/SellerBadge';
 import { WishlistButton } from '@/components/WishlistButton';
 import { ReviewStars } from '@/components/ReviewStars';
+import { PersonalityRibbon, PERSONALITY_COLORS } from '@/components/PersonalityBadge';
 
 const FALLBACK_IMG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f3f4f6" width="200" height="200"/><text fill="#9ca3af" font-family="Arial" font-size="14" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">No Image</text></svg>')
 
@@ -35,6 +36,8 @@ type Item = {
   is_featured?: boolean
   seller_avg_rating?: number
   seller_review_count?: number
+  seller_personality?: string
+  personality_match?: number
 }
 
 export default function BrowsePage() {
@@ -42,6 +45,7 @@ export default function BrowsePage() {
   const [items, setItems] = useState([] as Item[]);
   const [cities, setCities] = useState([] as { id: string; name: string }[]);
   const [categories, setCategories] = useState([] as Array<{ id: string; name: string; slug: string; items?: string[] }>);
+  const [renterType, setRenterType] = useState<string | null>(null);
   
   const q = searchParams?.get('q') || '';
   const cityId = searchParams?.get('city') || '';
@@ -82,6 +86,10 @@ export default function BrowsePage() {
         if (cat) setFilters(f => ({ ...f, categoryId: cat.id }));
       }
     })
+    // Fetch renter personality for match scoring
+    api.get('/personality/renter').then(r => {
+      if (r.data?.personality) setRenterType(r.data.personality)
+    }).catch(() => {})
   }, [categorySlug])
 
   useEffect(() => {
@@ -90,7 +98,7 @@ export default function BrowsePage() {
 
   const load = () => {
     api
-      .get('/items', { params: { ...filters } })
+      .get('/items', { params: { ...filters, renterType: renterType || undefined } })
       .then((res) => setItems(res.data.items))
       .catch(() => setItems([]))
   }
@@ -265,6 +273,18 @@ export default function BrowsePage() {
           <Link key={it.id} href={`/items/${it.id}`} className="group">
             <Card className="border-none bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 ease-out group-hover:-translate-y-2 transform-gpu">
               <div className="relative aspect-square bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-10 overflow-hidden">
+                {it.seller_personality && (
+                  <PersonalityRibbon
+                    type={it.seller_personality}
+                    info={{
+                      id: it.seller_personality,
+                      name: '',
+                      motto: '',
+                      icon: PERSONALITY_COLORS[it.seller_personality] ? '' : '🏷️',
+                    }}
+                    matchScore={it.personality_match}
+                  />
+                )}
                 <Image 
                   src={it.image_url?.startsWith('http') ? it.image_url : FALLBACK_IMG} 
                   alt={it.title}
