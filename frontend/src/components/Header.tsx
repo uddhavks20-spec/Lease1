@@ -158,7 +158,7 @@ export function Header() {
 
           {user ? (
             <div className="flex items-center gap-2">
-              <Link href={user.role === 'admin' ? '/admin/dashboard' : user.role === 'seller' ? '/seller/dashboard' : user.role === 'wholesaler' ? '/wholesaler/dashboard' : '/renter/dashboard'}>
+              <Link href="/profile">
                 <Button variant="ghost" size="sm" className="hidden md:flex gap-2">
                   <User className="h-4 w-4" />
                   {user.firstName}
