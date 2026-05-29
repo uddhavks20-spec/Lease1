@@ -92,7 +92,7 @@ export function PersonalityBadge({
   info,
   size = 'md',
   showRibbon = true,
-  showAnimation = true,
+  showAnimation = false,
   className = '',
 }: PersonalityBadgeProps) {
   const cardRef = useRef<HTMLDivElement>(null)
