@@ -3,47 +3,82 @@
 import { useRef, useState } from 'react'
 import Lottie from 'lottie-react'
 
-// Simple inline Lottie animation data — pulsing circle per personality
+// Enhanced pulsing circle animation with glow ripple effect
 function getLottieData(primary: string, secondary: string) {
+  const c = hexToRgb(primary)
+  const c2 = hexToRgb(secondary)
   return {
     v: '5.5.7',
     fr: 30,
     ip: 0,
-    op: 60,
-    layers: [{
-      ddd: 0,
-      ind: 1,
-      ty: 4,
-      sr: 1,
-      ks: {
-        o: { a: 0, k: 100 },
-        r: { a: 0, k: 0 },
-        p: { a: 0, k: [50, 50, 0] },
-        a: { a: 0, k: [0, 0, 0] },
-        s: {
-          a: 1,
-          k: [
-            { t: 0, s: [80, 80, 100], e: [110, 110, 100], i: { x: [0.42], y: [1] }, o: { x: [0.58], y: [0] } },
-            { t: 30, s: [110, 110, 100], e: [80, 80, 100], i: { x: [0.42], y: [1] }, o: { x: [0.58], y: [0] } },
-          ],
+    op: 61,
+    w: 100,
+    h: 100,
+    layers: [
+      // Layer 1: Outer glow ring (pulses wider, more transparent, slight delay)
+      {
+        ddd: 0, ind: 1, ty: 4, sr: 1,
+        ks: {
+          o: { a: 0, k: 100 },
+          r: { a: 0, k: 0 },
+          p: { a: 0, k: [50, 50, 0] },
+          a: { a: 0, k: [0, 0, 0] },
+          s: {
+            a: 1,
+            k: [
+              { t: 0, s: [80, 80, 100], o: { x: [0.5], y: [0] } },
+              { t: 30, s: [130, 130, 100], i: { x: [0.5], y: [1] }, o: { x: [0.5], y: [0] } },
+              { t: 60, s: [80, 80, 100], i: { x: [0.5], y: [1] } },
+            ],
+          },
         },
-      },
-      shapes: [{
-        ty: 'el',
-        p: { a: 0, k: [0, 0] },
-        s: { a: 0, k: [60, 60] },
-        it: [{
-          ty: 'fl',
-          c: { a: 0, k: hexToRgb(primary) },
-          o: { a: 0, k: 30 },
-        }, {
-          ty: 'st',
-          c: { a: 0, k: hexToRgb(secondary) },
-          w: { a: 0, k: 3 },
-          o: { a: 0, k: 60 },
+        shapes: [{
+          ty: 'el',
+          p: { a: 0, k: [0, 0] },
+          s: { a: 0, k: [60, 60] },
+          it: [{
+            ty: 'fl',
+            c: { a: 0, k: c },
+            o: { a: 0, k: 15 },
+          }],
         }],
-      }],
-    }],
+      },
+      // Layer 2: Main filled circle with stroke
+      {
+        ddd: 0, ind: 2, ty: 4, sr: 1,
+        ks: {
+          o: { a: 0, k: 100 },
+          r: { a: 0, k: 0 },
+          p: { a: 0, k: [50, 50, 0] },
+          a: { a: 0, k: [0, 0, 0] },
+          s: {
+            a: 1,
+            k: [
+              { t: 0, s: [80, 80, 100], o: { x: [0.5], y: [0] } },
+              { t: 15, s: [105, 105, 100], i: { x: [0.5], y: [1] }, o: { x: [0.5], y: [0] } },
+              { t: 30, s: [80, 80, 100], i: { x: [0.5], y: [1] }, o: { x: [0.5], y: [0] } },
+              { t: 45, s: [105, 105, 100], i: { x: [0.5], y: [1] }, o: { x: [0.5], y: [0] } },
+              { t: 60, s: [80, 80, 100], i: { x: [0.5], y: [1] } },
+            ],
+          },
+        },
+        shapes: [{
+          ty: 'el',
+          p: { a: 0, k: [0, 0] },
+          s: { a: 0, k: [60, 60] },
+          it: [{
+            ty: 'fl',
+            c: { a: 0, k: c },
+            o: { a: 0, k: 40 },
+          }, {
+            ty: 'st',
+            c: { a: 0, k: c2 },
+            w: { a: 0, k: 3 },
+            o: { a: 0, k: 70 },
+          }],
+        }],
+      },
+    ],
   }
 }
 
@@ -92,7 +127,7 @@ export function PersonalityBadge({
   info,
   size = 'md',
   showRibbon = true,
-  showAnimation = false,
+  showAnimation = true,
   className = '',
 }: PersonalityBadgeProps) {
   const cardRef = useRef<HTMLDivElement>(null)
