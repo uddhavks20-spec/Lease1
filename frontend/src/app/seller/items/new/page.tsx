@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Info, Calculator, ChevronDown, PackageCheck, Shield, TrendingUp, Zap, Sparkles, AlertCircle } from 'lucide-react'
 import { LeaseGuru } from '@/components/LeaseGuru'
+import { PersonalityQuiz } from '@/components/PersonalityQuiz'
 import { mockProductsData, MockProduct } from '@/data/mockProductsData'
 
 const COMPETITOR_RATES: Record<string, number> = {
@@ -118,6 +119,8 @@ export default function NewItemPage() {
   const [aiResellReasoning, setAiResellReasoning] = useState('')
   const [pricingEstimate, setPricingEstimate] = useState<any>(null)
   const [pricingLoading, setPricingLoading] = useState(false)
+  const [newItemId, setNewItemId] = useState<string | null>(null)
+  const [showQuiz, setShowQuiz] = useState(false)
 
   // Image & video state
   const [imageViews, setImageViews] = useState<Record<string, string>>({
@@ -304,8 +307,9 @@ export default function NewItemPage() {
         damagePhotoUrl: verification.damagePhotoUrl || undefined,
         verificationNotes: verification.notes || undefined,
       })
-      toast.success('Item created successfully!')
-      router.push(`/items/${res.data.id}`)
+      toast.success('Item created! Now set a personality to attract the right renters.')
+      setNewItemId(res.data.id)
+      setShowQuiz(true)
     } catch (err: any) {
       toast.error(err.response?.data?.error || 'Failed to create item')
     }
@@ -969,6 +973,15 @@ export default function NewItemPage() {
         </div>
 
       </form>
+
+      {showQuiz && newItemId && (
+        <PersonalityQuiz
+          mode="seller"
+          itemId={newItemId}
+          onComplete={() => router.push(`/items/${newItemId}`)}
+          onSkip={() => router.push(`/items/${newItemId}`)}
+        />
+      )}
     </div>
   )
 }

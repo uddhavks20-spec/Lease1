@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Plus, Package, IndianRupee, TrendingUp, AlertCircle, Edit2, Trash2, Eye, Tag, Shield, Zap, Percent, Gift } from 'lucide-react';
+import { Plus, Package, IndianRupee, TrendingUp, AlertCircle, Edit2, Trash2, Eye, Tag, Shield, Zap, Percent, Gift, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -30,6 +30,7 @@ interface Item {
   condition: string;
   category_name: string;
   views?: number;
+  seller_personality?: string;
 }
 
 // ─── v3 Pricing Helpers ───────────────────────────────────────────
@@ -257,6 +258,15 @@ export default function SellerDashboard() {
                           } className="capitalize py-0 h-5 text-[10px]">
                             {item.status}
                           </Badge>
+                          {item.seller_personality ? (
+                            <Badge variant="outline" className="text-[8px] font-bold uppercase text-primary-600 border-primary-200 dark:border-primary-800 py-0 h-5">
+                              <Sparkles className="h-3 w-3 mr-0.5" />{item.seller_personality}
+                            </Badge>
+                          ) : (
+                            <Link href={`/seller/items/edit/${item.id}`} className="text-[8px] font-bold text-amber-600 hover:underline flex items-center gap-0.5">
+                              <AlertCircle className="h-3 w-3" />Set personality
+                            </Link>
+                          )}
                           <span className="text-[9px] text-gray-400 font-bold uppercase">{item.seller_type === 'A' ? 'Type A' : 'Type B'}</span>
                         </div>
                         {/* Payout by tenure */}

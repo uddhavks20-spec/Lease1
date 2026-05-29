@@ -192,7 +192,7 @@ router.get('/seller/my-items', auth(true), requireRoles('seller'), async (req: R
   try {
     const sellerId = req.user!.sub
     const result = await db.query(
-      `SELECT i.id, i.title, i.monthly_rent, i.status, i.seller_type, i.retail_price, i.resell_value, i.recovered_amount, i.condition, i.category_id, c.name as category_name, i.created_at, i.is_boosted, i.is_featured
+      `SELECT i.id, i.title, i.monthly_rent, i.status, i.seller_type, i.retail_price, i.resell_value, i.recovered_amount, i.condition, i.category_id, c.name as category_name, i.created_at, i.is_boosted, i.is_featured, i.seller_personality
        FROM items i JOIN categories c ON c.id = i.category_id WHERE seller_id=$1 ORDER BY i.created_at DESC`,
       [sellerId]
     )
