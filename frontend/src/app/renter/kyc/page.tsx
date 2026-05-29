@@ -1,13 +1,18 @@
 "use client"
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
+import { PersonalityQuiz } from '@/components/PersonalityQuiz'
 import { toast } from 'react-hot-toast'
 
 export default function RenterKYCPage() {
+  const router = useRouter()
   const [kyc, setKyc] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [kycSubmitted, setKycSubmitted] = useState(false)
+  const [showQuiz, setShowQuiz] = useState(false)
   const [form, setForm] = useState({
     aadhaarNumber: '',
     panNumber: '',
@@ -20,6 +25,7 @@ export default function RenterKYCPage() {
   useEffect(() => {
     api.get('/kyc/me').then((res) => {
       setKyc(res.data.kyc)
+      setKycSubmitted(!!res.data.kyc)
       if (res.data.kyc) {
         setForm({
           aadhaarNumber: res.data.kyc.aadhaar_number || '',
@@ -38,6 +44,8 @@ export default function RenterKYCPage() {
     try {
       await api.post('/kyc/me', form)
       toast.success('KYC submitted for review')
+      setKycSubmitted(true)
+      setShowQuiz(true)
     } catch (err) {
       toast.error('Failed to submit KYC')
     }
@@ -143,6 +151,14 @@ export default function RenterKYCPage() {
           {kyc?.status === 'approved' ? 'Verification Complete' : 'Submit KYC for Review'}
         </Button>
       </form>
+
+      {showQuiz && (
+        <PersonalityQuiz
+          mode="renter"
+          onComplete={() => router.push('/renter/dashboard')}
+          onSkip={() => router.push('/renter/dashboard')}
+        />
+      )}
     </div>
   )
 }
