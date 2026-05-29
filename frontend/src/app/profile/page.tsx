@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth-context'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { PersonalityBadge, type PersonalityInfo } from '@/components/PersonalityBadge'
+import { PersonalityBadge, RENTER_DESCRIPTIONS, SELLER_RECOMMENDATIONS, type PersonalityInfo } from '@/components/PersonalityBadge'
 import { PersonalityQuiz } from '@/components/PersonalityQuiz'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -290,12 +290,15 @@ export default function ProfilePage() {
               </Card>
             ) : renterPersonality && renterInfo ? (
               <Card className="border-none bg-white dark:bg-gray-800 shadow-sm rounded-[32px]">
-                <CardContent className="p-8 flex flex-col items-center text-center space-y-6">
+                <CardContent className="p-8 sm:p-10 flex flex-col items-center text-center space-y-6">
                   <PersonalityBadge type={renterPersonality} info={renterInfo} size="xl" showRibbon />
-                  <div>
-                    <p className="text-sm text-gray-500">You are a</p>
-                    <h3 className="text-2xl font-black text-gray-900 dark:text-white">{renterInfo.name}</h3>
-                    <p className="text-gray-400 italic mt-1">"{renterInfo.motto}"</p>
+                  <div className="space-y-3 max-w-lg">
+                    <p className="text-sm text-gray-500 font-bold uppercase tracking-widest">You are a</p>
+                    <h3 className="text-3xl sm:text-4xl font-black text-gray-900 dark:text-white">{renterInfo.name}</h3>
+                    <p className="text-gray-400 italic text-sm sm:text-base">"{renterInfo.motto}"</p>
+                    <p className="text-gray-500 text-sm leading-relaxed">
+                      {RENTER_DESCRIPTIONS[renterPersonality]}
+                    </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setShowQuiz(true)} className="rounded-xl">
                     <Pencil className="h-4 w-4 mr-2" /> Retake Quiz
@@ -315,6 +318,31 @@ export default function ProfilePage() {
                   <Sparkles className="h-4 w-4 mr-2" /> Take the Quiz
                 </Button>
               </Card>
+            )}
+            {renterPersonality && SELLER_RECOMMENDATIONS[renterPersonality] && (
+              <div className="mt-8 space-y-4">
+                <div className="space-y-1">
+                  <h3 className="text-lg font-black uppercase tracking-tighter text-gray-900 dark:text-white">
+                    Recommended Sellers For You
+                  </h3>
+                  <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">
+                    Seller personalities that match your renter style
+                  </p>
+                </div>
+                <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {SELLER_RECOMMENDATIONS[renterPersonality].map((reco) => (
+                    <Card key={reco.id} className="border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800/50 rounded-2xl">
+                      <CardContent className="p-5 space-y-2 text-left">
+                        <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary-600">
+                          {reco.id}
+                        </span>
+                        <h4 className="font-black text-gray-900 dark:text-white text-sm">{reco.name}</h4>
+                        <p className="text-xs text-gray-500 leading-relaxed">{reco.reason}</p>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
         )

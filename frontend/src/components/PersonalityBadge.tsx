@@ -48,6 +48,54 @@ const PERSONALITY_COLORS: Record<string, { primary: string; secondary: string; r
   seasonal:    { primary: '#ca8a04', secondary: '#facc15', ribbon: 'bg-yellow-500' },
 }
 
+interface SellerReco {
+  id: string
+  name: string
+  reason: string
+}
+
+const RENTER_DESCRIPTIONS: Record<string, string> = {
+  saver: 'You are a strategic renter who thinks long-term. You evaluate every rental carefully, comparing costs and benefits before committing. You prefer quality items that serve you well over extended periods, and you rarely make impulse rental decisions. Your practical mindset makes you a low-risk, high-value customer for any seller.',
+  trialler: 'You are an experimental renter who loves exploring new products before making purchase decisions. You see renting as a try-before-you-buy service that helps you make smarter choices. You are always on the lookout for the latest gear and premium experiences, making you an engaged and curious renter.',
+  flexer: 'You are a practical, no-nonsense renter who needs things done quickly and affordably. You value convenience and efficiency over luxury, and you appreciate straightforward rental processes with minimal hassle. You know exactly what you need and go for it without overthinking.',
+  switcher: 'You are a variety-seeker who loves keeping things fresh. You get excited about trying new items and regularly rotating your rentals. Boredom is your biggest enemy, and renting gives you the freedom to constantly evolve your environment without the commitment of ownership.',
+  missionary: 'You are a purpose-driven renter who knows exactly what you need and when you need it. You rent for specific projects, events, or fixed periods, and you are meticulous about returning items on time. Your reliability and clarity make you a seller\'s ideal customer.',
+  aspirer: 'You are an aspirational renter who loves luxury and premium experiences but prefers renting over paying full price. You believe in living well today and paying smartly for it. You are drawn to high-end items and exclusive products that elevate your lifestyle.',
+}
+
+const SELLER_RECOMMENDATIONS: Record<string, SellerReco[]> = {
+  saver: [
+    { id: 'declutter', name: 'The Declutterer', reason: 'Rent long-term from declutterers who want steady passive income from items just sitting around.' },
+    { id: 'mogul', name: 'The Mogul', reason: 'Moguls offer reliable, well-maintained inventory perfect for extended rental periods.' },
+    { id: 'hobbyist', name: 'The Hobbyist', reason: 'Hobbyists rent gear during downtime, giving you access to quality items at lower rates.' },
+  ],
+  trialler: [
+    { id: 'collector', name: 'The Collector', reason: 'Collectors maintain curated, premium catalogs perfect for exploration and discovery.' },
+    { id: 'upgrader', name: 'The Upgrader', reason: 'Upgraders constantly refresh their inventory, giving you access to the latest models.' },
+    { id: 'seasonal', name: 'The Seasonal', reason: 'Seasonal sellers list unique items during peak times, great for trying something new.' },
+  ],
+  flexer: [
+    { id: 'declutter', name: 'The Declutterer', reason: 'Declutterers offer affordable items with flexible terms — perfect for budget-conscious renters.' },
+    { id: 'hobbyist', name: 'The Hobbyist', reason: 'Hobbyists are casual renters who offer competitive rates and straightforward transactions.' },
+    { id: 'seasonal', name: 'The Seasonal', reason: 'Seasonal sellers often discount items to clear inventory, great for quick deals.' },
+  ],
+  switcher: [
+    { id: 'collector', name: 'The Collector', reason: 'Collectors offer diverse, curated catalogs that satisfy your craving for variety.' },
+    { id: 'seasonal', name: 'The Seasonal', reason: 'Seasonal sellers bring fresh inventory each cycle, keeping your options ever-changing.' },
+    { id: 'upgrader', name: 'The Upgrader', reason: 'Upgraders cycle through new gear frequently, ensuring a constantly rotating selection.' },
+  ],
+  missionary: [
+    { id: 'upgrader', name: 'The Upgrader', reason: 'Upgraders maintain quality gear in excellent condition, perfect for your specific needs.' },
+    { id: 'mogul', name: 'The Mogul', reason: 'Moguls run professional operations with reliable availability and clear terms.' },
+    { id: 'declutter', name: 'The Declutterer', reason: 'Declutterers offer straightforward rentals without complicated policies.' },
+  ],
+  aspirer: [
+    { id: 'collector', name: 'The Collector', reason: 'Collectors curate premium, high-end items that match your luxury tastes.' },
+    { id: 'mogul', name: 'The Mogul', reason: 'Moguls often carry premium inventory and offer white-glove service.' },
+    { id: 'upgrader', name: 'The Upgrader', reason: 'Upgraders list top-condition gear that feels almost new.' },
+  ],
+}
+
 interface PersonalityBadgeProps {
   type: string
   info: PersonalityInfo
@@ -73,10 +121,10 @@ export function PersonalityBadge({
   const imgSrc = `/images/personalities/${filename}.png`
 
   const sizeMap = {
-    sm: { card: 'w-28 h-32', imgSize: 'w-20 h-20', icon: 'text-xl', name: 'text-[11px]', motto: 'text-[9px]' },
-    md: { card: 'w-36 h-40', imgSize: 'w-24 h-24', icon: 'text-2xl', name: 'text-sm', motto: 'text-[11px]' },
-    lg: { card: 'w-48 h-52', imgSize: 'w-32 h-32', icon: 'text-3xl', name: 'text-base', motto: 'text-xs' },
-    xl: { card: 'w-60 h-64', imgSize: 'w-40 h-40', icon: 'text-4xl', name: 'text-lg', motto: 'text-sm' },
+    sm: { card: 'w-32 h-36', imgSize: 'w-24 h-24', icon: 'text-2xl', name: 'text-xs', motto: 'text-[10px]' },
+    md: { card: 'w-44 h-48', imgSize: 'w-32 h-32', icon: 'text-3xl', name: 'text-sm', motto: 'text-xs' },
+    lg: { card: 'w-56 h-60', imgSize: 'w-40 h-40', icon: 'text-4xl', name: 'text-base', motto: 'text-sm' },
+    xl: { card: 'w-72 h-80', imgSize: 'w-48 h-48', icon: 'text-5xl', name: 'text-xl', motto: 'text-base' },
   }
 
   const s = sizeMap[size]
@@ -165,4 +213,4 @@ export function PersonalityRibbon({ type, info, matchScore }: { type: string; in
   )
 }
 
-export { PERSONALITY_COLORS }
+export { PERSONALITY_COLORS, RENTER_DESCRIPTIONS, SELLER_RECOMMENDATIONS }
