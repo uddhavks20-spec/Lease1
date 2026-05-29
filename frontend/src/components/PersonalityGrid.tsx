@@ -10,12 +10,13 @@ export interface PersonalityCardData {
   category: 'RENTER' | 'SELLER'
   imagePath: string
   accentColor: string
+  scale?: number
 }
 
 const PERSONALITIES: PersonalityCardData[] = [
   // Renters
   { id: 'saver',      name: 'The Saver',       motto: 'Long-term value over short-term gain',   category: 'RENTER', imagePath: '/images/personalities/saver.png',    accentColor: '#059669' },
-  { id: 'trialer',    name: 'The Trialler',     motto: 'Try before you commit',                  category: 'RENTER', imagePath: '/images/personalities/trialer.png',  accentColor: '#7c3aed' },
+  { id: 'trialer',    name: 'The Trialler',     motto: 'Try before you commit',                  category: 'RENTER', imagePath: '/images/personalities/trialer.png',  accentColor: '#7c3aed', scale: 0.7 },
   { id: 'flexer',     name: 'The Flexer',       motto: 'Affordable, quick, and easy',            category: 'RENTER', imagePath: '/images/personalities/flexer.png',   accentColor: '#d97706' },
   { id: 'switcher',   name: 'The Switcher',     motto: 'Always switching it up',                 category: 'RENTER', imagePath: '/images/personalities/switcher.png', accentColor: '#0284c7' },
   { id: 'missionary', name: 'The Missionary',   motto: 'Renting with purpose',                   category: 'RENTER', imagePath: '/images/personalities/missionary.png', accentColor: '#dc2626' },
@@ -85,15 +86,17 @@ function PersonalityCard({ data, index }: { data: PersonalityCardData; index: nu
 
         <Particles seed={index} />
 
-        <motion.img
-          src={data.imagePath}
-          alt={data.name}
-          className="relative w-full h-full object-contain drop-shadow-2xl scale-110"
-          animate={{ y: [0, -12, 0] }}
-          transition={{ duration: 3 + (index % 2), repeat: Infinity, ease: 'easeInOut' }}
-          whileHover={{ scale: 1.3, rotate: [0, -5, 5, 0], transition: { duration: 0.5, ease: 'easeOut' } }}
-          draggable={false}
-        />
+        <div className="flex items-center justify-center" style={{ transform: `scale(${data.scale || 1.1})` }}>
+          <motion.img
+            src={data.imagePath}
+            alt={data.name}
+            className="relative w-full h-full object-contain drop-shadow-2xl"
+            animate={{ y: [0, -12, 0] }}
+            transition={{ duration: 3 + (index % 2), repeat: Infinity, ease: 'easeInOut' }}
+            whileHover={{ scale: 1.2, rotate: [0, -5, 5, 0], transition: { duration: 0.5, ease: 'easeOut' } }}
+            draggable={false}
+          />
+        </div>
       </div>
 
       <div className="mt-4 sm:mt-5 text-center space-y-1">

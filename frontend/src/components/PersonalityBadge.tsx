@@ -7,6 +7,10 @@ const FLOAT_STYLES = `
 @keyframes badgeGlow { 0%,100%{opacity:0.3;transform:scale(1)} 50%{opacity:0.6;transform:scale(1.15)} }
 `
 
+const PERSONALITY_SCALE: Record<string, number> = {
+  trialler: 0.6,
+}
+
 const FILENAME_MAP: Record<string, string> = {
   saver: 'saver',
   trialler: 'trialer',
@@ -109,7 +113,7 @@ export function PersonalityBadge({
       )}
 
       {showAnimation ? (
-        <div         className={`relative ${s.imgSize} mb-1 flex items-center justify-center`}>
+        <div className={`relative ${s.imgSize} mb-1 flex items-center justify-center`}>
           <div
             className="absolute inset-0 rounded-full blur-xl"
             style={{ background: colors.primary, opacity: 0.3, animation: 'badgeGlow 2.5s ease-in-out infinite' }}
@@ -117,8 +121,8 @@ export function PersonalityBadge({
           <img
             src={imgSrc}
             alt={info.name}
-            className="relative w-full h-full object-cover drop-shadow-lg scale-[1.8]"
-            style={{ animation: 'badgeFloat 3s ease-in-out infinite' }}
+            className="relative w-full h-full object-cover drop-shadow-lg"
+            style={{ transform: `scale(${PERSONALITY_SCALE[type] || 1.8})`, animation: 'badgeFloat 3s ease-in-out infinite' }}
           />
         </div>
       ) : (
