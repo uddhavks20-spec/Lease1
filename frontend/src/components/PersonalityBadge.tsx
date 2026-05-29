@@ -69,10 +69,10 @@ export function PersonalityBadge({
   const imgSrc = `/images/personalities/${filename}.png`
 
   const sizeMap = {
-    sm: { card: 'w-24 h-28', imgSize: 'w-14 h-14', icon: 'text-lg', name: 'text-[9px]', motto: 'text-[7px]' },
-    md: { card: 'w-28 h-32', imgSize: 'w-16 h-16', icon: 'text-xl', name: 'text-[10px]', motto: 'text-[8px]' },
-    lg: { card: 'w-32 h-36', imgSize: 'w-20 h-20', icon: 'text-2xl', name: 'text-xs', motto: 'text-[9px]' },
-    xl: { card: 'w-40 h-44', imgSize: 'w-24 h-24', icon: 'text-3xl', name: 'text-sm', motto: 'text-[10px]' },
+    sm: { card: 'w-24 h-28', imgSize: 'w-16 h-16', icon: 'text-lg', name: 'text-[9px]', motto: 'text-[7px]' },
+    md: { card: 'w-28 h-32', imgSize: 'w-20 h-20', icon: 'text-xl', name: 'text-[10px]', motto: 'text-[8px]' },
+    lg: { card: 'w-32 h-36', imgSize: 'w-24 h-24', icon: 'text-2xl', name: 'text-xs', motto: 'text-[9px]' },
+    xl: { card: 'w-40 h-44', imgSize: 'w-28 h-28', icon: 'text-3xl', name: 'text-sm', motto: 'text-[10px]' },
   }
 
   const s = sizeMap[size]
@@ -109,7 +109,7 @@ export function PersonalityBadge({
       )}
 
       {showAnimation ? (
-        <div className={`relative ${s.imgSize} mb-1 flex items-center justify-center`}>
+        <div         className={`relative ${s.imgSize} mb-1 flex items-center justify-center`}>
           <div
             className="absolute inset-0 rounded-full blur-xl"
             style={{ background: colors.primary, opacity: 0.3, animation: 'badgeGlow 2.5s ease-in-out infinite' }}
@@ -117,7 +117,7 @@ export function PersonalityBadge({
           <img
             src={imgSrc}
             alt={info.name}
-            className="relative w-full h-full object-contain drop-shadow-lg scale-110"
+            className="relative w-full h-full object-cover drop-shadow-lg scale-[1.8]"
             style={{ animation: 'badgeFloat 3s ease-in-out infinite' }}
           />
         </div>

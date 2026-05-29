@@ -74,9 +74,9 @@ function PersonalityCard({ data, index }: { data: PersonalityCardData; index: nu
         {data.category}
       </div>
 
-      <div className="relative flex-1 w-full flex items-center justify-center py-2">
+      <div className="relative flex-1 w-full flex items-center justify-center min-h-0">
         <div
-          className="absolute inset-0 blur-3xl scale-125 transition-opacity duration-700"
+          className="absolute inset-0 blur-3xl scale-[2] transition-opacity duration-700"
           style={{
             background: `radial-gradient(circle at center, ${data.accentColor}44 0%, transparent 70%)`,
             opacity: hovered ? 0.6 : 0.25,
@@ -88,10 +88,10 @@ function PersonalityCard({ data, index }: { data: PersonalityCardData; index: nu
         <motion.img
           src={data.imagePath}
           alt={data.name}
-          className="relative w-full h-auto max-h-[240px] object-contain drop-shadow-2xl"
-          animate={{ y: [0, -10, 0] }}
+          className="relative w-full h-full object-contain drop-shadow-2xl scale-110"
+          animate={{ y: [0, -12, 0] }}
           transition={{ duration: 3 + (index % 2), repeat: Infinity, ease: 'easeInOut' }}
-          whileHover={{ scale: 1.2, rotate: [0, -4, 4, 0], transition: { duration: 0.5, ease: 'easeOut' } }}
+          whileHover={{ scale: 1.3, rotate: [0, -5, 5, 0], transition: { duration: 0.5, ease: 'easeOut' } }}
           draggable={false}
         />
       </div>
