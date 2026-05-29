@@ -51,9 +51,6 @@ export default function ProfilePage() {
     documentFrontUrl: '', documentBackUrl: '', selfieUrl: '',
   })
 
-  const [credit, setCredit] = useState<any>(null)
-  const [creditLoading, setCreditLoading] = useState(false)
-
   const [sellerRole, setSellerRole] = useState<string | null>(null)
   const [sellerForm, setSellerForm] = useState({ phone: '', businessName: '' })
   const [sellerLoading, setSellerLoading] = useState(false)
@@ -89,13 +86,6 @@ export default function ProfilePage() {
           })
         }
       }).finally(() => setKycLoading(false))
-    }
-  }, [activeSection])
-
-  useEffect(() => {
-    if (activeSection === 'lease-money') {
-      setCreditLoading(true)
-      api.get('/credit/me').then((res) => setCredit(res.data)).catch(() => {}).finally(() => setCreditLoading(false))
     }
   }, [activeSection])
 
@@ -165,13 +155,6 @@ export default function ProfilePage() {
       logout()
       router.push('/')
     } catch { toast.error('Failed to delete account') }
-  }
-
-  const tierColors: Record<string, string> = {
-    platinum: 'text-purple-600 bg-purple-50 dark:bg-purple-900/20 border-purple-200',
-    gold: 'text-amber-600 bg-amber-50 dark:bg-amber-900/20 border-amber-200',
-    silver: 'text-gray-600 bg-gray-50 dark:bg-gray-900 border-gray-200',
-    bronze: 'text-orange-600 bg-orange-50 dark:bg-orange-900/20 border-orange-200',
   }
 
   const renderSidebar = () => (
@@ -455,68 +438,11 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-black uppercase tracking-tighter">Lease Money</h2>
               <p className="text-gray-500 text-xs font-bold uppercase tracking-widest">Your credit & payment plans</p>
             </div>
-
-            {creditLoading ? (
-              <Card className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[32px] p-12 text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600 mx-auto" />
-              </Card>
-            ) : credit ? (
-              <div className="space-y-6">
-                <Card className="border-none bg-gradient-to-br from-primary-600 to-primary-800 text-white shadow-sm rounded-[32px]">
-                  <CardContent className="p-8 space-y-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-[10px] font-black uppercase tracking-widest opacity-70">Available Credit</p>
-                        <p className="text-4xl font-black">₹{credit.availableCredit?.toLocaleString('en-IN')}</p>
-                      </div>
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        tierColors[credit.tier] || 'bg-white/20 text-white'
-                      }`}>
-                        {credit.tier}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/20">
-                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest opacity-70">Credit Score</p>
-                        <p className="text-xl font-black">{credit.creditScore}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest opacity-70">Used Credit</p>
-                        <p className="text-xl font-black">₹{credit.usedCredit?.toLocaleString('en-IN')}</p>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-white/20">
-                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest opacity-70">Total Rentals</p>
-                        <p className="font-black">{credit.totalRentals}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest opacity-70">Completed</p>
-                        <p className="font-black text-green-300">{credit.completedRentals}</p>
-                      </div>
-                      <div>
-                        <p className="text-[9px] font-black uppercase tracking-widest opacity-70">Late Returns</p>
-                        <p className="font-black text-red-300">{credit.lateReturns}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-                <Link href="/credit/transactions">
-                  <Button variant="outline" className="w-full rounded-2xl h-14 font-black uppercase tracking-widest text-xs">
-                    View Transaction History <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                </Link>
-              </div>
-            ) : (
-              <Card className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[32px] p-16 text-center space-y-4">
-                <CreditCard className="h-12 w-12 text-gray-300 mx-auto" />
-                <h3 className="text-xl font-black text-gray-900 dark:text-white">No Credit Profile</h3>
-                <p className="text-sm text-gray-500 max-w-sm mx-auto">Start renting to build your Lease Money credit profile.</p>
-                <Link href="/browse">
-                  <Button className="rounded-xl">Browse Items</Button>
-                </Link>
-              </Card>
-            )}
+            <Card className="border-2 border-dashed border-gray-200 dark:border-gray-800 rounded-[32px] p-16 text-center space-y-4">
+              <CreditCard className="h-12 w-12 text-gray-300 mx-auto" />
+              <h3 className="text-xl font-black text-gray-900 dark:text-white">Coming Soon</h3>
+              <p className="text-sm text-gray-500 max-w-sm mx-auto">Lease Money — our built-in credit system with BNPL installments — is coming soon. Stay tuned!</p>
+            </Card>
           </div>
         )
 
