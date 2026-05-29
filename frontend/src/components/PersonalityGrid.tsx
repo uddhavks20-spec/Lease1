@@ -67,14 +67,14 @@ function PersonalityCard({ data, index }: { data: PersonalityCardData; index: nu
       transition={{ delay: index * 0.07, duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
       onHoverStart={() => setHovered(true)}
       onHoverEnd={() => setHovered(false)}
-      className="relative group rounded-3xl bg-white/[0.04] backdrop-blur-md border transition-colors duration-500 overflow-hidden p-5 sm:p-6 flex flex-col items-center cursor-default"
-      style={{ borderColor: hovered ? `${data.accentColor}55` : 'rgba(255,255,255,0.06)' }}
+      className="relative group rounded-3xl border transition-colors duration-500 overflow-hidden p-5 sm:p-6 flex flex-col items-center cursor-default"
+      style={{ backgroundColor: 'transparent', borderColor: hovered ? `${data.accentColor}55` : 'rgba(255,255,255,0.08)' }}
     >
       <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white/30 self-start mb-3">
         {data.category}
       </div>
 
-      <div className="relative w-full aspect-square max-w-[160px] mx-auto flex items-center justify-center">
+      <div className="relative flex-1 w-full flex items-center justify-center py-2">
         <div
           className="absolute inset-0 blur-3xl scale-125 transition-opacity duration-700"
           style={{
@@ -88,10 +88,10 @@ function PersonalityCard({ data, index }: { data: PersonalityCardData; index: nu
         <motion.img
           src={data.imagePath}
           alt={data.name}
-          className="relative w-full h-full object-contain drop-shadow-2xl"
-          animate={{ y: [0, -8, 0] }}
+          className="relative w-full h-auto max-h-[240px] object-contain drop-shadow-2xl"
+          animate={{ y: [0, -10, 0] }}
           transition={{ duration: 3 + (index % 2), repeat: Infinity, ease: 'easeInOut' }}
-          whileHover={{ scale: 1.15, rotate: [0, -4, 4, 0], transition: { duration: 0.5, ease: 'easeOut' } }}
+          whileHover={{ scale: 1.2, rotate: [0, -4, 4, 0], transition: { duration: 0.5, ease: 'easeOut' } }}
           draggable={false}
         />
       </div>

@@ -69,10 +69,10 @@ export function PersonalityBadge({
   const imgSrc = `/images/personalities/${filename}.png`
 
   const sizeMap = {
-    sm: { card: 'w-24 h-28', icon: 'text-lg', name: 'text-[9px]', motto: 'text-[7px]' },
-    md: { card: 'w-28 h-32', icon: 'text-xl', name: 'text-[10px]', motto: 'text-[8px]' },
-    lg: { card: 'w-32 h-36', icon: 'text-2xl', name: 'text-xs', motto: 'text-[9px]' },
-    xl: { card: 'w-40 h-44', icon: 'text-3xl', name: 'text-sm', motto: 'text-[10px]' },
+    sm: { card: 'w-24 h-28', imgSize: 'w-14 h-14', icon: 'text-lg', name: 'text-[9px]', motto: 'text-[7px]' },
+    md: { card: 'w-28 h-32', imgSize: 'w-16 h-16', icon: 'text-xl', name: 'text-[10px]', motto: 'text-[8px]' },
+    lg: { card: 'w-32 h-36', imgSize: 'w-20 h-20', icon: 'text-2xl', name: 'text-xs', motto: 'text-[9px]' },
+    xl: { card: 'w-40 h-44', imgSize: 'w-24 h-24', icon: 'text-3xl', name: 'text-sm', motto: 'text-[10px]' },
   }
 
   const s = sizeMap[size]
@@ -96,8 +96,9 @@ export function PersonalityBadge({
       style={{
         transform: `perspective(500px) rotateX(${tilt.y}deg) rotateY(${tilt.x}deg)`,
         transition: tilt.x === 0 && tilt.y === 0 ? 'transform 0.5s ease' : 'none',
+        backgroundColor: 'transparent',
       }}
-      className={`relative ${s.card} rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700 shadow-lg flex flex-col items-center justify-center overflow-hidden ${className}`}
+      className={`relative ${s.card} rounded-2xl border border-white/10 flex flex-col items-center justify-center overflow-hidden ${className}`}
     >
       <style>{FLOAT_STYLES}</style>
 
@@ -108,15 +109,15 @@ export function PersonalityBadge({
       )}
 
       {showAnimation ? (
-        <div className="relative w-12 h-12 mb-1 flex items-center justify-center">
+        <div className={`relative ${s.imgSize} mb-1 flex items-center justify-center`}>
           <div
-            className="absolute inset-0 rounded-full blur-lg"
-            style={{ background: colors.primary, opacity: 0.25, animation: 'badgeGlow 2.5s ease-in-out infinite' }}
+            className="absolute inset-0 rounded-full blur-xl"
+            style={{ background: colors.primary, opacity: 0.3, animation: 'badgeGlow 2.5s ease-in-out infinite' }}
           />
           <img
             src={imgSrc}
             alt={info.name}
-            className="relative w-full h-full object-contain drop-shadow-lg"
+            className="relative w-full h-full object-contain drop-shadow-lg scale-110"
             style={{ animation: 'badgeFloat 3s ease-in-out infinite' }}
           />
         </div>
@@ -124,10 +125,10 @@ export function PersonalityBadge({
         <span className={s.icon + ' mb-1'}>{info.icon}</span>
       )}
 
-      <span className={`${s.name} font-black text-gray-900 dark:text-white text-center leading-tight px-1`}>
+      <span className={`${s.name} font-black text-white/90 text-center leading-tight px-1`}>
         {info.name}
       </span>
-      <span className={`${s.motto} text-gray-400 text-center leading-tight px-1`}>
+      <span className={`${s.motto} text-white/40 text-center leading-tight px-1`}>
         {info.motto}
       </span>
     </div>
