@@ -102,7 +102,7 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
       originalPrice,
       subAttributes = {},
       minRentDuration = 3,
-      maxRentDuration = 48,
+      maxRentDuration = 12,
       images = [],
       videoUrl,
       sellerType,
