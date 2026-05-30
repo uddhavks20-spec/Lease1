@@ -121,6 +121,7 @@ export default function NewItemPage() {
   const [pricingLoading, setPricingLoading] = useState(false)
   const [newItemId, setNewItemId] = useState<string | null>(null)
   const [showQuiz, setShowQuiz] = useState(false)
+  const [customSpecs, setCustomSpecs] = useState<{ name: string; value: string }[]>([])
 
   // Image & video state
   const [imageViews, setImageViews] = useState<Record<string, string>>({
@@ -179,6 +180,7 @@ export default function NewItemPage() {
         imageUrl: selectedProduct.imageUrl,
         subAttributes: {}
       }))
+      setCustomSpecs([])
       setManualRentOverride(false)
     }
   }, [selectedProduct, categories])
@@ -304,6 +306,7 @@ export default function NewItemPage() {
         sellerType,
         resellValue: rv,
         subAttributes: finalizedSubAttributes,
+        customSpecs: customSpecs.filter(s => s.name && s.value),
         images,
         videoUrl: videoUrl || undefined,
         purchaseReceiptUrl: verification.purchaseReceiptUrl || undefined,
@@ -466,9 +469,43 @@ export default function NewItemPage() {
               {selectedProduct && (
                 <div className="grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
                   <div className="space-y-4">
-                    <label className="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] block">Preview</label>
-                    <div className="aspect-square relative rounded-[24px] overflow-hidden bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 p-6 group">
-                      <img src={form.imageUrl} alt="Preview" className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-700" />
+                    <label className="text-[10px] font-black text-primary-600 uppercase tracking-[0.2em] block">Custom Specifications</label>
+                    <div className="space-y-3">
+                      <p className="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Add specs not in the template</p>
+                      {customSpecs.map((spec, i) => (
+                        <div key={i} className="flex gap-2 items-start">
+                          <input
+                            type="text"
+                            placeholder="Spec name"
+                            className="flex-1 bg-gray-50 dark:bg-gray-900 border-none rounded-xl px-3 py-2 text-[10px] font-bold outline-none ring-2 ring-transparent focus:ring-primary-500"
+                            value={spec.name}
+                            onChange={(e) => {
+                              const next = [...customSpecs]
+                              next[i] = { ...next[i], name: e.target.value }
+                              setCustomSpecs(next)
+                            }}
+                          />
+                          <input
+                            type="text"
+                            placeholder="Value"
+                            className="flex-1 bg-gray-50 dark:bg-gray-900 border-none rounded-xl px-3 py-2 text-[10px] font-bold outline-none ring-2 ring-transparent focus:ring-primary-500"
+                            value={spec.value}
+                            onChange={(e) => {
+                              const next = [...customSpecs]
+                              next[i] = { ...next[i], value: e.target.value }
+                              setCustomSpecs(next)
+                            }}
+                          />
+                          <button type="button" onClick={() => setCustomSpecs(customSpecs.filter((_, j) => j !== i))}
+                            className="p-2 text-gray-400 hover:text-red-500 transition-colors">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                          </button>
+                        </div>
+                      ))}
+                      <button type="button" onClick={() => setCustomSpecs([...customSpecs, { name: '', value: '' }])}
+                        className="w-full py-2.5 rounded-2xl border-2 border-dashed border-gray-200 dark:border-gray-700 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:border-primary-500 hover:text-primary-600 transition-all">
+                        + Add Spec
+                      </button>
                     </div>
                   </div>
                   
