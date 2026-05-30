@@ -217,7 +217,11 @@ export default function ProfilePage() {
                     </div>
                     <div className="space-y-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Email</label>
-                      <input className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-2 ring-transparent opacity-60" value={user?.email || ''} disabled />
+                      <input className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 opacity-60" value={user?.email || ''} disabled />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Phone</label>
+                      <input className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500" value={editForm.phone} onChange={(e) => setEditForm({ ...editForm, phone: e.target.value })} placeholder="+91 98765 43210" />
                     </div>
                     <div className="flex gap-3">
                       <Button onClick={updateProfile} disabled={saving} className="rounded-xl">
@@ -235,10 +239,11 @@ export default function ProfilePage() {
                       <div className="flex-1">
                         <h3 className="text-xl font-black text-gray-900 dark:text-white">{user?.firstName} {user?.lastName}</h3>
                         <p className="text-sm text-gray-500">{user?.email}</p>
+                        {user?.phone && <p className="text-sm text-gray-400">{user?.phone}</p>}
                         <span className="text-[10px] font-black uppercase tracking-widest text-primary-600">{user?.role}</span>
                       </div>
                       <Button variant="outline" size="sm" onClick={() => {
-                        setEditForm({ firstName: user?.firstName || '', lastName: user?.lastName || '', phone: '' })
+                        setEditForm({ firstName: user?.firstName || '', lastName: user?.lastName || '', phone: user?.phone || '' })
                         setEditMode(true)
                       }} className="rounded-xl">
                         <Pencil className="h-4 w-4 mr-1" /> Edit
@@ -613,6 +618,13 @@ export default function ProfilePage() {
           <div className="flex-1 min-w-0 max-w-3xl">
             {renderContent()}
           </div>
+          {renterPersonality && renterInfo && (
+            <div className="hidden lg:block w-64 shrink-0">
+              <div className="sticky top-24">
+                <PersonalityBadge type={renterPersonality} info={renterInfo} size="lg" showRibbon />
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

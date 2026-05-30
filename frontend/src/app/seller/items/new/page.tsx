@@ -474,7 +474,24 @@ export default function NewItemPage() {
                 </div>
               </div>
 
-              <input type="hidden" name="categoryId" value={form.categoryId} />
+              <div>
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">Category</label>
+                <div className="relative">
+                  <select
+                    name="categoryId"
+                    className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 appearance-none cursor-pointer transition-all"
+                    value={form.categoryId}
+                    onChange={(e) => setForm({ ...form, categoryId: e.target.value })}
+                    required
+                  >
+                    <option value="">Select Category</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400 pointer-events-none" />
+                </div>
+              </div>
 
               {selectedProduct && (
                 <div className="grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
