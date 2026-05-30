@@ -296,3 +296,31 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, li {
 .grid {
   min-width: 0;
 }
+
+/* ─── Dark mode remap (bg stays warm cream) ─── */
+html.dark .dark\:bg-gray-900 {
+  background-color: #F5F0E8;
+}
+html.dark .dark\:bg-gray-900\/50 {
+  background-color: rgba(245, 240, 232, 0.5);
+}
+html.dark .dark\:bg-gray-900\/95 {
+  background-color: rgba(253, 248, 240, 0.95);
+}
+html.dark .dark\:bg-gray-800 {
+  background-color: #EBE5D8;
+}
+html.dark .dark\:text-white,
+html.dark .dark\:text-gray-100,
+html.dark .dark\:text-gray-200,
+html.dark .dark\:text-gray-300 {
+  color: #1A1220;
+}
+html.dark .dark\:text-gray-400,
+html.dark .dark\:text-gray-500 {
+  color: #6B6572;
+}
+html.dark .dark\:border-gray-800,
+html.dark .dark\:border-gray-700 {
+  border-color: #D4CFC5;
+}
