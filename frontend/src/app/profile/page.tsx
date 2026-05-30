@@ -356,6 +356,7 @@ export default function ProfilePage() {
             </div>
             <div className="grid sm:grid-cols-2 gap-6">
               {['renter', 'seller', 'wholesaler', ...(user?.role === 'admin' ? ['admin'] : [])].map((role) => (
+                <Link key={role} href={`/${role}/dashboard`}>
                   <Card className="border-none bg-white dark:bg-gray-800 shadow-sm rounded-[32px] hover:shadow-xl transition-all cursor-pointer group">
                     <CardContent className="p-8 flex items-center justify-between">
                       <div>

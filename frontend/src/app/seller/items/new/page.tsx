@@ -176,7 +176,7 @@ export default function NewItemPage() {
         c.name === selectedProduct.category ||
         c.name.includes(selectedProduct.category) ||
         selectedProduct.category.includes(c.name) ||
-        c.name.split(' ').some(w => selectedProduct.category.includes(w))
+        c.name.split(' ').some((w: string) => selectedProduct.category.includes(w))
       )
       if (!cat) console.warn('No matching category for', selectedProduct.category, 'among', categories.map(c => c.name))
       setForm(prev => ({
