@@ -259,9 +259,12 @@ export default function NewItemPage() {
     setAiAnalyzing(false)
   }
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    if (!form.categoryId || !form.cityId) {
+    const data = new FormData(e.currentTarget)
+    const categoryId = data.get('categoryId') as string
+    const cityId = data.get('cityId') as string
+    if (!categoryId || !cityId) {
       toast.error('Please select category and city')
       return
     }
@@ -296,6 +299,8 @@ export default function NewItemPage() {
       const rv = sellerType === 'A' && resellValue ? resellValue : null
       const res = await api.post('/items', {
         ...form,
+        categoryId,
+        cityId,
         sellerType,
         resellValue: rv,
         subAttributes: finalizedSubAttributes,
@@ -456,6 +461,8 @@ export default function NewItemPage() {
                 </div>
               </div>
 
+              <input type="hidden" name="categoryId" value={form.categoryId} />
+
               {selectedProduct && (
                 <div className="grid grid-cols-2 gap-6 animate-in fade-in slide-in-from-top-4 duration-500">
                   <div className="space-y-4">
@@ -535,6 +542,7 @@ export default function NewItemPage() {
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">Location</label>
                   <div className="relative">
                     <select 
+                      name="cityId"
                       className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-3 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 appearance-none cursor-pointer"
                       value={form.cityId} 
                       onChange={(e) => setForm({ ...form, cityId: e.target.value })}
