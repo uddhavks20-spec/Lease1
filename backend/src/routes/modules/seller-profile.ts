@@ -104,7 +104,7 @@ router.patch('/', auth(true), async (req: Request, res: Response, next: NextFunc
       params.push(storeName)
     }
 
-    if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' })
+    if (updates.length === 0) return       res.status(400).json({ error: 'Nothing to change 🫥', description: 'No fields were provided to update.' })
 
     params.push(userId)
     await db.query(

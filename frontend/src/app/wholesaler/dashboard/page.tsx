@@ -36,8 +36,8 @@ export default function WholesalerDashboard() {
     try {
       await api.delete('/wholesaler/products/' + id);
       setProducts(products.filter(p => p.id !== id));
-      toast.success('Product deleted');
-    } catch (e) { toast.error('Delete failed'); }
+      toast.success('Product deleted 🗑️');
+    } catch (e) { toast.error('Delete failed 🗑️'); }
   };
 
   if (loading) return <div className="container py-20 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div></div>;

@@ -224,7 +224,7 @@ router.post('/:id/complete', auth(false), async (req: Request, res: Response, ne
     const { id } = req.params
     const booking = bookings.get(id)
     if (!booking) return res.status(404).json({ error: 'Booking not found' })
-    if (booking.status === 'completed') return res.status(400).json({ error: 'Already completed' })
+    if (booking.status === 'completed') return       res.status(400).json({ error: 'Already done ✅', description: 'This has already been completed.' })
 
     const missedChecks = booking.checkIns.filter(c => c.status === 'pending' && new Date(c.dueDate) < new Date())
     for (const c of missedChecks) c.status = 'no_response'

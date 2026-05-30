@@ -53,7 +53,7 @@ router.post('/renter', auth(true), async (req: Request, res: Response, next: Nex
     const { personality, answers } = req.body
 
     if (!RENTER_TYPES.includes(personality)) {
-      res.status(400).json({ error: 'Invalid renter personality type' })
+      res.status(400).json({ error: 'Wrong character build 🎭', description: 'Select a valid personality type.' })
       return
     }
 
@@ -104,7 +104,7 @@ router.post('/item/:itemId', auth(true), async (req: Request, res: Response, nex
     const { personality, answers } = req.body
 
     if (!SELLER_TYPES.includes(personality)) {
-      res.status(400).json({ error: 'Invalid seller personality type' })
+      res.status(400).json({ error: 'Wrong character build 🎭', description: 'Select a valid personality type.' })
       return
     }
 
@@ -114,7 +114,7 @@ router.post('/item/:itemId', auth(true), async (req: Request, res: Response, nex
       return
     }
     if (item.seller_id !== userId) {
-      res.status(403).json({ error: 'Only the seller can set item personality' })
+      res.status(403).json({ error: 'Admin powers required 👑', description: 'You don\'t have permission.' })
       return
     }
 

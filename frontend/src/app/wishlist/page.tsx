@@ -46,9 +46,9 @@ export default function WishlistPage() {
     try {
       await api.delete(`/wishlist/${itemId}`)
       setItems(items.filter(i => i.item_id !== itemId))
-      toast.success('Removed from wishlist')
+      toast.success('Roster updated ✂️')
     } catch {
-      toast.error('Failed to remove')
+      toast.error('Roster update failed ✂️')
     }
   }
 

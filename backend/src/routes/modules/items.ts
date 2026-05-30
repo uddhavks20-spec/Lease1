@@ -122,7 +122,7 @@ router.post('/', auth(true), requireRoles('seller'), async (req: Request, res: R
       [sellerId, title]
     )
     if (existing.rows.length > 0) {
-      return res.status(400).json({ error: 'You already have a listing with this title' })
+      return       res.status(400).json({ error: 'Seen this one before 👀', description: 'You already have a listing with that title.' })
     }
 
     const status = process.env.TEST_MODE === 'true' ? 'approved' : 'pending'

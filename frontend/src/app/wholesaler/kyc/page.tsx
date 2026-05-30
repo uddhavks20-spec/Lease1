@@ -40,14 +40,14 @@ export default function WholesalerKYCPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.businessName || !form.gstNumber) {
-      toast.error('Business name and GST number are required')
+      toast.error('Missing paperwork 📄')
       return
     }
     try {
       await api.post('/wholesaler/kyc', form)
-      toast.success('KYC submitted for review. We will contact you at kishanuddhav2004@gmail.com')
+      toast.success('Waiting on the NPCs ⏳')
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Submission failed')
+      toast.error(err.response?.data?.error || 'Upload failed 📤')
     }
   }
 

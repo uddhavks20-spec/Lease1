@@ -19,10 +19,10 @@ router.post(
     try {
       const { email, password, firstName, lastName, role } = req.body
       const existing = await db.query('SELECT id FROM users WHERE email=$1', [email])
-      if (existing.rowCount) return res.status(409).json({ error: 'Email already in use' })
+      if (existing.rowCount) return       res.status(409).json({ error: 'That username is taken 🎯', description: 'An account already exists with this email.' })
 
       const roleRes = await db.query('SELECT id FROM roles WHERE name=$1', [role])
-      if (!roleRes.rowCount) return res.status(400).json({ error: 'Invalid role' })
+      if (!roleRes.rowCount) return       res.status(400).json({ error: 'Wrong class selected 🎮', description: 'The selected role isn\'t valid.' })
       const roleId = roleRes.rows[0].id
 
       const hash = await bcrypt.hash(password, 10)
@@ -52,10 +52,10 @@ router.post(
          FROM users u JOIN roles r ON r.id = u.role_id WHERE u.email=$1`,
         [email]
       )
-      if (!userRes.rowCount) return res.status(401).json({ error: 'Invalid credentials' })
+      if (!userRes.rowCount) return res.status(401).json({ error: 'Access denied 🚫', description: 'Email or password is incorrect.' })
       const user = userRes.rows[0]
       const ok = await bcrypt.compare(password, user.password_hash)
-      if (!ok) return res.status(401).json({ error: 'Invalid credentials' })
+      if (!ok) return res.status(401).json({ error: 'Access denied 🚫', description: 'Email or password is incorrect.' })
       const token = jwt.sign({ sub: user.id, role: user.role }, JWT_SECRET, { expiresIn: TOKEN_TTL })
       return res.json({ token })
     } catch (e) {

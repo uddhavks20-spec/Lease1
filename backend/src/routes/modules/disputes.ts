@@ -46,7 +46,7 @@ router.post(
         [rentalId, userId]
       )
       if (existing.rowCount) {
-        res.status(400).json({ error: 'An active dispute already exists for this rental' })
+        res.status(400).json({ error: 'Case already open 📂', description: 'There\'s already an active dispute for this rental.' })
         return
       }
 
@@ -62,8 +62,8 @@ router.post(
         const otherPartyId = rentalInfo.renter_id === userId ? rentalInfo.seller_id : rentalInfo.renter_id
         await notifyUser({
           userId: otherPartyId,
-          title: '⚠️ Dispute Raised',
-          message: `A dispute has been raised on rental: ${title || type}`,
+          title: 'Meta Shift ⚠️',
+          message: 'A dispute has been raised. Time to pull up the logs and fix the synergy.',
           type: 'warning',
           actionUrl: '/disputes',
           relatedEntityType: 'dispute',
@@ -146,8 +146,8 @@ router.post(
         const otherPartyId = disputeInfo.raised_by === userId ? (disputeInfo.renter_id === userId ? disputeInfo.seller_id : disputeInfo.renter_id) : disputeInfo.raised_by
         await notifyUser({
           userId: otherPartyId,
-          title: '💬 New Message on Dispute',
-          message: message.slice(0, 120),
+          title: 'Chat Active 💬',
+          message: 'New message in the dispute logs. Don\'t ghost the thread.',
           type: 'info',
           actionUrl: '/disputes',
           relatedEntityType: 'dispute',
@@ -193,8 +193,8 @@ router.patch(
         for (const nid of notifyIds) {
           await notifyUser({
             userId: nid,
-            title: status === 'resolved' ? '✅ Dispute Resolved' : status === 'escalated' ? '🔺 Dispute Escalated' : '🔍 Dispute Under Review',
-            message: `Status updated to ${status}.${resolution ? ` Resolution: ${resolution}` : ''}`,
+            title: 'Verdict Update ⚖️',
+            message: `Case status changed: ${status === 'resolved' ? 'Resolved' : status === 'escalated' ? 'Escalated' : 'Under Review'}. The lobby has updated.`,
             type: status === 'resolved' ? 'success' : 'info',
             actionUrl: '/disputes',
             relatedEntityType: 'dispute',

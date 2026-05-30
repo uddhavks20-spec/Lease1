@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { PersonalityBadge, RENTER_DESCRIPTIONS, SELLER_RECOMMENDATIONS, type PersonalityInfo } from '@/components/PersonalityBadge'
 import { PersonalityQuiz } from '@/components/PersonalityQuiz'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { toast } from 'react-hot-toast'
 import {
@@ -35,6 +35,15 @@ export default function ProfilePage() {
   const { user, logout, refreshUser } = useAuth()
   const [activeSection, setActiveSection] = useState('profile')
   const [sidebarOpen, setSidebarOpen] = useState(true)
+
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const section = searchParams?.get('section')
+    if (section && SIDEBAR_ITEMS.some(i => i.key === section && !i.href)) {
+      setActiveSection(section)
+    }
+  }, [searchParams])
 
   const [renterPersonality, setRenterPersonality] = useState<string | null>(null)
   const [renterInfo, setRenterInfo] = useState<PersonalityInfo | null>(null)
@@ -102,10 +111,10 @@ export default function ProfilePage() {
     setSaving(true)
     try {
       await api.patch('/users/me', editForm)
-      toast.success('Profile updated')
+      toast.success('Character updated ✨')
       setEditMode(false)
       refreshUser()
-    } catch { toast.error('Failed to update profile') }
+    } catch {       toast.error('Save failed 💾') }
     finally { setSaving(false) }
   }
 
@@ -113,9 +122,9 @@ export default function ProfilePage() {
     e.preventDefault()
     try {
       await api.post('/kyc/me', kycForm)
-      toast.success('KYC submitted for review')
+      toast.success('Waiting on the NPCs ⏳')
       setKyc((prev: any) => ({ ...prev, status: 'pending' }))
-    } catch { toast.error('Failed to submit KYC') }
+    } catch {       toast.error('Verification paused ⏸️') }
   }
 
   const handleSellerRegister = async () => {
@@ -123,11 +132,11 @@ export default function ProfilePage() {
     try {
       const res = await api.post('/users/me/add-role', { role: 'seller' })
       localStorage.setItem('token', res.data.token)
-      toast.success('Seller account created!')
+      toast.success('Shop unlocked 🛍️')
       setSellerRole('seller')
       refreshUser()
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Failed to create seller account')
+      toast.error(err?.response?.data?.error || 'Shop unlock failed 🛍️')
     } finally { setSellerLoading(false) }
   }
 
@@ -136,10 +145,10 @@ export default function ProfilePage() {
     try {
       const res = await api.post('/users/me/add-role', { role: 'wholesaler' })
       localStorage.setItem('token', res.data.token)
-      toast.success('Wholesaler account created!')
+      toast.success('Empire begins 📦')
       refreshUser()
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Failed to create wholesaler account')
+      toast.error(err?.response?.data?.error || 'Empire delayed 📦')
     } finally { setWholesalerLoading(false) }
   }
 
@@ -152,10 +161,10 @@ export default function ProfilePage() {
     if (deleteText !== 'DELETE') return
     try {
       await api.delete('/users/me')
-      toast.success('Account deleted')
+      toast.success('Character retired 🫡')
       logout()
       router.push('/')
-    } catch { toast.error('Failed to delete account') }
+    } catch {       toast.error('Exit failed 🚪') }
   }
 
   const renderSidebar = () => (

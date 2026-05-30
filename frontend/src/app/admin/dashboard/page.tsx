@@ -39,9 +39,9 @@ export default function AdminDashboard() {
 
   useEffect(() => { load() }, [])
 
-  const approveItem = async (id: string) => { await api.patch(`/admin/items/${id}/approve`); toast.success('Approved'); load() }
-  const approveKyc = async (userId: string) => { await api.patch(`/admin/kyc/${userId}/approve`); toast.success('KYC approved'); load() }
-  const approveRental = async (id: string) => { await api.patch(`/admin/rentals/${id}/approve`); toast.success('Rental approved'); load() }
+  const approveItem = async (id: string) => { await api.patch(`/admin/items/${id}/approve`); toast.success('Item spawned ✅'); load() }
+  const approveKyc = async (userId: string) => { await api.patch(`/admin/kyc/${userId}/approve`); toast.success('Player verified ✅'); load() }
+  const approveRental = async (id: string) => { await api.patch(`/admin/rentals/${id}/approve`); toast.success('Mission greenlit ✅'); load() }
 
   const metrics = data ? [
     { label: 'Revenue', value: formatCurrency(Number(data.revenue)), icon: DollarSign, color: 'bg-green-50 text-green-600 dark:bg-green-900/20' },

@@ -27,7 +27,7 @@ router.post(
       const codeUpper = code.toUpperCase()
       const existing = await db.query(`SELECT id FROM coupons WHERE code=$1`, [codeUpper])
       if (existing.rowCount) {
-        res.status(409).json({ error: 'Coupon code already exists' })
+        res.status(409).json({ error: 'Discount code taken 🏷️', description: 'This coupon code is already in use.' })
         return
       }
 
@@ -97,17 +97,17 @@ router.get('/validate', auth(true), query('code').isString(), query('amount').op
     )).rows[0]
 
     if (!coupon) {
-      res.status(404).json({ valid: false, error: 'Invalid or expired coupon code' })
+      res.status(404).json({ valid: false, error: 'Coupon expired like old memes 🫠', description: 'Enter a valid coupon code.' })
       return
     }
 
     if (coupon.usage_limit && coupon.used_count >= coupon.usage_limit) {
-      res.status(400).json({ valid: false, error: 'Coupon usage limit reached' })
+      res.status(400).json({ valid: false, error: 'Coupon exhausted 🎟️', description: 'This coupon has reached its usage limit.' })
       return
     }
 
     if (amount < coupon.min_rental_amount) {
-      res.status(400).json({ valid: false, error: `Minimum rental amount of ₹${coupon.min_rental_amount} required` })
+      res.status(400).json({ valid: false, error: 'Quest requirements not met 📋', description: `Your order doesn\'t meet the minimum amount of ₹${coupon.min_rental_amount}.` })
       return
     }
 

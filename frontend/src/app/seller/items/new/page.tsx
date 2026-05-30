@@ -260,9 +260,9 @@ export default function NewItemPage() {
       setResellValue(res.data.estimatedResellValue)
       setAiResellReasoning(res.data.reasoning)
       setResellLocked(false)
-      toast.success(`AI estimated resell value: ₹${res.data.estimatedResellValue.toLocaleString('en-IN')}`)
+        toast.success(`AI did the math 🤖 — ₹${res.data.estimatedResellValue.toLocaleString('en-IN')}`)
     } catch (e) {
-      toast.error('AI analysis failed. Enter resell value manually.')
+        toast.error('AI took a coffee break 🤖☕')
       setResellLocked(false)
     }
     setAiAnalyzing(false)
@@ -322,11 +322,11 @@ export default function NewItemPage() {
         damagePhotoUrl: verification.damagePhotoUrl || undefined,
         verificationNotes: verification.notes || undefined,
       })
-      toast.success('Item created! Now set a personality to attract the right renters.')
+        toast.success('Spawned successfully 🎭')
       setNewItemId(res.data.id)
       setShowQuiz(true)
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create item')
+      toast.error(err.response?.data?.error || 'Spawn failed 🎭')
     }
   }
 

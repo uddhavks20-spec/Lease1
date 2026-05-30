@@ -26,19 +26,19 @@ router.post(
       )).rows[0]
       if (!rental) return res.status(404).json({ error: 'Rental not found' })
       if (rental.status !== 'completed') {
-        return res.status(400).json({ error: 'Reviews can only be submitted after rental is completed' })
+        return       res.status(400).json({ error: 'Too early for the credits 🎬', description: 'Complete the rental first.' })
       }
       if (rental.renter_id !== reviewerId && rental.revieweeId !== reviewerId) {
         // Also check if user is the seller of the item
         const item = (await db.query(`SELECT seller_id FROM items WHERE id=$1`, [rental.item_id])).rows[0]
         if (!item || item.seller_id !== reviewerId) {
-          return res.status(403).json({ error: 'You are not a participant in this rental' })
+          return       res.status(403).json({ error: 'Admin powers required 👑', description: 'You don\'t have permission.' })
         }
       }
 
       // Prevent self-review
       if (reviewerId === revieweeId) {
-        return res.status(400).json({ error: 'You cannot review yourself' })
+        return       res.status(400).json({ error: 'Self-love detected ❤️', description: 'You can\'t review your own account.' })
       }
 
       // One review per target per rental
@@ -47,7 +47,7 @@ router.post(
         [rentalId, reviewerId, revieweeId]
       )).rows[0]
       if (existing) {
-        return res.status(400).json({ error: 'You have already reviewed this user for this rental' })
+        return       res.status(400).json({ error: 'One review is enough ✍️', description: 'You\'ve already submitted a review.' })
       }
 
       const result = await db.query(

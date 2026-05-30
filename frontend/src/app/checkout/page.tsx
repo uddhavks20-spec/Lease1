@@ -59,7 +59,7 @@ export default function CheckoutPage() {
 
   const verifyOTP = async () => {
     if (otp.length !== 6) {
-      toast.error("Please enter a valid 6-digit OTP");
+      toast.error("OTP must be 6 digits 🔢");
       return;
     }
     setIsVerifying(true);
@@ -72,28 +72,28 @@ export default function CheckoutPage() {
 
   const handleCheckout = async () => {
     if (!address.fullName || !address.phoneNumber || !address.pincode || !address.flatHouseNo || !address.areaStreet) {
-      toast.error("Please fill in all mandatory delivery details");
+      toast.error("Delivery details incomplete 📍");
       return;
     }
 
     if (address.addressType === 'hostel' && (!address.hostelName || !address.roomNumber)) {
-      toast.error("Please provide Hostel and Room details for campus delivery");
+      toast.error("Hostel zone needs coordinates 🏠");
       return;
     }
 
     if (!agreedToKYC || !agreedToTerms) {
-      toast.error("Please agree to KYC policy and Terms of Service");
+      toast.error("Terms not accepted 📜");
       return;
     }
 
     if (!agreedToTheftPolicy) {
-      toast.error("Please acknowledge the theft & non-return policy");
+      toast.error("Theft policy unchecked 🔒");
       return;
     }
 
     // Trigger OTP first for security
     setShowOTP(true);
-    toast.success("OTP sent to your mobile number");
+    toast.success("Signal received 📲");
   };
 
   const proceedToPayment = async () => {
@@ -125,7 +125,7 @@ export default function CheckoutPage() {
       // If Lease Credit or Pay Later, we simulate success immediately
       if (paymentMethod === 'lease_credit' || paymentMethod === 'paylater') {
         await new Promise(r => setTimeout(r, 2000));
-        toast.success(`Order placed using ${paymentMethod === 'lease_credit' ? 'Lease Credit' : 'Pay Later'}!`);
+        toast.success(`Mission accepted ✅`);
         clearCart();
         router.push("/renter/dashboard");
         return;
@@ -139,7 +139,7 @@ export default function CheckoutPage() {
         description: "Initial Rental Payment",
         order_id: order.id,
         handler: function (response: any) {
-          toast.success("Payment successful! Order confirmed.");
+          toast.success("GG WP 🎉");
           clearCart();
           router.push("/renter/dashboard");
         },
@@ -155,10 +155,10 @@ export default function CheckoutPage() {
         const rzp = new window.Razorpay(options);
         rzp.open();
       } else {
-        toast.error("Razorpay SDK not loaded. Please try again.");
+        toast.error("Payment gateway on break 💤");
       }
     } catch (e: any) {
-      toast.error(e.response?.data?.error || "Unable to process order");
+      toast.error(e.response?.data?.error || "Order failed — server said no 🙅");
     } finally {
       setLoading(false);
     }

@@ -95,14 +95,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         level: u.level
       }
       setUser(normalized)
-      toast.success('Welcome back!')
+      toast.success('Back in the lobby 👋')
       if (normalized.role === 'admin') router.push('/admin/dashboard')
       else if (normalized.role === 'seller') router.push('/seller/dashboard')
       else if (normalized.role === 'wholesaler') router.push('/wholesaler/dashboard')
       else router.push('/renter/dashboard')
       
     } catch (error) {
-      toast.error('Login failed. Please check your credentials.')
+      toast.error('Access denied 🚫')
       throw error
     } finally {
       setIsLoading(false)
@@ -134,13 +134,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         level: u.level
       }
       setUser(normalized)
-      toast.success('Account created. Complete KYC verification.')
+      toast.success('Account unlocked 🎯')
       if (userData.role === 'seller') router.push('/seller/kyc')
       else if (userData.role === 'wholesaler') router.push('/wholesaler/kyc')
       else router.push('/renter/kyc')
       
     } catch (error) {
-      toast.error('Registration failed. Please try again.')
+      toast.error('Plot twist 😬')
       throw error
     } finally {
       setIsLoading(false)
@@ -150,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = () => {
     setUser(null)
     localStorage.removeItem('token')
-    toast.success('Logged out successfully')
+    toast.success('Ghost mode activated 👻')
     router.push('/')
   }
 

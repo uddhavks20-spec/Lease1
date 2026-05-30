@@ -55,12 +55,12 @@ export default function SellerCouponsPage() {
         usage_limit: form.usage_limit ? parseInt(form.usage_limit) : undefined,
         valid_until: form.valid_until || undefined,
       })
-      toast.success('Coupon created!')
+      toast.success('Coupon spawned 🎟️')
       setShowCreate(false)
       setForm({ code: '', description: '', discount_type: 'percentage', discount_value: '', min_rental_amount: '0', max_discount_amount: '', usage_limit: '', valid_until: '' })
       fetchCoupons()
     } catch (e: any) {
-      toast.error(e.response?.data?.error || 'Failed to create coupon')
+      toast.error(e.response?.data?.error || 'Coupon creation failed 🎟️')
     }
   }
 
@@ -72,13 +72,13 @@ export default function SellerCouponsPage() {
   const deleteCoupon = async (id: string) => {
     if (!confirm('Delete this coupon?')) return
     await api.delete(`/coupons/${id}`)
-    toast.success('Coupon deleted')
+    toast.success('Coupon vanished 🪄')
     fetchCoupons()
   }
 
   const copyCode = (code: string) => {
     navigator.clipboard.writeText(code)
-    toast.success('Copied!')
+    toast.success('In your clipboard 📋')
   }
 
   if (loading) return <div className="container py-20 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" /></div>

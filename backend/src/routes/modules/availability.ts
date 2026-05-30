@@ -48,10 +48,10 @@ router.post('/:itemId/block', auth(true), async (req: Request, res: Response, ne
     )).rows[0]
     if (!item) return res.status(404).json({ error: 'Item not found' })
     if (item.seller_id !== userId && req.user!.role !== 'admin') {
-      return res.status(403).json({ error: 'Only the seller can block dates' })
+      return       res.status(403).json({ error: 'Seller only zone 🚧', description: 'Only sellers can block dates.' })
     }
 
-    if (!startDate || !endDate) return res.status(400).json({ error: 'startDate and endDate required' })
+    if (!startDate || !endDate) return       res.status(400).json({ error: 'Time machine incomplete 📅', description: 'Select both start and end dates.' })
 
     const result = await db.query(
       `INSERT INTO item_availability_blocks (item_id, start_date, end_date, reason)
@@ -80,7 +80,7 @@ router.delete('/block/:id', auth(true), async (req: Request, res: Response, next
     )).rows[0]
     if (!block) return res.status(404).json({ error: 'Block not found' })
     if (block.seller_id !== userId && req.user!.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' })
+      return res.status(403).json({ error: 'You shall not pass 🚷', description: 'You don\'t have permission for this action.' })
     }
 
     await db.query(`DELETE FROM item_availability_blocks WHERE id=$1`, [id])
@@ -96,7 +96,7 @@ router.get('/:itemId/check', async (req: Request, res: Response, next: NextFunct
     const { itemId } = req.params
     const { start, end } = req.query as { start?: string; end?: string }
 
-    if (!start || !end) return res.status(400).json({ error: 'start and end query params required' })
+    if (!start || !end) return       res.status(400).json({ error: 'Time machine incomplete 📅', description: 'Select both start and end dates.' })
 
     const result = (await db.query(
       `SELECT is_item_available($1, $2, $3) as available`,

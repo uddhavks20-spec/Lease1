@@ -325,7 +325,7 @@ export default function HomePage() {
                     </div>
                     <CardTitle className="text-lg">The Flex Culture</CardTitle>
                     <CardDescription className="text-sm">
-                      So you can take mirror selfies with premium gear, post them to your drafts, and return it before anyone realizes you're actually broke. 🪞
+                      So you can take mirror selfies with premium gear, and return it before anyone realizes you're actually broke. 
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -337,7 +337,7 @@ export default function HomePage() {
                     </div>
                     <CardTitle className="text-lg">The Financial Delusion</CardTitle>
                     <CardDescription className="text-sm">
-                      Buying things fully is for adults with actual responsibilities. Renting lets us spend our allowance on expensive iced coffee instead. 💸🧋
+                      Buying things fully is for adults with actual responsibilities. Renting lets us spend on expensive iced coffee instead. 
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -349,7 +349,7 @@ export default function HomePage() {
                     </div>
                     <CardTitle className="text-lg">Identity Crisis</CardTitle>
                     <CardDescription className="text-sm">
-                      We change our entire personality every two weeks anyway. Your gear should change with your current delusion. 🔄🎭
+                      We change our entire personality every two weeks anyway. Your gear should also change with your current delusion. 
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -361,7 +361,7 @@ export default function HomePage() {
                     </div>
                     <CardTitle className="text-lg">Trust Issues? Same.</CardTitle>
                     <CardDescription className="text-sm">
-                      We use Razorpay escrow. Your money stays locked up safely until you actually get your stuff. No ghosting, no financial scams, just pure peace of mind. 🔒💸
+                      We use Razorpay escrow. Your money stays locked up safely until you actually get your stuff.
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -373,7 +373,19 @@ export default function HomePage() {
                     </div>
                     <CardTitle className="text-lg">Commitment Issues Friendly</CardTitle>
                     <CardDescription className="text-sm">
-                      Rent gear anywhere from 1 to 24 months. Because committing to a piece of tech forever feels way too much like a stable, long-term relationship, and we know you're not ready for that. 🤧💔
+                      Rent gear anywhere from 1 to 24 months. Because committing feels way too much like a long-term relationship, and we know you're not ready for that.
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🎒</span>
+                    </div>
+                    <CardTitle className="text-lg">The Closet Hoarder</CardTitle>
+                    <CardDescription className="text-sm">
+                      Your room is already overflowing with unwashed hoodies and random hyperfixation junk. Let us handle that clutter. 🎒📦
                     </CardDescription>
                   </CardHeader>
                 </Card>
@@ -383,14 +395,14 @@ export default function HomePage() {
           </div>
 
           {/* Sidebar Advertisements */}
-          <aside className="w-full lg:w-80 space-y-6">
+          <aside className="w-full lg:w-96 space-y-6">
             <div className="sticky top-24 space-y-6">
-              <div className="p-1">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-1 flex items-center gap-2">
-                  <ShoppingBag className="w-4 h-4" />
+              <div className="bg-white dark:bg-gray-800 rounded-[32px] p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
+                  <ShoppingBag className="w-5 h-5" />
                   Featured Gadgets
                 </h3>
-                <p className="text-[9px] text-gray-400 mb-4 ml-6">Staring at it won't put it in your cart, pick a vibe or step aside. 🛑</p>
+                <p className="text-xs text-gray-400 mb-4 ml-8">Staring at it won't put it in your cart, pick a vibe or step aside. 🛑</p>
                 
                 <div className="space-y-4">
                   {advertisements.map((ad, i) => (

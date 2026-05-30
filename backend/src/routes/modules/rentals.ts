@@ -36,7 +36,7 @@ router.post(
         `SELECT id, seller_id, monthly_rent, deposit_amount, retail_price FROM items WHERE id=$1 AND (status IN ('approved','active') OR ($2 AND status='pending'))`,
         [itemId, allowPending]
       )
-      if (!itemRes.rowCount) return res.status(404).json({ error: 'Item not available' })
+      if (!itemRes.rowCount) return       res.status(404).json({ error: 'Already claimed ⚔️', description: 'This item isn\'t available right now.' })
       const item = itemRes.rows[0]
 
       // Check availability
@@ -45,7 +45,7 @@ router.post(
         [itemId, startStr, endStr]
       )).rows[0]
       if (!availCheck?.available) {
-        return res.status(409).json({ error: 'Item not available for selected dates' })
+        return       res.status(409).json({ error: 'Calendar says no 📅', description: 'Choose different rental dates.' })
       }
 
       const totalRent = Number(item.monthly_rent) * Number(durationMonths)
@@ -160,9 +160,9 @@ router.get('/:id/timeline', auth(true), async (req: Request, res: Response, next
        FROM rentals r JOIN items i ON i.id = r.item_id WHERE r.id=$1`,
       [id]
     )).rows[0]
-    if (!rental) return res.status(404).json({ error: 'Rental not found' })
+    if (!rental) return res.status(404).json({ error: 'Lost in the void 🌌', description: 'We couldn\'t find that rental.' })
     if (rental.renter_id !== userId && rental.seller_id !== userId && req.user!.role !== 'admin') {
-      return res.status(403).json({ error: 'Forbidden' })
+      return       res.status(403).json({ error: 'You shall not pass 🚷', description: 'You don\'t have permission for this action.' })
     }
 
     const history = (await db.query(
@@ -194,7 +194,7 @@ router.patch('/:id/status', auth(true), async (req: Request, res: Response, next
        FROM rentals r JOIN items i ON i.id = r.item_id WHERE r.id=$1`,
       [id]
     )).rows[0]
-    if (!rental) return res.status(404).json({ error: 'Rental not found' })
+    if (!rental) return res.status(404).json({ error: 'Lost in the void 🌌', description: 'We couldn\'t find that rental.' })
 
     const isAdmin = req.user!.role === 'admin'
     const isSeller = rental.seller_id === userId
@@ -214,27 +214,27 @@ router.patch('/:id/status', auth(true), async (req: Request, res: Response, next
 
     const allowed = allowedTransitions[rental.status] || []
     if (!allowed.includes(status)) {
-      return res.status(400).json({ error: `Cannot transition from ${rental.status} to ${status}` })
+      return       res.status(400).json({ error: 'Timeline broken ⏳', description: `Cannot transition from ${rental.status} to ${status}.` })
     }
 
     // Permission checks for each transition
     if (status === 'rejected' && !isAdmin && !isSeller) {
-      return res.status(403).json({ error: 'Only seller or admin can reject rentals' })
+      return       res.status(403).json({ error: 'Admin powers required 👑', description: 'You don\'t have permission.' })
     }
     if (status === 'approved' && !isAdmin && !isSeller) {
-      return res.status(403).json({ error: 'Only seller or admin can approve rentals' })
+      return       res.status(403).json({ error: 'Admin powers required 👑', description: 'You don\'t have permission.' })
     }
     if (status === 'scheduled' && !isAdmin) {
-      return res.status(403).json({ error: 'Only admin can schedule rentals' })
+      return       res.status(403).json({ error: 'Admin powers required 👑', description: 'You don\'t have permission.' })
     }
     if (status === 'completed' && !isAdmin) {
-      return res.status(403).json({ error: 'Only admin can complete rentals' })
+      return       res.status(403).json({ error: 'Admin powers required 👑', description: 'You don\'t have permission.' })
     }
     if (status === 'disputed' && !isRenter && !isSeller) {
-      return res.status(403).json({ error: 'Only participants can dispute rentals' })
+      return       res.status(403).json({ error: 'Admin powers required 👑', description: 'You don\'t have permission.' })
     }
     if (status === 'cancelled' && !isRenter && !isAdmin) {
-      return res.status(403).json({ error: 'Only renter or admin can cancel rentals' })
+      return       res.status(403).json({ error: 'Admin powers required 👑', description: 'You don\'t have permission.' })
     }
 
     await db.query(
@@ -254,14 +254,22 @@ router.patch('/:id/status', auth(true), async (req: Request, res: Response, next
     const itemTitle = itemRes.rows[0]?.title || 'Item'
 
     // Notify involved users
-    const statusEmoji: Record<string, string> = { approved: '✅', rejected: '❌', scheduled: '📦', active: '🚀', completed: '🎉', cancelled: '🚫', disputed: '⚠️' }
-    const statusMessages: Record<string, string> = {
-      approved: 'Your rental has been approved!', rejected: 'Your rental was rejected.',
-      scheduled: 'Your rental is scheduled for delivery!', active: 'Your rental is now active!',
-      completed: 'Your rental has been completed. Thank you!', cancelled: 'Your rental was cancelled.',
-      disputed: 'A dispute has been raised on your rental.',
+    const statusTitles: Record<string, string> = {
+      approved: 'Request Accepted ✅', rejected: 'Request Denied ❌',
+      scheduled: 'Loadout Queued 📦', active: 'Live in the Match 🚀',
+      completed: 'GG WP 🎉', cancelled: 'Match Cancelled 🚫',
+      disputed: 'Clan Wars Activated ⚠️',
     }
-    const emoji = statusEmoji[status] || '📋'
+    const statusMessages: Record<string, string> = {
+      approved: 'Your rental is approved. Mission passed! Respect +.',
+      rejected: 'Rental rejected. Mission failed, we\'ll get \'em next time.',
+      scheduled: 'Your gear is locked in and preparing to spawn.',
+      active: 'The clock is ticking, make it look like a main character play.',
+      completed: 'Excellent rotation, clean execution.',
+      cancelled: 'Back to the lobby we go.',
+      disputed: 'The renter raised a dispute. Time to defend your base.',
+    }
+    const title = statusTitles[status] || `Rental ${status.charAt(0).toUpperCase() + status.slice(1)}`
     const msg = statusMessages[status] || `Status changed to ${status}`
 
     const notifyTargets = [rental.renter_id]
@@ -270,7 +278,7 @@ router.patch('/:id/status', auth(true), async (req: Request, res: Response, next
     for (const targetId of notifyTargets) {
       await notifyUser({
         userId: targetId,
-        title: `${emoji} Rental ${status.charAt(0).toUpperCase() + status.slice(1)}`,
+        title: title,
         message: `${itemTitle}: ${msg}`,
         type: status === 'completed' || status === 'approved' ? 'success' : status === 'rejected' || status === 'cancelled' ? 'error' : 'info',
         actionUrl: `/renter/rentals/${id}`,

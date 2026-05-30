@@ -60,7 +60,7 @@ export default function RentalDetailPage() {
       setRental(res.data.rental)
       setHistory(res.data.history || [])
     }).catch(() => {
-      toast.error('Failed to load rental details')
+      toast.error('Rental details corrupted 📁')
       router.push('/renter/dashboard')
     }).finally(() => setLoading(false))
   }, [id, user, router])

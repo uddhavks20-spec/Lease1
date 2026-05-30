@@ -44,7 +44,7 @@ router.patch('/me', auth(true), async (req: Request, res: Response, next: NextFu
     if (lastName) { updates.push(`last_name = $${idx++}`); values.push(lastName) }
     if (phone !== undefined) { updates.push(`phone = $${idx++}`); values.push(phone) }
 
-    if (updates.length === 0) return res.status(400).json({ error: 'No fields to update' })
+    if (updates.length === 0) return       res.status(400).json({ error: 'Nothing to change 🫥', description: 'No fields were provided to update.' })
 
     values.push(userId)
     await db.query(`UPDATE users SET ${updates.join(', ')} WHERE id = $${idx}`, values)
@@ -83,7 +83,7 @@ router.post('/me/add-role', auth(true), async (req: Request, res: Response, next
     const { role } = req.body
 
     const roleRes = await db.query('SELECT id FROM roles WHERE name = $1', [role])
-    if (!roleRes.rowCount) return res.status(400).json({ error: 'Invalid role' })
+    if (!roleRes.rowCount) return     res.status(400).json({ error: 'Wrong class selected 🎮', description: 'The selected role isn\'t valid.' })
 
     await db.query('UPDATE users SET role_id = $1 WHERE id = $2', [roleRes.rows[0].id, userId])
 

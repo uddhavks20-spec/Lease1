@@ -43,7 +43,7 @@ export default function DisputesPage() {
     setNewMessage('')
     const res = await api.get(`/disputes/${selected.id}`)
     setMessages(res.data.messages)
-    toast.success('Message sent')
+    toast.success('Chat updated 💬')
   }
 
   if (loading) return <div className="container py-20 flex justify-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600" /></div>

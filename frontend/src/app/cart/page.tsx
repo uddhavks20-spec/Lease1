@@ -36,7 +36,7 @@ export default function CartPage() {
         setCouponDiscount(res.data.discount);
         setCouponError('');
         setShowCouponInput(false);
-        toast.success(`Coupon applied! You saved ${formatCurrency(res.data.discount)}`);
+        toast.success(`Savings unlocked 💸 — ${formatCurrency(res.data.discount)}`);
       }
     } catch (err: any) {
       setCouponError(err.response?.data?.error || 'Invalid coupon');
@@ -74,7 +74,7 @@ export default function CartPage() {
         </div>
         <div className="space-y-2">
           <h1 className="text-3xl font-black text-gray-900 dark:text-white">Your cart is empty</h1>
-          <p className="text-gray-500 max-w-xs mx-auto">Looks like you haven't added any rentals to your cart yet.</p>
+          <p className="text-gray-500 max-w-xs mx-auto">Your cart is getting fewer hits than your resume on LinkedIn. Let's at least fix your campus rotation while you wait for that HR callback.</p>
         </div>
         <Link href="/browse">
           <Button className="h-12 px-8 font-bold rounded-xl shadow-lg shadow-primary-200">

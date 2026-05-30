@@ -117,9 +117,9 @@ export default function SellerDashboard() {
     try {
       await api.delete(`/items/${id}`);
       setItems(items.filter(item => item.id !== id));
-      toast.success('Listing deleted');
+              toast.success('Poof 💨');
     } catch (e) {
-      toast.error('Failed to delete listing');
+      toast.error('Delete failed 🗑️');
     }
   };
 
@@ -305,10 +305,10 @@ export default function SellerDashboard() {
                     <Button variant="ghost" size="sm" className={`${(item as any).is_boosted ? 'text-purple-500' : 'text-gray-400'}`} onClick={async () => {
                       try {
                         await api.patch(`/items/${item.id}/boost`);
-                        toast.success((item as any).is_boosted ? 'Boost removed' : 'Item boosted!');
+                        toast.success((item as any).is_boosted ? 'Back to normal 📉' : 'Main character mode 🚀');
                         const res = await api.get('/items/seller/my-items');
                         setItems(res.data.items);
-                      } catch { toast.error('Failed to toggle boost'); }
+                      } catch {         toast.error('Rocket malfunction 🚀'); }
                     }}>
                       <Zap className={`h-4 w-4 ${(item as any).is_boosted ? 'fill-purple-500' : ''}`} />
                     </Button>

@@ -31,19 +31,19 @@ export default function NewWholesaleProductPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!form.title || !form.pricePerUnit || !form.quantityAvailable) {
-      toast.error('Title, price per unit, and quantity are required')
+      toast.error('Missing essentials 📦')
       return
     }
     if (form.quantityAvailable < 1) {
-      toast.error('Quantity must be at least 1')
+      toast.error('Quantity? At least 1, come on 📦')
       return
     }
     try {
       const res = await api.post('/wholesaler/products', form)
-      toast.success('Product listed successfully!')
+      toast.success('We\'re live 🔥')
       router.push('/wholesaler/dashboard')
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to create product')
+      toast.error(err.response?.data?.error || 'Product launch delayed 🚀')
     }
   }
 

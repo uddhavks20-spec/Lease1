@@ -254,12 +254,12 @@ export default function BookingsPage() {
               <div className="space-y-2">
                 <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">No Active Rentals</h2>
                 <p className="text-gray-500 max-w-xs mx-auto text-sm font-medium">
-                  Start a booking through Lease Guru — just ask to rent something and select "Start booking process".
+                  No active rentals and no active love life? Tragic. Let’s at least fix one of those. Hit up Lease Guru to rent a fresh rotation and look like a catch again. 📉💅
                 </p>
               </div>
               <Link href="/">
                 <Button className="rounded-xl font-bold">
-                  Chat with Lease Guru
+                  Fix my rotation
                 </Button>
               </Link>
             </Card>

@@ -38,12 +38,12 @@ router.post('/track', auth(true), body('referralCode').isString(), async (req, r
     )).rows[0]
 
     if (!referrer) {
-      res.status(404).json({ error: 'Invalid referral code' })
+      res.status(404).json({ error: 'Invite not found 🔍', description: 'Check the referral code and try again.' })
       return
     }
 
     if (referrer.user_id === referredId) {
-      res.status(400).json({ error: 'Cannot refer yourself' })
+      res.status(400).json({ error: 'Nice try 😏', description: 'You can\'t use your own referral code.' })
       return
     }
 
@@ -112,7 +112,7 @@ router.post('/claim', auth(true), async (req, res, next) => {
     )).rows[0].total
 
     if (unclaimed <= 0) {
-      res.status(400).json({ error: 'No rewards to claim' })
+      res.status(400).json({ error: 'Empty treasure chest 📦', description: 'There are no rewards available.' })
       return
     }
 

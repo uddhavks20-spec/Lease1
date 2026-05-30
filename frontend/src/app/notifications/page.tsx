@@ -23,7 +23,7 @@ export default function NotificationsPage() {
   const markAllRead = async () => {
     await api.post('/notifications/read-all')
     setNotifications(prev => prev.map(n => ({ ...n, is_read: true })))
-    toast.success('All marked as read')
+    toast.success('Inbox zero 📭')
   }
 
   const typeIcon = (type: string) => {

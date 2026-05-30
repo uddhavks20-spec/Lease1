@@ -32,18 +32,18 @@ export default function ReferralsPage() {
   const copyLink = () => {
     navigator.clipboard.writeText(referralLink)
     setCopied(true)
-    toast.success('Referral link copied!')
+    toast.success('In your clipboard 📋')
     setTimeout(() => setCopied(false), 2000)
   }
 
   const claimRewards = async () => {
     try {
       const res = await api.post('/referrals/claim')
-      toast.success(`₹${res.data.amountClaimed} credited to your account!`)
+      toast.success(`Reward unlocked 🤑 — ₹${res.data.amountClaimed}`)
       const statsRes = await api.get('/referrals/my-stats')
       setStats(statsRes.data)
     } catch {
-      toast.error('Failed to claim rewards')
+      toast.error('Treasure chest locked 🧭')
     }
   }
 
@@ -91,7 +91,7 @@ export default function ReferralsPage() {
         <CardContent className="py-8 text-center">
           <div className="max-w-md mx-auto space-y-4">
             <h2 className="text-2xl font-black">Share Your Referral Link</h2>
-            <p className="text-gray-500">Seeing a row of zeros is completely on brand for your social life. Copy the link and spam your group chats—unless you're genuinely trying to gatekeep free cash from the few people who actually talk to you.</p>
+            <p className="text-gray-500">Zero referrals is crazy. Do you actually have no friends on campus, or are you just allergic to free cash? Fix your broke status and spam the link.</p>
             <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 rounded-2xl p-2">
               <div className="flex-1 px-4 py-2 font-mono font-bold text-sm truncate">{referralLink}</div>
               <Button onClick={copyLink} className="rounded-xl flex-shrink-0">

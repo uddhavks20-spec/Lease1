@@ -20,7 +20,7 @@ export function auth(required = true) {
   return (req: Request, res: Response, next: NextFunction) => {
     const header = req.headers.authorization
     if (!header) {
-      if (required) return res.status(401).json({ error: 'Missing Authorization header' })
+      if (required) return       res.status(401).json({ error: 'No entry pass 🎫', description: 'Authentication is required.' })
       return next()
     }
     const token = header.replace('Bearer ', '')
@@ -29,7 +29,7 @@ export function auth(required = true) {
       req.user = payload
       next()
     } catch {
-      if (required) return res.status(401).json({ error: 'Invalid or expired token' })
+      if (required) return       res.status(401).json({ error: 'Session timed out ⏰', description: 'Please sign in again.' })
       next()
     }
   }
@@ -37,8 +37,8 @@ export function auth(required = true) {
 
 export function requireRoles(...roles: AuthPayload['role'][]) {
   return (req: Request, res: Response, next: NextFunction) => {
-    if (!req.user) return res.status(401).json({ error: 'Unauthorized' })
-    if (!roles.includes(req.user.role)) return res.status(403).json({ error: 'Forbidden' })
+    if (!req.user) return       res.status(401).json({ error: 'You shall not pass 🚷', description: 'You don\'t have permission for this action.' })
+    if (!roles.includes(req.user.role)) return       res.status(403).json({ error: 'You shall not pass 🚷', description: 'You don\'t have permission for this action.' })
     next()
   }
 }

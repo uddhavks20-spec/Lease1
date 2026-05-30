@@ -23,6 +23,9 @@ api.interceptors.response.use(
         localStorage.removeItem('token')
       }
     }
+    if (err?.response?.data?.error && err?.response?.data?.description) {
+      err.response.data.error = err.response.data.error + '\n' + err.response.data.description
+    }
     return Promise.reject(err)
   }
 )

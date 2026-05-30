@@ -63,8 +63,8 @@ router.post(
       }
 
       notifyAdmins({
-        title: '🆕 New KYC Submission',
-        message: `User ${req.user!.sub} has submitted KYC documents for verification.`,
+        title: 'New Player Entering 🆕',
+        message: 'A fresh KYC submission just dropped in the review queue.',
         type: 'info',
         actionUrl: '/admin/dashboard',
         relatedEntityType: 'kyc',

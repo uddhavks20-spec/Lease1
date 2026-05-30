@@ -32,9 +32,9 @@ export default function NotificationPreferencesPage() {
         if (prefs[f] !== undefined) body[f] = prefs[f]
       }
       await api.patch('/notifications/prefs', body)
-      toast.success('Preferences saved')
+      toast.success('Settings locked in ⚙️')
     } catch {
-      toast.error('Failed to save preferences')
+      toast.error('Settings rejected ⚙️')
     }
   }
 

@@ -42,11 +42,11 @@ export default function AdminCitiesPage() {
         colleges: form.colleges.split(',').map((s: string) => s.trim()).filter(Boolean),
         estimated_users: parseInt(form.estimated_users) || 0,
       })
-      toast.success('City added!')
+      toast.success('City unlocked 🏙️')
       setShowCreate(false)
       setForm({ name: '', state: '', coverage_area: '', colleges: '', estimated_users: '0' })
       fetchCities()
-    } catch { toast.error('Failed to add city') }
+    } catch { toast.error('Expansion failed 🏙️') }
   }
 
   const toggleCity = async (id: string, active: boolean) => {

@@ -84,8 +84,8 @@ router.patch('/kyc/:userId/approve', async (req, res, next) => {
     )
     await notifyUser({
       userId,
-      title: '✅ KYC Verified',
-      message: 'Your KYC documents have been approved. You can now list items and rent on Lease!',
+      title: 'Main Character Verified ✅',
+      message: 'Your KYC passed the vibe check. Welcome to the server.',
       type: 'success',
       actionUrl: '/seller/kyc',
       relatedEntityType: 'kyc',
@@ -111,8 +111,8 @@ router.patch('/kyc/:userId/reject', async (req, res, next) => {
     )
     await notifyUser({
       userId,
-      title: '❌ KYC Update Required',
-      message: `Your KYC verification was rejected. ${reason ? `Reason: ${reason}` : 'Please resubmit your documents.'}`,
+      title: 'NPC Behavior Detected ❌',
+      message: 'KYC rejected. Fix your details before you get hard-stuck at the gate.',
       type: 'error',
       actionUrl: '/seller/kyc',
       relatedEntityType: 'kyc',

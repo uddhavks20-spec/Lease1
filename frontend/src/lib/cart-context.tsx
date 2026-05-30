@@ -49,16 +49,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addToCart = (item: CartItem) => {
     const exists = cart.find((i) => i.id === item.id);
     if (exists) {
-      toast.error('Item already in cart');
+      toast.error('Already in your inventory 🎒');
       return;
     }
     setCart((prev) => [...prev, { ...item, damageWaiver: false }]);
-    toast.success('Added to cart');
+            toast.success('Loot secured 🛒');
   };
 
   const removeFromCart = (id: string) => {
     setCart((prev) => prev.filter((item) => item.id !== id));
-    toast.success('Removed from cart');
+            toast.success('Loot dropped 📤');
   };
 
   const clearCart = () => {

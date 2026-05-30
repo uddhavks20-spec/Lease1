@@ -59,7 +59,7 @@ export default function SellerKYCPage() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     await api.post('/kyc/me', form)
-    toast.success('KYC submitted for review')
+      toast.success('Waiting on the NPCs ⏳')
   }
 
   const statusIcon = (status: string) => {

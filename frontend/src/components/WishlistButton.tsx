@@ -34,7 +34,7 @@ export function WishlistButton({ itemId, size = 'md', className }: WishlistButto
     e.preventDefault()
     e.stopPropagation()
     if (!user) {
-      toast.error('Please login to save items')
+      toast.error('Guests can\'t save loot 🔒')
       router.push('/login')
       return
     }
@@ -43,14 +43,14 @@ export function WishlistButton({ itemId, size = 'md', className }: WishlistButto
       if (inWishlist) {
         await api.delete(`/wishlist/${itemId}`)
         setInWishlist(false)
-        toast.success('Removed from wishlist')
+        toast.success('Roster updated ✂️')
       } else {
         await api.post(`/wishlist/${itemId}`)
         setInWishlist(true)
-        toast.success('Added to wishlist')
+        toast.success('Dream roster ⭐')
       }
     } catch {
-      toast.error('Something went wrong')
+      toast.error('The gremlins won 👾')
     } finally {
       setLoading(false)
     }

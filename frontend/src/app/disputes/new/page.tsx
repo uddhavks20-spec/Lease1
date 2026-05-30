@@ -25,10 +25,10 @@ export default function NewDisputePage() {
         ...form,
         amount_involved: form.amount_involved ? parseFloat(form.amount_involved) : undefined,
       })
-      toast.success('Dispute raised!')
+      toast.success('Clan war initiated ⚠️')
       router.push(`/disputes`)
     } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to raise dispute')
+      toast.error(err.response?.data?.error || 'Dispute rejected ⚠️')
     }
   }
 

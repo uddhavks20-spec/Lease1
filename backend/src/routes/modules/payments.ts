@@ -9,7 +9,7 @@ router.post('/webhook', async (req: Request, res: Response, next: NextFunction) 
     const signature = req.headers['x-razorpay-signature'] as string
     const payload = JSON.stringify(req.body)
     if (!verifyWebhookSignature(payload, signature)) {
-      return res.status(400).json({ error: 'Invalid signature' })
+      return       res.status(400).json({ error: 'Security check failed 🔐', description: 'Payment verification failed.' })
     }
     const event = req.body
     if (event.event === 'payment.captured') {

@@ -210,14 +210,14 @@ router.post('/checkout/:rentalId', auth(true), async (req: Request, res: Respons
     const { images } = req.body // array of { dataUrl, view }
 
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: 'At least one image is required' })
+      return res.status(400).json({ error: 'No pics, no party 📸', description: 'Upload at least one image.' })
     }
 
     // Preprocess each image
     for (const img of images) {
       const check = preprocessImage(img.dataUrl || img.image_url)
       if (!check.valid) {
-        return res.status(400).json({ error: `Image invalid: ${check.reason}`, imageUrl: img.dataUrl })
+        return res.status(400).json({ error: 'That file ain\'t it 📷', description: `Upload a valid image. Reason: ${check.reason}`, imageUrl: img.dataUrl })
       }
     }
 
@@ -250,13 +250,13 @@ router.post('/checkin/:rentalId', auth(true), async (req: Request, res: Response
     const { images } = req.body
 
     if (!images || !Array.isArray(images) || images.length === 0) {
-      return res.status(400).json({ error: 'At least one image is required' })
+      return res.status(400).json({ error: 'No pics, no party 📸', description: 'Upload at least one image.' })
     }
 
     for (const img of images) {
       const check = preprocessImage(img.dataUrl || img.image_url)
       if (!check.valid) {
-        return res.status(400).json({ error: `Image invalid: ${check.reason}` })
+        return res.status(400).json({ error: 'That file ain\'t it 📷', description: `Upload a valid image. Reason: ${check.reason}` })
       }
     }
 

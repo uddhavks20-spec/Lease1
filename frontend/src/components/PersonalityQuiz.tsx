@@ -138,10 +138,10 @@ export function PersonalityQuiz({ mode, itemId, onComplete, onSkip }: Personalit
       } else if (itemId) {
         await api.post(`/personality/item/${itemId}`, payload)
       }
-      toast.success(`${mode === 'renter' ? 'Renter' : 'Seller'} personality saved!`)
+      toast.success('Personality detected 🎭')
       onComplete(personality)
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || 'Failed to save')
+      toast.error(err?.response?.data?.error || 'Personality undefined 🎭')
     } finally {
       setSaving(false)
     }

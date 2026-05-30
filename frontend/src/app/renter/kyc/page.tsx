@@ -43,11 +43,11 @@ export default function RenterKYCPage() {
     e.preventDefault()
     try {
       await api.post('/kyc/me', form)
-      toast.success('KYC submitted for review')
+      toast.success('Waiting on the NPCs ⏳')
       setKycSubmitted(true)
       setShowQuiz(true)
     } catch (err) {
-      toast.error('Failed to submit KYC')
+      toast.error('Verification paused ⏸️')
     }
   }
 

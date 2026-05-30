@@ -39,7 +39,7 @@ router.post('/:itemId', auth(true), async (req: Request, res: Response, next: Ne
       `SELECT id FROM wishlist_items WHERE user_id=$1 AND item_id=$2 LIMIT 1`,
       [userId, itemId]
     )).rows[0]
-    if (existing) return res.status(409).json({ error: 'Item already in wishlist' })
+    if (existing) return       res.status(409).json({ error: 'Already on your radar ⭐', description: 'This item is already saved.' })
 
     const result = await db.query(
       `INSERT INTO wishlist_items (user_id, item_id) VALUES ($1,$2) RETURNING id`,

@@ -231,7 +231,7 @@ export default function ItemDetailPage() {
   const handleAddToCart = () => {
     if (!item) return
     addToCart({ id: item.id, title: item.title, monthly_rent: monthlyRent, deposit_amount: depositAmount, image: item.images?.[0]?.image_url || '/images/placeholder.png', duration })
-    toast.success('Added to cart')
+              toast.success('Loot secured 🛒')
   }
 
   const startRental = () => {
