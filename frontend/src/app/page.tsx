@@ -188,7 +188,7 @@ export default function HomePage() {
               <div className="flex justify-between items-end mb-10">
                 <div>
                   <h2 className="text-3xl font-black text-gray-900 dark:text-white uppercase tracking-tighter">Most Popular</h2>
-                  <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-1">Handpicked for students</p>
+                  <p className="text-gray-500 font-bold text-xs uppercase tracking-widest mt-1">Rent a new personality. Cuz we both know this one's not helping. 😪💔</p>
                 </div>
                 <Link href="/browse" className="text-primary-600 font-black text-sm uppercase tracking-widest flex items-center gap-2 group">
                   View Catalog <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
