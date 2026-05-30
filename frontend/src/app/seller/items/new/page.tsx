@@ -347,11 +347,27 @@ export default function NewItemPage() {
                   <TrendingUp className="w-3 h-3 inline mr-1" />Sell Alternative
                 </button>
               </div>
-              <p className="text-[9px] text-gray-400 font-bold mt-2 uppercase tracking-wider">
-                {sellerType === 'B'
-                  ? 'Your item stays safe with verified renters. Income is bonus.'
-                  : 'We help you earn more than selling outright on OLX/Cashify.'}
-              </p>
+              {sellerType === 'B' ? (
+                <div className="mt-3 p-4 bg-green-50 dark:bg-green-900/10 rounded-2xl border border-green-200 dark:border-green-900/30">
+                  <p className="text-[9px] font-black text-green-700 uppercase tracking-[0.2em] mb-2">Why choose Safety First?</p>
+                  <ul className="text-[10px] font-bold text-green-800 dark:text-green-300 space-y-1 ml-4 list-disc">
+                    <li>Your item stays with verified, trustworthy renters only</li>
+                    <li>No risk of loss — item returns to you after the rental period</li>
+                    <li>Passive income without giving up ownership</li>
+                    <li>Best for: items you still use or are emotionally attached to</li>
+                  </ul>
+                </div>
+              ) : (
+                <div className="mt-3 p-4 bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-900/30">
+                  <p className="text-[9px] font-black text-amber-700 uppercase tracking-[0.2em] mb-2">Why choose Sell Alternative?</p>
+                  <ul className="text-[10px] font-bold text-amber-800 dark:text-amber-300 space-y-1 ml-4 list-disc">
+                    <li>Earn 15%+ more than selling outright on OLX, Cashify, or Facebook</li>
+                    <li>Item is eventually sold — higher total payout over time</li>
+                    <li>AI estimates your resell value and we guarantee to beat it</li>
+                    <li>Best for: items you no longer need and were planning to sell</li>
+                  </ul>
+                </div>
+              )}
               {sellerType === 'A' && (
                 <div className="mt-4 space-y-3">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-2">What can you sell this for on OLX/Cashify?</label>
