@@ -172,7 +172,13 @@ export default function NewItemPage() {
   // Sync category and image when product changes
   useEffect(() => {
     if (selectedProduct) {
-      const cat = categories.find(c => c.name.includes(selectedProduct.category.split(' ')[0]))
+      const cat = categories.find(c =>
+        c.name === selectedProduct.category ||
+        c.name.includes(selectedProduct.category) ||
+        selectedProduct.category.includes(c.name) ||
+        c.name.split(' ').some(w => selectedProduct.category.includes(w))
+      )
+      if (!cat) console.warn('No matching category for', selectedProduct.category, 'among', categories.map(c => c.name))
       setForm(prev => ({
         ...prev,
         title: selectedProduct.title,
