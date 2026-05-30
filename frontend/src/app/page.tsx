@@ -367,10 +367,11 @@ export default function HomePage() {
           <aside className="w-full lg:w-80 space-y-6">
             <div className="sticky top-24 space-y-6">
               <div className="p-1">
-                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <h3 className="text-xs font-bold text-gray-400 uppercase tracking-[0.2em] mb-1 flex items-center gap-2">
                   <ShoppingBag className="w-4 h-4" />
-                  Sponsored Gadgets
+                  Featured Gadgets
                 </h3>
+                <p className="text-[9px] text-gray-400 mb-4 ml-6">Staring at it won't put it in your cart, pick a vibe or step aside. 🛑</p>
                 
                 <div className="space-y-4">
                   {advertisements.map((ad, i) => (
