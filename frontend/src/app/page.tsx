@@ -410,7 +410,7 @@ export default function HomePage() {
                       <div className="relative z-10">
                         <Badge className="bg-white/20 text-white border-none mb-2 backdrop-blur-sm text-[10px]">AD</Badge>
                         <h4 className="font-bold text-lg mb-1">{ad.title}</h4>
-                        <p className="text-sm opacity-80 mb-4">{ad.desc}</p>
+                        <p className="text-sm text-amber-300 font-bold mb-4">{ad.desc}</p>
                         <Button size="sm" variant="secondary" className="bg-white text-black hover:bg-gray-100 font-bold rounded-full">
                           Rent Now
                         </Button>
