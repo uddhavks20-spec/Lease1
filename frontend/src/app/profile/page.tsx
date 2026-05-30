@@ -13,7 +13,7 @@ import { toast } from 'react-hot-toast'
 import {
   User, Sparkles, LayoutDashboard, Bell, ShieldCheck, CreditCard,
   Store, Package, LogOut, Trash2, ChevronRight, ArrowRight,
-  ChevronLeft, Wallet, Pencil
+  ChevronLeft, Wallet, Pencil, AlertTriangle, List,
 } from 'lucide-react'
 
 const SIDEBAR_ITEMS = [
@@ -24,7 +24,8 @@ const SIDEBAR_ITEMS = [
   { key: 'kyc', label: 'KYC', icon: ShieldCheck },
   { key: 'lease-money', label: 'Lease Money', icon: Wallet },
   { key: 'seller', label: 'Seller Account', icon: Store },
-  { key: 'wholesaler', label: 'Wholesaler Account', icon: Package },
+  { key: 'listings', label: 'My Listings', icon: List, href: '/seller/dashboard' },
+  { key: 'disputes', label: 'Disputes', icon: AlertTriangle, href: '/disputes' },
   { key: 'logout', label: 'Log Out', icon: LogOut },
   { key: 'delete', label: 'Delete Account', icon: Trash2 },
 ]
@@ -163,10 +164,17 @@ export default function ProfilePage() {
         {SIDEBAR_ITEMS.map((item) => {
           const Icon = item.icon
           const isDanger = item.key === 'logout' || item.key === 'delete'
-          return (
+          const isLink = !!item.href
+          const btn = (
             <button
               key={item.key}
-              onClick={() => setActiveSection(item.key)}
+              title={item.label}
+              onClick={() => {
+                if (isLink) router.push(item.href!)
+                else if (item.key === 'logout') handleLogout()
+                else if (item.key === 'delete') setActiveSection('delete')
+                else setActiveSection(item.key)
+              }}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-left transition-all text-sm font-bold ${
                 activeSection === item.key
                   ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-600 shadow-sm'
@@ -179,6 +187,7 @@ export default function ProfilePage() {
               {sidebarOpen && <span>{item.label}</span>}
             </button>
           )
+          return btn
         })}
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}

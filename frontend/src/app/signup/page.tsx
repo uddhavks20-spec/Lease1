@@ -3,7 +3,6 @@
 import React, { useState } from 'react'
 import { useAuth } from '@/lib/auth-context'
 import { Button } from '@/components/ui/button'
-import { FormEvent } from 'react'
 
 export default function SignupPage() {
   const { register, isLoading } = useAuth()
@@ -11,13 +10,9 @@ export default function SignupPage() {
   const [lastName, setLastName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [role, setRole] = useState<'seller' | 'renter' | 'wholesaler'>('renter')
-
-
-
   const onSubmit = async (e: any) => {
     e.preventDefault()
-    await register({ firstName, lastName, email, password, role })
+    await register({ firstName, lastName, email, password, role: 'renter' })
   }
 
   return (
@@ -39,14 +34,6 @@ export default function SignupPage() {
         <div>
           <label className="label">Password</label>
           <input className="input-field" type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-        </div>
-        <div>
-          <label className="label">Role</label>
-          <select className="input-field" value={role} onChange={(e) => setRole(e.target.value as 'seller' | 'renter' | 'wholesaler')}>
-            <option value="renter">Renter</option>
-            <option value="seller">Seller</option>
-            <option value="wholesaler">Wholesaler</option>
-          </select>
         </div>
         <Button disabled={isLoading} className="w-full" type="submit">
           {isLoading ? 'Creating...' : 'Sign Up'}

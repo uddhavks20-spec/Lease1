@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, MapPin, ShoppingCart, User, LogOut, Package, Heart, Gift, AlertTriangle, Bell } from 'lucide-react';
+import { Search, MapPin, ShoppingCart, User, LogOut, Package, Heart, Gift, Bell, Home, Plus } from 'lucide-react';
 import { NotificationPanel } from './NotificationPanel';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth-context';
@@ -124,6 +124,11 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          <Link href="/" title="Home">
+            <Button variant="ghost" size="icon" className="relative">
+              <Home className="h-5 w-5" />
+            </Button>
+          </Link>
           <Link href="/bookings">
             <Button variant="ghost" size="icon" className="relative">
               <Package className="h-5 w-5" />
@@ -140,11 +145,6 @@ export function Header() {
               <Gift className="h-5 w-5" />
             </Button>
           </Link>
-          <Link href="/disputes">
-            <Button variant="ghost" size="icon" className="relative">
-              <AlertTriangle className="h-5 w-5" />
-            </Button>
-          </Link>
           <Link href="/cart">
             <Button variant="ghost" size="icon" className="relative">
               <ShoppingCart className="h-5 w-5" />
@@ -158,6 +158,28 @@ export function Header() {
 
           {user ? (
             <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                title="Add Listing"
+                className="hidden md:inline-flex gap-2 text-primary-600 font-bold"
+                onClick={async () => {
+                  try {
+                    const res = await api.get('/users/me/roles');
+                    const roles = res.data.roles || [];
+                    if (roles.includes('seller')) {
+                      router.push('/seller/items/new');
+                    } else {
+                      router.push('/profile');
+                    }
+                  } catch {
+                    router.push('/profile');
+                  }
+                }}
+              >
+                <Plus className="h-4 w-4" />
+                Add Listing
+              </Button>
               <Link href="/profile">
                 <Button variant="ghost" size="sm" className="hidden md:flex gap-2">
                   <User className="h-4 w-4" />

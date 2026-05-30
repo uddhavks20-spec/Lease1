@@ -65,7 +65,7 @@ export default function RenterDashboard() {
           </div>
           <div className="space-y-2">
             <h2 className="text-2xl font-black text-gray-900 dark:text-white uppercase tracking-tight">No Active Rentals</h2>
-            <p className="text-gray-500 max-w-xs mx-auto text-sm font-medium">You haven't rented anything yet. Start browsing the campus catalog!</p>
+            <p className="text-gray-500 max-w-xs mx-auto text-sm font-medium">No active rentals and no active love life? Tragic. Let's at least fix one of those. Hit up Lease Guru to rent a fresh rotation and look like a catch again. 📉💅</p>
           </div>
           <Link href="/browse">
             <Button variant="outline" className="rounded-xl font-bold border-2">

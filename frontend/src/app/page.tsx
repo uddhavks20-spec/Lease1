@@ -10,6 +10,7 @@ import { Home, Search, Shield, TrendingUp, Users, Calendar, ArrowRight, Zap, Spa
 import api from '@/lib/api'
 import { formatCurrency } from "@/lib/utils";
 import { useAuth } from '@/lib/auth-context'
+import { WishlistButton } from '@/components/WishlistButton'
 
 const FALLBACK_IMG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f3f4f6" width="200" height="200"/><text fill="#9ca3af" font-family="Arial" font-size="14" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">No Image</text></svg>')
 
@@ -210,6 +211,9 @@ export default function HomePage() {
                         <Badge className="absolute top-4 left-4 bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white backdrop-blur-md border-none text-[10px] font-black uppercase tracking-tighter px-3 py-1">
                           Popular
                         </Badge>
+                        <div className="absolute top-4 right-4 z-10">
+                          <WishlistButton itemId={item.id} size="sm" />
+                        </div>
                       </div>
                       <div className="p-6">
                         <h3 className="text-gray-900 dark:text-white font-black text-lg mb-1 leading-tight group-hover:text-primary-600 transition-colors">{item.title}</h3>
@@ -257,7 +261,10 @@ export default function HomePage() {
                               height={150}
                               className="object-contain group-hover:scale-110 transition-transform duration-300 ease-out transform-gpu"
                             />
-                            <Badge className="absolute top-4 right-4 bg-white/90 text-primary-600 hover:bg-white backdrop-blur-sm border-none shadow-sm">
+                            <div className="absolute top-4 right-4 z-10">
+                              <WishlistButton itemId={item.id} size="sm" />
+                            </div>
+                            <Badge className="absolute top-4 left-4 bg-white/90 text-primary-600 hover:bg-white backdrop-blur-sm border-none shadow-sm">
                               New
                             </Badge>
                           </div>
@@ -310,51 +317,63 @@ export default function HomePage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 md:gap-8">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
                 <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
-                    <div className="w-12 h-12 bg-primary-100 dark:bg-primary-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Shield className="w-6 h-6 text-primary-600 dark:text-primary-400" />
+                    <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🪞</span>
                     </div>
-                    <CardTitle className="text-lg">Secure Transactions</CardTitle>
+                    <CardTitle className="text-lg">The Flex Culture</CardTitle>
                     <CardDescription className="text-sm">
-                      All payments protected with Razorpay escrow. Your money is safe.
+                      So you can take mirror selfies with premium gear, post them to your drafts, and return it before anyone realizes you're actually broke. 🪞
                     </CardDescription>
                   </CardHeader>
                 </Card>
 
                 <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
-                    <div className="w-12 h-12 bg-success-100 dark:bg-success-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Users className="w-6 h-6 text-success-600 dark:text-success-400" />
+                    <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">💸</span>
                     </div>
-                    <CardTitle className="text-lg">Student-Only</CardTitle>
+                    <CardTitle className="text-lg">The Financial Delusion</CardTitle>
                     <CardDescription className="text-sm">
-                      Verified student IDs ensure you're dealing with genuine peers.
+                      Buying things fully is for adults with actual responsibilities. Renting lets us spend our allowance on expensive iced coffee instead. 💸🧋
                     </CardDescription>
                   </CardHeader>
                 </Card>
 
                 <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
-                    <div className="w-12 h-12 bg-warning-100 dark:bg-warning-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <TrendingUp className="w-6 h-6 text-warning-600 dark:text-warning-400" />
+                    <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🔄</span>
                     </div>
-                    <CardTitle className="text-lg">Earn Extra Income</CardTitle>
+                    <CardTitle className="text-lg">Identity Crisis</CardTitle>
                     <CardDescription className="text-sm">
-                      Monetize your unused items within your campus.
+                      We change our entire personality every two weeks anyway. Your gear should change with your current delusion. 🔄🎭
                     </CardDescription>
                   </CardHeader>
                 </Card>
 
                 <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
-                    <div className="w-12 h-12 bg-secondary-100 dark:bg-secondary-900 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Calendar className="w-6 h-6 text-secondary-600 dark:text-secondary-400" />
+                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🔒</span>
                     </div>
-                    <CardTitle className="text-lg">Flexible Durations</CardTitle>
+                    <CardTitle className="text-lg">Trust Issues? Same.</CardTitle>
                     <CardDescription className="text-sm">
-                      Rent for exactly how long you need - from 1 to 24 months.
+                      We use Razorpay escrow. Your money stays locked up safely until you actually get your stuff. No ghosting, no financial scams, just pure peace of mind. 🔒💸
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+
+                <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                  <CardHeader>
+                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🤧</span>
+                    </div>
+                    <CardTitle className="text-lg">Commitment Issues Friendly</CardTitle>
+                    <CardDescription className="text-sm">
+                      Rent gear anywhere from 1 to 24 months. Because committing to a piece of tech forever feels way too much like a stable, long-term relationship, and we know you're not ready for that. 🤧💔
                     </CardDescription>
                   </CardHeader>
                 </Card>

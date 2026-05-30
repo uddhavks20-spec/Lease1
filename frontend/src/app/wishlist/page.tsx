@@ -76,12 +76,12 @@ export default function WishlistPage() {
           <div className="w-20 h-20 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto">
             <Heart className="h-10 w-10 text-gray-300" />
           </div>
-          <h3 className="text-xl font-bold text-gray-900 dark:text-white">Your wishlist is empty</h3>
+          <h3 className="text-xl font-bold text-gray-900 dark:text-white">YOUR WISHLIST IS EMPTY</h3>
           <p className="text-gray-500 max-w-xs mx-auto">
-            Save items you like by tapping the heart icon on any listing.
+            Manifesting is completely free, yet your list is still giving absolute bankruptcy. Tap the heart icon on any listing to start hoarding items you can't currently afford. Let's build that ego back up. 💸📉
           </p>
           <Link href="/browse">
-            <Button>Browse Items</Button>
+            <Button>Start Manifesting 🔍</Button>
           </Link>
         </div>
       ) : (
