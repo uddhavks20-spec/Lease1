@@ -234,7 +234,7 @@ export default function HomePage() {
                     <Zap className="w-8 h-8 text-primary-600 fill-primary-600" />
                     Latest Listings
                   </h2>
-                  <p className="text-gray-500 mt-1">Freshly added to the marketplace</p>
+                  <p className="text-gray-500 mt-1">Brand new gear. Maybe this one will actually fix your life (it won't). 🤧💔</p>
                 </div>
                 <Link href="/browse" className="text-primary-600 font-semibold flex items-center gap-1 hover:underline">
                   Browse All <ArrowRight className="w-4 h-4" />
