@@ -122,6 +122,7 @@ export default function NewItemPage() {
   const [newItemId, setNewItemId] = useState<string | null>(null)
   const [showQuiz, setShowQuiz] = useState(false)
   const [customSpecs, setCustomSpecs] = useState<{ name: string; value: string }[]>([])
+  const [showIncompleteWarning, setShowIncompleteWarning] = useState(false)
 
   // Image & video state
   const [imageViews, setImageViews] = useState<Record<string, string>>({
@@ -272,12 +273,8 @@ export default function NewItemPage() {
     const data = new FormData(e.currentTarget)
     const categoryId = data.get('categoryId') as string
     const cityId = data.get('cityId') as string
-    if (!categoryId) {
-      toast.error(`Category not selected (selected product: "${selectedProduct?.title || 'none'}")`)
-      return
-    }
-    if (!cityId) {
-      toast.error('Please select a city')
+    if (!categoryId || !cityId) {
+      setShowIncompleteWarning(true)
       return
     }
 
@@ -296,7 +293,7 @@ export default function NewItemPage() {
     })
 
     if (images.length === 0) {
-      toast.error('Please upload at least one product image')
+      setShowIncompleteWarning(true)
       return
     }
 
@@ -1069,6 +1066,30 @@ export default function NewItemPage() {
           onComplete={() => router.push(`/items/${newItemId}`)}
           onSkip={() => router.push(`/items/${newItemId}`)}
         />
+      )}
+
+      {showIncompleteWarning && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+          <div className="bg-white dark:bg-gray-900 rounded-[32px] p-8 max-w-md mx-4 shadow-2xl text-center space-y-6">
+            <div className="w-16 h-16 mx-auto rounded-full bg-amber-50 dark:bg-amber-900/20 flex items-center justify-center">
+              <span className="text-3xl">😅</span>
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-xl font-black text-gray-900 dark:text-white">Hold up!</h3>
+              <p className="text-gray-500 text-sm leading-relaxed">
+                Low attention span? Fill out the details completely, or you won't get picked here either
+              </p>
+            </div>
+            <div className="space-y-3">
+              <Button onClick={() => setShowIncompleteWarning(false)} className="w-full rounded-2xl h-12 font-black">
+                Don't drop me, I'm filling it out! 😭
+              </Button>
+              <Button variant="outline" onClick={() => router.push('/')} className="w-full rounded-2xl h-12 font-black">
+                Whatever, show me something else 🙄
+              </Button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

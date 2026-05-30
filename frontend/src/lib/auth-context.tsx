@@ -10,6 +10,7 @@ interface User {
   email: string
   firstName: string
   lastName: string
+  phone?: string
   role: 'admin' | 'seller' | 'renter' | 'wholesaler'
   isVerified: boolean
   xpPoints: number
