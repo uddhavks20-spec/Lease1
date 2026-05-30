@@ -3,16 +3,14 @@
 @tailwind utilities;
 
 :root {
-  --foreground-rgb: 0, 0, 0;
-  --background-start-rgb: 214, 219, 220;
-  --background-end-rgb: 255, 255, 255;
+  --foreground-rgb: 26, 18, 32;
+  --background-rgb: 253, 248, 240;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --foreground-rgb: 255, 255, 255;
-    --background-start-rgb: 0, 0, 0;
-    --background-end-rgb: 0, 0, 0;
+    --foreground-rgb: 240, 235, 245;
+    --background-rgb: 26, 21, 32;
   }
 }
 
@@ -31,12 +29,7 @@ body {
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  background: rgb(var(--background-rgb));
 }
 
 a {
@@ -96,7 +89,7 @@ a {
 
 /* Custom button styles */
 .btn-primary {
-  background-color: #2563eb;
+  background-color: #FF006E;
   color: #ffffff;
   font-weight: 500;
   padding: 0.5rem 1rem;
@@ -105,12 +98,12 @@ a {
 }
 
 .btn-primary:hover {
-  background-color: #1d4ed8;
+  background-color: #cc0058;
 }
 
 .btn-secondary {
-  background-color: #475569;
-  color: #ffffff;
+  background-color: #00F5D4;
+  color: #0F0A2E;
   font-weight: 500;
   padding: 0.5rem 1rem;
   border-radius: 0.5rem;
@@ -118,7 +111,7 @@ a {
 }
 
 .btn-secondary:hover {
-  background-color: #334155;
+  background-color: #00c4a9;
 }
 
 .btn-outline {
@@ -136,10 +129,31 @@ a {
 }
 
 @media (prefers-color-scheme: dark) {
+.btn-outline {
+  position: relative;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  font-weight: 500;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  transition: color 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.btn-outline:hover {
+  border-color: #FF006E;
+  color: #FF006E;
+}
+
+@media (prefers-color-scheme: dark) {
   .btn-outline {
     border-color: #4b5563;
     color: #d1d5db;
   }
+  .btn-outline:hover {
+    color: #FF006E;
+    border-color: #FF006E;
+  }
+}
   .btn-outline:hover {
     color: #ffffff;
   }
@@ -198,7 +212,7 @@ a {
 }
 
 .gradient-text {
-  @apply bg-gradient-to-r from-primary-600 to-secondary-600 bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-primary-600 to-secondary-500 bg-clip-text text-transparent;
 }
 
 /* Mobile first responsive design */

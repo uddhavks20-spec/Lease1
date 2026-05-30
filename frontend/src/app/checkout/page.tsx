@@ -135,8 +135,8 @@ export default function CheckoutPage() {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_mock",
         amount: order.amount,
         currency: order.currency,
-        name: "Lease",
-        description: "Initial Rental Payment",
+        name: "Flex",
+        description: "Flex Rental Payment",
         order_id: order.id,
         handler: function (response: any) {
           toast.success("GG WP 🎉");
@@ -148,7 +148,7 @@ export default function CheckoutPage() {
           email: address.email,
           contact: address.phoneNumber,
         },
-        theme: { color: "#2563eb" },
+        theme: { color: "#FF006E" },
       };
 
       if (window.Razorpay) {
@@ -477,7 +477,7 @@ export default function CheckoutPage() {
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${item.damageWaiver ? 'translate-x-6' : 'translate-x-1'}`} />
                       </button>
                       <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        Damage Waiver — <span className="text-primary-600">₹{DAMAGE_WAIVER_FEE}/mo</span>
+                        Damage Waiver — <span className="text-amber-600">₹{DAMAGE_WAIVER_FEE}/mo</span>
                       </span>
                     </div>
                   </div>

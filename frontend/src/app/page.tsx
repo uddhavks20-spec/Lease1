@@ -167,7 +167,7 @@ export default function HomePage() {
                       <div className="p-6">
                         <h3 className="text-gray-900 dark:text-white font-black text-lg mb-1 leading-tight group-hover:text-primary-600 transition-colors">{item.title}</h3>
                         <div className="flex items-center justify-between mt-4">
-                          <p className="text-primary-600 font-black text-xl">{formatCurrency(item.monthly_rent)}/mo</p>
+                          <p className="text-amber-600 font-black text-xl">{formatCurrency(item.monthly_rent)}/mo</p>
                           <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                             <ArrowRight className="w-5 h-5" />
                           </div>
@@ -218,7 +218,7 @@ export default function HomePage() {
                       <div className="p-6">
                         <h3 className="text-gray-900 dark:text-white font-black text-lg mb-1 leading-tight group-hover:text-primary-600 transition-colors">{item.title}</h3>
                         <div className="flex items-center justify-between mt-4">
-                          <p className="text-primary-600 font-black text-xl">{formatCurrency(item.monthly_rent)}/mo</p>
+                          <p className="text-amber-600 font-black text-xl">{formatCurrency(item.monthly_rent)}/mo</p>
                           <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
                             <ArrowRight className="w-5 h-5" />
                           </div>

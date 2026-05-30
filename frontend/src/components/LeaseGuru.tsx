@@ -72,17 +72,20 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
   useEffect(() => {
     if (messages.length === 0) {
       const greetings: Record<string, string> = {
-        seller: "Yo! I'm Lease Guru \u2014 your personal pricing sidekick. Got stuff lying around? Tell me what it is and what it's worth, and I'll tell you exactly what to charge and how much you could earn. No fluff, just math.",
-        buyer: "Hey! Lease Guru here. Looking to rent something smart? Tell me what you need, for how long, and I'll run the real numbers \u2014 I'll check what's available, compare options, and find you the best deal within campus. What are you shopping for?",
-        renter: "Sup! Lease Guru at your service. Managing active rentals? I can help you track costs, understand your deposit status, or see if extending makes more sense than buying. What do you need?",
-        wholesaler: "Hey wholesaler! Lease Guru here. I can help you optimize your inventory turnover, suggest volume-friendly pricing, and analyze utilization rates. What products are you moving?",
+        seller: "Yo! I'm Flex Guru \u2014 your personal pricing sidekick. Got stuff lying around? Tell me what it is and what it's worth, and I'll tell you exactly what to charge and how much you could earn. No fluff, just math.",
+
+  buyer: "Hey! Flex Guru here. Looking to rent something smart? Tell me what you need, for how long, and I'll run the real numbers \u2014 I'll check what's available, compare options, and find you the best deal within campus. What are you shopping for?",
+
+  renter: "Sup! Flex Guru at your service. Managing active rentals? I can help you track costs, understand your deposit status, or see if extending makes more sense than buying. What do you need?",
+
+  wholesaler: "Hey wholesaler! Flex Guru here. I can help you optimize your inventory turnover, suggest volume-friendly pricing, and analyze utilization rates. What products are you moving?",
       };
       setMessages([{ role: 'bot', text: greetings[role] || greetings.buyer }]);
       setSuggestions([
         'I want to rent something',
         'I want to list/sell something',
         'I have a complaint',
-        'How does Lease work?',
+        'How does Flex work?',
         'Pricing help',
       ]);
     }
@@ -252,7 +255,7 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h4 className="font-black text-sm uppercase tracking-widest">Lease Guru</h4>
+                  <h4 className="font-black text-sm uppercase tracking-widest">Flex Guru</h4>
                   <Badge className="bg-yellow-300 text-yellow-900 border-none text-[8px] font-black px-1.5 py-0">AI</Badge>
                   {sessionState?.hinglishMode && (
                     <Badge className="bg-pink-400 text-white border-none text-[8px] font-black px-1.5 py-0">Hinglish</Badge>
@@ -535,7 +538,7 @@ function LeaseGuru({ role = 'buyer' }: LeaseGuruProps) {
 
           {/* Footer with contact */}
           <div className="px-4 py-2 bg-gray-50 dark:bg-gray-900 border-t border-gray-100 dark:border-gray-700 text-[9px] text-gray-400 text-center font-medium shrink-0">
-            Powered by Lease GenAI <span className="mx-1">·</span> Escalate: <strong>kishanuddhav2004@gmail.com</strong>
+            Powered by Flex GenAI <span className="mx-1">·</span> Escalate: <strong>kishanuddhav2004@gmail.com</strong>
           </div>
         </Card>
       )}

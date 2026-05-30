@@ -146,14 +146,14 @@ export default function SellerDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card className="border-none bg-blue-50/50 dark:bg-blue-900/10 shadow-sm">
+        <Card className="border-none bg-amber-50/50 dark:bg-amber-900/10 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-blue-600 dark:text-blue-400">Total Earnings</CardTitle>
-            <IndianRupee className="h-4 w-4 text-blue-600" />
+            <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-400">Total Earnings</CardTitle>
+            <IndianRupee className="h-4 w-4 text-amber-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{formatCurrency(stats.totalEarnings)}</div>
-            <p className="text-xs text-blue-500 mt-1">+12% from last month</p>
+            <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{formatCurrency(stats.totalEarnings)}</div>
+            <p className="text-xs text-amber-500 mt-1">+12% from last month</p>
           </CardContent>
         </Card>
         
@@ -179,14 +179,14 @@ export default function SellerDashboard() {
           </CardContent>
         </Card>
 
-        <Card className="border-none bg-amber-50/50 dark:bg-amber-900/10 shadow-sm">
+        <Card className="border-none bg-primary-50/50 dark:bg-primary-900/10 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-amber-600 dark:text-amber-400">Pending Actions</CardTitle>
-            <AlertCircle className="h-4 w-4 text-amber-600" />
+            <CardTitle className="text-sm font-medium text-primary-600 dark:text-primary-400">Pending Actions</CardTitle>
+            <AlertCircle className="h-4 w-4 text-primary-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-amber-700 dark:text-amber-300">{stats.pendingRequests}</div>
-            <p className="text-xs text-amber-500 mt-1">Requires your attention</p>
+            <div className="text-2xl font-bold text-primary-700 dark:text-primary-300">{stats.pendingRequests}</div>
+            <p className="text-xs text-primary-500 mt-1">Requires your attention</p>
           </CardContent>
         </Card>
       </div>

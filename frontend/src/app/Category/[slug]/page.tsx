@@ -80,7 +80,7 @@ export default function CategoryPage() {
                 <div className="p-5">
                   <h3 className="font-black text-gray-900 dark:text-white mb-1 line-clamp-1 uppercase text-sm">{item.title}</h3>
                   <div className="flex items-center gap-2">
-                    <span className="text-primary-600 font-black text-lg">{formatCurrency(item.monthly_rent)}/mo</span>
+                    <span className="text-amber-600 font-black text-lg">{formatCurrency(item.monthly_rent)}/mo</span>
                     <Badge className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-none text-[9px] font-black">
                       ₹{formatCurrency(item.deposit_amount)} deposit
                     </Badge>

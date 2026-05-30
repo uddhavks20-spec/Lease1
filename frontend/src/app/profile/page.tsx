@@ -22,7 +22,7 @@ const SIDEBAR_ITEMS = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'subscriptions', label: 'Subscriptions', icon: Bell },
   { key: 'kyc', label: 'KYC', icon: ShieldCheck },
-  { key: 'lease-money', label: 'Lease Money', icon: Wallet },
+  { key: 'lease-money', label: 'Flex Money', icon: Wallet },
   { key: 'seller', label: 'Seller Account', icon: Store },
   { key: 'listings', label: 'My Listings', icon: List, href: '/seller/dashboard' },
   { key: 'disputes', label: 'Disputes', icon: AlertTriangle, href: '/disputes' },
@@ -668,16 +668,16 @@ export default function ProfilePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="min-h-screen bg-surface dark:bg-surface-dark">
       <div className="container py-10">
-        <div className="flex gap-8">
+        <div className="flex gap-8 items-stretch">
           {renderSidebar()}
-          <div className="flex-1 min-w-0 max-w-3xl">
+          <div className="flex-1 min-w-0 max-w-3xl flex flex-col">
             {renderContent()}
           </div>
-          {renterPersonality && renterInfo && (
+          {activeSection === 'profile' && renterPersonality && renterInfo && (
             <div className="hidden lg:block w-64 shrink-0">
-              <div className="sticky top-24">
+              <div className="bg-white dark:bg-gray-800 rounded-[32px] shadow-sm p-6 flex flex-col items-center justify-center text-center h-full">
                 <PersonalityBadge type={renterPersonality} info={renterInfo} size="lg" showRibbon />
               </div>
             </div>

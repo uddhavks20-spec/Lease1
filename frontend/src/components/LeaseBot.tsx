@@ -26,10 +26,10 @@ export function LeaseBot({ role, context }: LeaseBotProps) {
   useEffect(() => {
     if (messages.length === 0) {
       const initialText = role === 'seller' 
-        ? "Hi! I'm your Lease Pricing Advisor. Ready to turn your unused items into passive income? Ask me anything about pricing or security!"
+        ? "Hi! I'm your Flex Pricing Advisor. Ready to turn your unused items into passive income? Ask me anything about pricing or security!"
         : role === 'renter'
         ? "Welcome back to your dashboard! I'm here to help you manage your rentals and payments. Have questions about your active orders?"
-        : "Hello! I'm LeaseBot. Looking for a smart deal? I can help you understand how much you'll save by renting today!";
+        : "Hello! I'm FlexBot. Looking for a smart deal? I can help you understand how much you'll save by renting today!";
       setMessages([{ role: 'bot', text: initialText }]);
     }
   }, [role]);
@@ -58,7 +58,7 @@ export function LeaseBot({ role, context }: LeaseBotProps) {
         } else if (lower.includes('security') || lower.includes('safe') || lower.includes('damage')) {
           botResponse = "We've got you covered! We hard-lock a 35% security deposit based on the True Market Value. This completely removes any risk of damage or loss, so you can earn worry-free.";
         } else {
-          botResponse = "Listing on Lease is the smartest way to optimize your assets. Your items earn for you, and we handle all the escrow and verification hassles!";
+          botResponse = "Listing on Flex is the smartest way to optimize your assets. Your items earn for you, and we handle all the escrow and verification hassles!";
         }
       } else {
         if (lower.includes('price') || lower.includes('cost') || lower.includes('save')) {
@@ -66,7 +66,7 @@ export function LeaseBot({ role, context }: LeaseBotProps) {
         } else if (lower.includes('deposit') || lower.includes('return')) {
           botResponse = "The security deposit is 100% refundable. Think of it as a temporary hold that comes right back to your account the moment you return the item. It's much smarter than buying and being stuck with resale hassles!";
         } else {
-          botResponse = "By renting on Lease, you get premium gadgets and furniture without the huge upfront cost. It's the ultimate student hack for a better lifestyle!";
+          botResponse = "By renting on Flex, you get premium gadgets and furniture without the huge upfront cost. It's the ultimate student hack for a better lifestyle!";
         }
       }
 
@@ -95,7 +95,7 @@ export function LeaseBot({ role, context }: LeaseBotProps) {
                 <Bot className="w-5 h-5" />
               </div>
               <div>
-                <h4 className="font-black text-sm uppercase tracking-widest">Lease Advisor</h4>
+                <h4 className="font-black text-sm uppercase tracking-widest">Flex Advisor</h4>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                   <span className="text-[10px] font-bold opacity-80 uppercase">Always Active</span>
@@ -122,7 +122,7 @@ export function LeaseBot({ role, context }: LeaseBotProps) {
             <div className="relative">
               <input
                 className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-xl pl-4 pr-12 py-3 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all"
-                placeholder="Ask LeaseBot..."
+                placeholder="Ask FlexBot..."
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleSend()}

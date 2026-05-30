@@ -1036,7 +1036,7 @@ export default function NewItemPage() {
                 </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
                   <span>Renter Pays (Monthly Rent)</span>
-                  <span className="text-primary-600">₹{Math.ceil(form.monthlyRent).toLocaleString('en-IN')}/mo</span>
+                  <span className="text-amber-600">₹{Math.ceil(form.monthlyRent).toLocaleString('en-IN')}/mo</span>
                 </div>
                 <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
                   <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Total Cost to Renter (Full Duration)</div>
@@ -1050,7 +1050,7 @@ export default function NewItemPage() {
                   </div>
                   <div className="flex justify-between text-[12px] font-black tracking-widest pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-gray-900 dark:text-white">Total Renter Pays</span>
-                    <span className="text-primary-600">₹{(form.minRentDuration * Math.ceil(form.monthlyRent) + form.depositAmount).toLocaleString('en-IN')}</span>
+                    <span className="text-amber-600">₹{(form.minRentDuration * Math.ceil(form.monthlyRent) + form.depositAmount).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               </div>

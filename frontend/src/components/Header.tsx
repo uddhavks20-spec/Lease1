@@ -89,9 +89,9 @@ export function Header() {
         {/* Logo */}
         <Link href="/" className="flex items-center space-x-2">
           <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold text-xl">L</span>
+            <span className="text-white font-bold text-xl">F</span>
           </div>
-          <span className="text-xl font-bold gradient-text hidden md:inline-block">Lease</span>
+          <span className="text-xl font-bold gradient-text hidden md:inline-block">Flex</span>
         </Link>
 
         {/* Search & Location */}

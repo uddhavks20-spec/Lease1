@@ -19,10 +19,10 @@ export const viewport: Viewport = {
 }
 
 export const metadata: Metadata = {
-  title: 'Lease - Student Rental Marketplace',
-  description: 'Rent and lend items securely within your campus community. Student-only rental marketplace starting in Kanpur.',
-  keywords: 'rental, marketplace, students, campus, kanpur, india',
-  authors: [{ name: 'Lease Team' }],
+  title: 'Flex - Rent It Before You Buy It',
+  description: 'Peer-to-peer gadget rentals for college students. Flex the latest tech without the commitment.',
+  keywords: 'rental, marketplace, students, campus, gadgets, flex',
+  authors: [{ name: 'Flex Team' }],
   icons: {
     icon: '/favicon.svg',
     apple: '/favicon.svg',
