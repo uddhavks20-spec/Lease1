@@ -71,11 +71,11 @@ module.exports = {
         },
         surface: {
           DEFAULT: '#FDF8F0',
-          dark: '#1A1520',
+          dark: '#FDF8F0',
           card: '#FFFFFF',
-          'card-dark': '#221D2A',
+          'card-dark': '#F5F0E8',
           muted: '#F5F0E8',
-          'muted-dark': '#2D2635',
+          'muted-dark': '#EBE5D8',
         },
       },
       fontFamily: {
