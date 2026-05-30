@@ -761,9 +761,15 @@ For completion-level chips (like "Start over" or "Talk to a human"), follow the 
         console.log(`[Guardrails] ${issues.join(' | ')}`)
       }
 
+      const listingKeywords = ['show', 'listing', 'available', 'dikhao', 'dikha', 'hai kya', 'options', 'near me', 'nearby', 'compare', 'milte', 'mil']
+      const showTable = listings.length > 0 && (
+        listingKeywords.some(k => message.toLowerCase().includes(k)) ||
+        session.itemOfInterest && message.toLowerCase().includes(session.itemOfInterest.toLowerCase())
+      )
+
       return {
         reply: sanitized,
-        table: listings.length > 0 ? listings.slice(0, 5).map((l: any, i: number) => ({
+        table: showTable ? listings.slice(0, 5).map((l: any, i: number) => ({
           '#': i + 1, 'Item': l.title,
           'Rate': '₹' + Number(l.monthly_rent).toLocaleString('en-IN') + '/mo',
           'Deposit': '₹' + Number(l.deposit_amount).toLocaleString('en-IN'),
