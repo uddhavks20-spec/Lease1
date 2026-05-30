@@ -266,8 +266,12 @@ export default function NewItemPage() {
     const data = new FormData(e.currentTarget)
     const categoryId = data.get('categoryId') as string
     const cityId = data.get('cityId') as string
-    if (!categoryId || !cityId) {
-      toast.error('Please select category and city')
+    if (!categoryId) {
+      toast.error(`Category not selected (selected product: "${selectedProduct?.title || 'none'}")`)
+      return
+    }
+    if (!cityId) {
+      toast.error('Please select a city')
       return
     }
 
