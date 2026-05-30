@@ -105,7 +105,7 @@ export default function NewItemPage() {
     monthlyRent: 0,
     depositAmount: 0,
     minRentDuration: 3,
-    maxRentDuration: 48,
+    maxRentDuration: 12,
     subAttributes: {} as Record<string, string>,
     imageUrl: ''
   })
@@ -617,18 +617,29 @@ export default function NewItemPage() {
                     <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
                   </div>
                 </div>
-                <div>
+                <div className="space-y-3">
                   <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-2 block">Rental Duration (months)</label>
                   <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-2xl">
                     <input 
                       type="number" 
-                      min={3}
-                      max={48}
+                      min={1}
+                      max={24}
                       className="w-16 bg-white dark:bg-gray-800 border-none rounded-xl py-1.5 text-center text-xs font-black" 
                       value={form.minRentDuration} 
                       onChange={(e) => setForm({ ...form, minRentDuration: Number(e.target.value) })}
                     />
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">months (3–48)</span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">min (1–24)</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-900 p-1.5 rounded-2xl">
+                    <input 
+                      type="number" 
+                      min={1}
+                      max={24}
+                      className="w-16 bg-white dark:bg-gray-800 border-none rounded-xl py-1.5 text-center text-xs font-black" 
+                      value={form.maxRentDuration} 
+                      onChange={(e) => setForm({ ...form, maxRentDuration: Number(e.target.value) })}
+                    />
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">max (1–24)</span>
                   </div>
                 </div>
               </div>
@@ -679,28 +690,24 @@ export default function NewItemPage() {
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Working Condition Video (Optional)</label>
-              <div className="flex gap-2">
-                <div className="flex-1 relative">
-                  <svg className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
-                  <input
-                    type="url"
-                    placeholder="Paste YouTube or Google Drive link..."
-                    className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl pl-12 pr-5 py-3.5 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all"
-                    value={videoUrl}
-                    onChange={(e) => setVideoUrl(e.target.value)}
-                  />
-                </div>
-              </div>
-              {videoUrl && (
-                <div className="aspect-video bg-gray-50 dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-700">
-                  <iframe
-                    src={videoUrl.replace('watch?v=', 'embed/').replace('youtu.be/', 'youtube.com/embed/')}
-                    className="w-full h-full"
-                    allowFullScreen
-                    title="Product Video"
-                  />
-                </div>
-              )}
+              <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-6 text-center hover:border-primary-500 transition-all">
+                {videoUrl ? (
+                  <div className="relative">
+                    {videoUrl.startsWith('data:video') ? (
+                      <video src={videoUrl} className="max-h-40 mx-auto rounded-xl" controls />
+                    ) : (
+                      <img src={videoUrl} alt="Video thumbnail" className="max-h-32 mx-auto rounded-xl" />
+                    )}
+                    <button type="button" onClick={() => setVideoUrl('')} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold">✕</button>
+                  </div>
+                ) : (
+                  <div className="text-gray-400">
+                    <svg className="w-10 h-10 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" /></svg>
+                    <span className="text-[10px] font-bold uppercase tracking-wider">Tap to Upload Video</span>
+                  </div>
+                )}
+                <input type="file" accept="video/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => setVideoUrl(ev.target?.result as string); r.readAsDataURL(f); }} />
+              </label>
             </div>
           </CardContent>
         </Card>

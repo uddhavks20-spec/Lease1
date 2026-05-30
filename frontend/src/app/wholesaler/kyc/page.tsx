@@ -96,19 +96,43 @@ export default function WholesalerKYCPage() {
 
         <div className="bg-white dark:bg-gray-800 rounded-[28px] p-6 shadow-sm border border-gray-100 dark:border-gray-800 space-y-4">
           <h2 className="font-black text-lg uppercase tracking-tighter flex items-center gap-2"><FileText className="w-5 h-5 text-primary-600" /> Document Uploads</h2>
-          <p className="text-[10px] text-gray-400 font-medium">Upload images or PDF links (use Google Drive, ImgBB, or any public URL)</p>
+          <p className="text-[10px] text-gray-400 font-medium">Upload document images</p>
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1.5">Business Registration URL</label>
-              <input className="input-field" placeholder="https://..." value={form.businessRegistrationUrl} onChange={(e) => setForm({ ...form, businessRegistrationUrl: e.target.value })} />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1.5">Business Registration</label>
+              <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 text-center hover:border-primary-500 transition-all">
+                {form.businessRegistrationUrl ? (
+                  <div className="relative">
+                    <img src={form.businessRegistrationUrl} alt="Registration" className="max-h-24 mx-auto rounded-lg" />
+                    <button type="button" onClick={() => setForm({ ...form, businessRegistrationUrl: '' })} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold">✕</button>
+                  </div>
+                ) : <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Upload</span>}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => setForm({ ...form, businessRegistrationUrl: ev.target?.result as string }); r.readAsDataURL(f); }} />
+              </label>
             </div>
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1.5">GST Certificate URL</label>
-              <input className="input-field" placeholder="https://..." value={form.gstCertificateUrl} onChange={(e) => setForm({ ...form, gstCertificateUrl: e.target.value })} />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1.5">GST Certificate</label>
+              <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 text-center hover:border-primary-500 transition-all">
+                {form.gstCertificateUrl ? (
+                  <div className="relative">
+                    <img src={form.gstCertificateUrl} alt="GST" className="max-h-24 mx-auto rounded-lg" />
+                    <button type="button" onClick={() => setForm({ ...form, gstCertificateUrl: '' })} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold">✕</button>
+                  </div>
+                ) : <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Upload</span>}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => setForm({ ...form, gstCertificateUrl: ev.target?.result as string }); r.readAsDataURL(f); }} />
+              </label>
             </div>
             <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1.5">PAN Card URL</label>
-              <input className="input-field" placeholder="https://..." value={form.panCardUrl} onChange={(e) => setForm({ ...form, panCardUrl: e.target.value })} />
+              <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block mb-1.5">PAN Card</label>
+              <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 text-center hover:border-primary-500 transition-all">
+                {form.panCardUrl ? (
+                  <div className="relative">
+                    <img src={form.panCardUrl} alt="PAN" className="max-h-24 mx-auto rounded-lg" />
+                    <button type="button" onClick={() => setForm({ ...form, panCardUrl: '' })} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold">✕</button>
+                  </div>
+                ) : <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Upload</span>}
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => setForm({ ...form, panCardUrl: ev.target?.result as string }); r.readAsDataURL(f); }} />
+              </label>
             </div>
           </div>
         </div>

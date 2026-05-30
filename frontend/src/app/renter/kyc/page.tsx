@@ -114,33 +114,57 @@ export default function RenterKYCPage() {
 
         <div className="grid sm:grid-cols-2 gap-6">
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Document Front URL</label>
-            <input 
-              className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all" 
-              value={form.documentFrontUrl} 
-              onChange={(e) => setForm({ ...form, documentFrontUrl: e.target.value })} 
-              placeholder="Image URL"
-            />
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Document Front</label>
+            <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 text-center hover:border-primary-500 transition-all">
+              {form.documentFrontUrl ? (
+                <div className="relative">
+                  <img src={form.documentFrontUrl} alt="Front" className="max-h-28 mx-auto rounded-xl" />
+                  <button type="button" onClick={() => setForm({ ...form, documentFrontUrl: '' })} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold">✕</button>
+                </div>
+              ) : (
+                <div className="text-gray-400">
+                  <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Click to Upload</span>
+                </div>
+              )}
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => setForm({ ...form, documentFrontUrl: ev.target?.result as string }); r.readAsDataURL(f); }} />
+            </label>
           </div>
           <div className="space-y-2">
-            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Document Back URL</label>
-            <input 
-              className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all" 
-              value={form.documentBackUrl} 
-              onChange={(e) => setForm({ ...form, documentBackUrl: e.target.value })} 
-              placeholder="Image URL"
-            />
+            <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Document Back</label>
+            <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 text-center hover:border-primary-500 transition-all">
+              {form.documentBackUrl ? (
+                <div className="relative">
+                  <img src={form.documentBackUrl} alt="Back" className="max-h-28 mx-auto rounded-xl" />
+                  <button type="button" onClick={() => setForm({ ...form, documentBackUrl: '' })} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold">✕</button>
+                </div>
+              ) : (
+                <div className="text-gray-400">
+                  <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                  <span className="text-[10px] font-bold uppercase tracking-wider">Click to Upload</span>
+                </div>
+              )}
+              <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => setForm({ ...form, documentBackUrl: ev.target?.result as string }); r.readAsDataURL(f); }} />
+            </label>
           </div>
         </div>
 
         <div className="space-y-2">
-          <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Selfie URL</label>
-          <input 
-            className="w-full bg-gray-50 dark:bg-gray-900 border-none rounded-2xl px-5 py-4 text-sm font-bold outline-none ring-2 ring-transparent focus:ring-primary-500 transition-all" 
-            value={form.selfieUrl} 
-            onChange={(e) => setForm({ ...form, selfieUrl: e.target.value })} 
-            placeholder="Image URL"
-          />
+          <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Selfie</label>
+          <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-2xl p-4 text-center hover:border-primary-500 transition-all">
+            {form.selfieUrl ? (
+              <div className="relative">
+                <img src={form.selfieUrl} alt="Selfie" className="max-h-28 mx-auto rounded-xl" />
+                <button type="button" onClick={() => setForm({ ...form, selfieUrl: '' })} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold">✕</button>
+              </div>
+            ) : (
+              <div className="text-gray-400">
+                <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                <span className="text-[10px] font-bold uppercase tracking-wider">Click to Upload</span>
+              </div>
+            )}
+            <input type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (!f) return; const r = new FileReader(); r.onload = (ev) => setForm({ ...form, selfieUrl: ev.target?.result as string }); r.readAsDataURL(f); }} />
+          </label>
         </div>
 
         <Button 

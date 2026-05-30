@@ -16,6 +16,13 @@ const DOCUMENT_TYPES = [
   { value: 'student_id', label: 'Student ID' },
 ]
 
+function handleFileUpload(file: File | null, callback: (dataUrl: string) => void) {
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = (e) => callback(e.target?.result as string)
+  reader.readAsDataURL(file)
+}
+
 export default function SellerKYCPage() {
   const [kyc, setKyc] = useState<any>(null)
   const [form, setForm] = useState({
@@ -115,8 +122,21 @@ export default function SellerKYCPage() {
                 <input className="input-field" value={form.document_number} onChange={e => setForm({ ...form, document_number: e.target.value })} placeholder="Enter document number" />
               </div>
               <div>
-                <label className="text-sm font-bold block mb-1">Document Image URL</label>
-                <input className="input-field" value={form.document_url} onChange={e => setForm({ ...form, document_url: e.target.value })} placeholder="https://..." />
+                <label className="text-sm font-bold block mb-1">Document Image</label>
+                <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-4 text-center hover:border-primary-500 transition-all">
+                  {form.document_url ? (
+                    <div className="relative">
+                      <img src={form.document_url} alt="Document" className="max-h-32 mx-auto rounded-lg" />
+                      <button type="button" onClick={() => setForm({ ...form, document_url: '' })} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full text-xs font-bold">✕</button>
+                    </div>
+                  ) : (
+                    <div className="text-gray-400">
+                      <svg className="w-8 h-8 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                      <span className="text-[10px] font-bold uppercase tracking-wider">Click to Upload</span>
+                    </div>
+                  )}
+                  <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e.target.files?.[0] || null, (url) => setForm({ ...form, document_url: url }))} />
+                </label>
               </div>
             </div>
 
@@ -136,16 +156,40 @@ export default function SellerKYCPage() {
                   <input className="input-field" value={form.collegeId} onChange={e => setForm({ ...form, collegeId: e.target.value })} />
                 </div>
                 <div>
-                  <label className="text-sm font-bold block mb-1">Document Front URL</label>
-                  <input className="input-field" value={form.documentFrontUrl} onChange={e => setForm({ ...form, documentFrontUrl: e.target.value })} />
+                  <label className="text-sm font-bold block mb-1">Document Front</label>
+                  <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-3 text-center hover:border-primary-500 transition-all">
+                    {form.documentFrontUrl ? (
+                      <div className="relative">
+                        <img src={form.documentFrontUrl} alt="Front" className="max-h-24 mx-auto rounded-lg" />
+                        <button type="button" onClick={() => setForm({ ...form, documentFrontUrl: '' })} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold">✕</button>
+                      </div>
+                    ) : <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Upload</span>}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e.target.files?.[0] || null, (url) => setForm({ ...form, documentFrontUrl: url }))} />
+                  </label>
                 </div>
                 <div>
-                  <label className="text-sm font-bold block mb-1">Document Back URL</label>
-                  <input className="input-field" value={form.documentBackUrl} onChange={e => setForm({ ...form, documentBackUrl: e.target.value })} />
+                  <label className="text-sm font-bold block mb-1">Document Back</label>
+                  <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-3 text-center hover:border-primary-500 transition-all">
+                    {form.documentBackUrl ? (
+                      <div className="relative">
+                        <img src={form.documentBackUrl} alt="Back" className="max-h-24 mx-auto rounded-lg" />
+                        <button type="button" onClick={() => setForm({ ...form, documentBackUrl: '' })} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold">✕</button>
+                      </div>
+                    ) : <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Upload</span>}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e.target.files?.[0] || null, (url) => setForm({ ...form, documentBackUrl: url }))} />
+                  </label>
                 </div>
                 <div>
-                  <label className="text-sm font-bold block mb-1">Selfie URL</label>
-                  <input className="input-field" value={form.selfieUrl} onChange={e => setForm({ ...form, selfieUrl: e.target.value })} />
+                  <label className="text-sm font-bold block mb-1">Selfie</label>
+                  <label className="block w-full cursor-pointer bg-gray-50 dark:bg-gray-900 border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl p-3 text-center hover:border-primary-500 transition-all">
+                    {form.selfieUrl ? (
+                      <div className="relative">
+                        <img src={form.selfieUrl} alt="Selfie" className="max-h-24 mx-auto rounded-lg" />
+                        <button type="button" onClick={() => setForm({ ...form, selfieUrl: '' })} className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full text-[10px] font-bold">✕</button>
+                      </div>
+                    ) : <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Upload</span>}
+                    <input type="file" accept="image/*" className="hidden" onChange={(e) => handleFileUpload(e.target.files?.[0] || null, (url) => setForm({ ...form, selfieUrl: url }))} />
+                  </label>
                 </div>
               </div>
             </div>
