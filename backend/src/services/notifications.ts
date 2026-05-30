@@ -76,7 +76,9 @@ export async function notifyUsers(userIds: string[], payload: Omit<NotifyPayload
 
 // ─── Notify all admins ───────────────────────────────────────────
 export async function notifyAdmins(payload: Omit<NotifyPayload, 'userId'>) {
-  const admins = (await db.query(`SELECT id FROM users WHERE role='admin'`)).rows
+  const admins = (await db.query(
+    `SELECT u.id FROM users u JOIN roles r ON r.id = u.role_id WHERE r.name='admin'`
+  )).rows
   for (const admin of admins) {
     await notifyUser({ ...payload, userId: admin.id })
   }

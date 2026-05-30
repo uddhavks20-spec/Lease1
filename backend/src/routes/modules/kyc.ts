@@ -2,6 +2,7 @@ import { Router } from 'express'
 import { body } from 'express-validator'
 import { auth } from '../../middleware/auth'
 import { db } from '../../utils/db'
+import { notifyAdmins } from '../../services/notifications'
 
 const router = Router()
 
@@ -60,6 +61,15 @@ router.post(
           vals
         )
       }
+
+      notifyAdmins({
+        title: '🆕 New KYC Submission',
+        message: `User ${req.user!.sub} has submitted KYC documents for verification.`,
+        type: 'info',
+        actionUrl: '/admin/dashboard',
+        relatedEntityType: 'kyc',
+        relatedEntityId: userId,
+      })
 
       res.json({ ok: true })
     } catch (e) {
