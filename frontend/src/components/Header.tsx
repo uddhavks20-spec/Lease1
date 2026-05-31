@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
+import { createPortal } from 'react-dom';
 import { Search, User, Menu, X, Home, LayoutGrid, Heart, ShoppingCart, Calendar, Gift, Sofa, Laptop, Snowflake, Bike, Armchair, Package, MapPin } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
@@ -23,8 +24,11 @@ export function Header() {
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [activeSection, setActiveSection] = useState<'what' | 'where' | null>(null);
   const [hoveredSection, setHoveredSection] = useState<'what' | 'where' | null>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
+  const whatRef = useRef<HTMLDivElement>(null);
+  const whereRef = useRef<HTMLDivElement>(null);
 
   const categories = [
     { label: 'Laptops', icon: Laptop, query: 'laptop' },
@@ -124,6 +128,13 @@ export function Header() {
     c.name.toLowerCase().includes(cityInput.toLowerCase())
   );
 
+  useEffect(() => {
+    if (activeSection && searchRef.current) {
+      const rect = searchRef.current.getBoundingClientRect();
+      setDropdownPos({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+    }
+  }, [activeSection]);
+
   const renderProfileMenu = (close: () => void) => {
     return (
       <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-surface-dark rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-50">
@@ -203,6 +214,7 @@ export function Header() {
                       }`}
                     />
                     <div
+                      ref={whatRef}
                       className={`relative flex-1 min-w-0 px-4 pt-2.5 pb-1.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'what' ? '' : 'hover:bg-transparent'}`}
                       onClick={() => setActiveSection(activeSection === 'what' ? null : 'what')}
                       onMouseEnter={() => setHoveredSection('what')}
@@ -220,6 +232,7 @@ export function Header() {
                     </div>
                     <div className="w-px h-8 bg-primary-200/60 dark:bg-primary-800/30 shrink-0 shadow-[0_0_4px_rgba(255,0,110,0.1)] transition-opacity duration-200 z-10" />
                     <div
+                      ref={whereRef}
                       className={`relative flex-1 min-w-0 px-4 pt-2.5 pb-1.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'where' ? '' : 'hover:bg-transparent'}`}
                       onClick={() => setActiveSection(activeSection === 'where' ? null : 'where')}
                       onMouseEnter={() => setHoveredSection('where')}
@@ -252,99 +265,6 @@ export function Header() {
                     </div>
                   </div>
                 </form>
-
-                {activeSection && (
-                  <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-[100] animate-in fade-in slide-in-from-top-2 duration-200">
-                    {activeSection === 'what' && (
-                      <div className="p-4">
-                        <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Categories</p>
-                        <div className="grid grid-cols-3 gap-2">
-                          {categories.map(cat => {
-                            const Icon = cat.icon;
-                            return (
-                              <button
-                                key={cat.label}
-                                type="button"
-                                onClick={() => { setSearchQuery(cat.query); setActiveSection(null); }}
-                                className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md ${
-                                  searchQuery === cat.query
-                                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                                    : 'border-gray-100 dark:border-gray-700 hover:border-primary-200'
-                                }`}
-                              >
-                                <div className="w-10 h-10 rounded-full bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center">
-                                  <Icon className="h-5 w-5 text-primary-600" />
-                                </div>
-                                <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{cat.label}</span>
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeSection === 'where' && (
-                      <div className="max-h-80 overflow-y-auto">
-                        <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-                          <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <MapPin className="h-4 w-4 text-gray-400" />
-                            <input
-                              type="text"
-                              placeholder="Search destinations"
-                              className="w-full bg-transparent border-none outline-none text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
-                              value={cityInput}
-                              onChange={(e) => {
-                                const val = e.target.value;
-                                setCityInput(val);
-                                const match = cities.find(c => c.name.toLowerCase().includes(val.toLowerCase()));
-                                if (match && val.length >= match.name.length) {
-                                  setSelectedCity(match.id);
-                                } else {
-                                  setSelectedCity('');
-                                }
-                              }}
-                              autoFocus
-                            />
-                          </div>
-                        </div>
-                        <div className="p-2">
-                          {filteredCities.length > 0 ? filteredCities.map(city => (
-                            <button
-                              key={city.id}
-                              type="button"
-                              onClick={() => { setSelectedCity(city.id); setCityInput(city.name); setActiveSection(null); }}
-                              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
-                                selectedCity === city.id
-                                  ? 'bg-primary-50 dark:bg-primary-900/20'
-                                  : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
-                              }`}
-                            >
-                              <div className="w-8 h-8 rounded-lg bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center shrink-0">
-                                <MapPin className="h-4 w-4 text-primary-600" />
-                              </div>
-                              <div className="text-left">
-                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{city.name}</p>
-                              </div>
-                            </button>
-                          )) : (
-                            <button
-                              type="button"
-                              onClick={() => { setSelectedCity(''); setActiveSection(null); }}
-                              className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                            >
-                              <div className="w-8 h-8 rounded-lg bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center shrink-0">
-                                <MapPin className="h-4 w-4 text-primary-600" />
-                              </div>
-                              <div className="text-left">
-                                <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">All locations</p>
-                              </div>
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
           </>
@@ -416,6 +336,104 @@ export function Header() {
             )}
           </nav>
         </div>
+      )}
+
+      {activeSection && dropdownPos && typeof window !== 'undefined' && createPortal(
+        <div
+          className="fixed bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-[9999]"
+          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {activeSection === 'what' && (
+            <div className="p-4">
+              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Categories</p>
+              <div className="grid grid-cols-3 gap-2">
+                {categories.map(cat => {
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.label}
+                      type="button"
+                      onClick={() => { setSearchQuery(cat.query); setActiveSection(null); }}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md ${
+                        searchQuery === cat.query
+                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                          : 'border-gray-100 dark:border-gray-700 hover:border-primary-200'
+                      }`}
+                    >
+                      <div className="w-10 h-10 rounded-full bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center">
+                        <Icon className="h-5 w-5 text-primary-600" />
+                      </div>
+                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'where' && (
+            <div className="max-h-80 overflow-y-auto">
+              <div className="p-3 border-b border-gray-100 dark:border-gray-700">
+                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                  <MapPin className="h-4 w-4 text-gray-400" />
+                  <input
+                    type="text"
+                    placeholder="Search destinations"
+                    className="w-full bg-transparent border-none outline-none text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
+                    value={cityInput}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setCityInput(val);
+                      const match = cities.find(c => c.name.toLowerCase().includes(val.toLowerCase()));
+                      if (match && val.length >= match.name.length) {
+                        setSelectedCity(match.id);
+                      } else {
+                        setSelectedCity('');
+                      }
+                    }}
+                    autoFocus
+                  />
+                </div>
+              </div>
+              <div className="p-2">
+                {filteredCities.length > 0 ? filteredCities.map(city => (
+                  <button
+                    key={city.id}
+                    type="button"
+                    onClick={() => { setSelectedCity(city.id); setCityInput(city.name); setActiveSection(null); }}
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                      selectedCity === city.id
+                        ? 'bg-primary-50 dark:bg-primary-900/20'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }`}
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center shrink-0">
+                      <MapPin className="h-4 w-4 text-primary-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{city.name}</p>
+                    </div>
+                  </button>
+                )) : (
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedCity(''); setActiveSection(null); }}
+                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-lg bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center shrink-0">
+                      <MapPin className="h-4 w-4 text-primary-600" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">All locations</p>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+        </div>,
+        document.body
       )}
     </header>
   );
