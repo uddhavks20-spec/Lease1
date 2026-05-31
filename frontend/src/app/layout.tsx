@@ -6,11 +6,13 @@ import { ThemeProvider } from '@/components/theme-provider'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/lib/auth-context'
 import { CartProvider } from '@/lib/cart-context'
-import { Header } from '@/components/Header'
+import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
 import { LeaseGuru } from '@/components/LeaseGuru' // Import Suspense
 
 const inter = Inter({ subsets: ['latin'] })
+
+const Header = dynamic(() => import('@/components/Header').then(m => m.Header), { ssr: false })
 
 // 2. Extracted viewport into its own export to fix terminal warnings
 export const viewport: Viewport = {

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { Search, User, Menu, X, Home, LayoutGrid, Heart, ShoppingCart, Calendar, Gift, Sofa, Laptop, Snowflake, Bike, Armchair, Package, MapPin } from 'lucide-react';
+import { Search, User, Menu, X, LayoutGrid, Sofa, Laptop, Snowflake, Bike, Armchair, Package, MapPin } from 'lucide-react';
 import { useAuth } from '@/lib/auth-context';
 import { useCart } from '@/lib/cart-context';
 import api from '@/lib/api';
@@ -22,22 +22,31 @@ export function Header() {
   const [cityInput, setCityInput] = useState('');
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
-  const [activeSection, setActiveSection] = useState<'what' | 'where' | null>(null);
+  const [activeSection, setActiveSection] = useState<'what' | 'where' | 'both' | null>(null);
+  const [lastClicked, setLastClicked] = useState<'what' | 'where'>('what');
   const [hoveredSection, setHoveredSection] = useState<'what' | 'where' | null>(null);
+  const [searchHovered, setSearchHovered] = useState(false);
   const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number; width: number } | null>(null);
+  const [sliderStyle, setSliderStyle] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
   const profileRef = useRef<HTMLDivElement>(null);
   const searchRef = useRef<HTMLDivElement>(null);
   const whatRef = useRef<HTMLDivElement>(null);
   const whereRef = useRef<HTMLDivElement>(null);
+  const btnRef = useRef<HTMLDivElement>(null);
+  const whatInputRef = useRef<HTMLInputElement>(null);
+  const whereInputRef = useRef<HTMLInputElement>(null);
 
   const categories = [
-    { label: 'Laptops', icon: Laptop, query: 'laptop' },
-    { label: 'ACs', icon: Snowflake, query: 'ac' },
-    { label: 'Furniture', icon: Sofa, query: 'furniture' },
-    { label: 'Bikes', icon: Bike, query: 'bike' },
-    { label: 'Chairs', icon: Armchair, query: 'chair' },
-    { label: 'Appliances', icon: Package, query: 'appliance' },
+    { label: 'Laptops', icon: Laptop, query: 'laptop', color: 'bg-blue-100 text-blue-600', subtitle: 'Work & study' },
+    { label: 'ACs', icon: Snowflake, query: 'ac', color: 'bg-gray-200 text-gray-700', subtitle: 'Beat the heat' },
+    { label: 'Furniture', icon: Sofa, query: 'furniture', color: 'bg-amber-100 text-amber-600', subtitle: 'Home essentials' },
+    { label: 'Bikes', icon: Bike, query: 'bike', color: 'bg-green-100 text-green-600', subtitle: 'Ride around' },
+    { label: 'Chairs', icon: Armchair, query: 'chair', color: 'bg-purple-100 text-purple-600', subtitle: 'Sit in style' },
+    { label: 'Appliances', icon: Package, query: 'appliance', color: 'bg-gray-200 text-gray-700', subtitle: 'Daily needs' },
   ];
+
+  const cityIcons = ['bg-gray-200 text-gray-700', 'bg-orange-100 text-orange-600', 'bg-green-100 text-green-600', 'bg-blue-100 text-blue-600', 'bg-gray-200 text-gray-700', 'bg-purple-100 text-purple-600'];
+  const citySubtitles = ['Popular rental spot', 'Near you', 'Trending now', 'Top rated', 'Budget friendly', 'Premium picks'];
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 80);
@@ -109,12 +118,12 @@ export function Header() {
   };
 
   const navItems = [
-    { label: 'Home', href: '/', icon: Home },
-    { label: 'Listings', href: '/browse', icon: LayoutGrid },
-    { label: 'Wishlist', href: '/wishlist', icon: Heart },
-    { label: 'Cart', href: '/cart', icon: ShoppingCart, count: cart.length },
-    { label: 'Bookings', href: '/bookings', icon: Calendar },
-    { label: 'Referrals', href: '/referrals', icon: Gift },
+    { label: 'Home', href: '/', imgSrc: '/images/nav/home.png' },
+    { label: 'Listings', href: '/browse', imgSrc: '/images/nav/listings.png' },
+    { label: 'Wishlist', href: '/wishlist', imgSrc: '/images/nav/wishlist.png' },
+    { label: 'Cart', href: '/cart', imgSrc: '/images/nav/cart.png', count: cart.length },
+    { label: 'Bookings', href: '/bookings', imgSrc: '/images/nav/bookings.png' },
+    { label: 'Referrals', href: '/referrals', imgSrc: '/images/nav/referrals.png' },
   ];
 
   const isActive = (href: string) => {
@@ -131,117 +140,159 @@ export function Header() {
   useEffect(() => {
     if (activeSection && searchRef.current) {
       const rect = searchRef.current.getBoundingClientRect();
-      setDropdownPos({ top: rect.bottom + 8, left: rect.left, width: rect.width });
+      const fullWidth = rect.width;
+      const halfWidth = fullWidth / 2;
+      const isBoth = activeSection === 'both';
+      setDropdownPos({
+        top: rect.bottom + 8,
+        left: isBoth ? rect.left : (activeSection === 'where' ? rect.left + halfWidth : rect.left),
+        width: isBoth ? fullWidth : halfWidth,
+      });
     }
   }, [activeSection]);
+
+  useEffect(() => {
+    const target = activeSection === 'both' ? lastClicked : (activeSection || hoveredSection);
+    if (!target || !searchRef.current || !whatRef.current || !whereRef.current || !btnRef.current) return;
+    const id = requestAnimationFrame(() => {
+      const container = searchRef.current!;
+      const btn = btnRef.current!;
+      const sectionRef = target === 'what' ? whatRef.current! : whereRef.current!;
+      const containerRect = container.getBoundingClientRect();
+      const sectionRect = sectionRef.getBoundingClientRect();
+      const btnLeft = btn.getBoundingClientRect().left - containerRect.left;
+      const pad = activeSection ? 0 : 1;
+      const left = sectionRect.left - containerRect.left - pad;
+      const maxWidth = btnLeft - left - 4;
+      setSliderStyle({
+        left,
+        width: Math.min(sectionRect.width + pad * 2, maxWidth),
+      });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [activeSection, hoveredSection, lastClicked]);
 
   const renderProfileMenu = (close: () => void) => {
     return (
       <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-surface-dark rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-50">
-        <Link href="/profile" className="block px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800" onClick={close}>Profile</Link>
-        <Link href="/seller/dashboard" className="block px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-primary-600 hover:bg-gray-50 dark:hover:bg-gray-800" onClick={close}>Dashboard</Link>
+        <Link href="/profile" className="block px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800" onClick={close}>Profile</Link>
+        <Link href="/seller/dashboard" className="block px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800" onClick={close}>Dashboard</Link>
         <hr className="my-1 border-gray-100 dark:border-gray-700" />
         <button onClick={() => { logout(); close(); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800">Log out</button>
       </div>
     );
   };
 
-  const headerClass = `sticky top-0 z-50 w-full overflow-visible transition-all duration-300 bg-gradient-to-b from-secondary-50 via-secondary-100 to-secondary-200 dark:from-secondary-950/30 dark:via-secondary-900/40 dark:to-secondary-800/50 ${scrolled ? 'shadow-lg shadow-secondary-300/20' : 'shadow-md shadow-secondary-200/30'}`;
+  const headerClass = `sticky top-0 z-50 w-full overflow-visible transition-all duration-300 ${scrolled ? 'shadow-lg' : 'shadow-md'}`;
 
   return (
     <header className={headerClass}>
-      <div className="container overflow-visible">
+      <div className="overflow-visible">
         {!scrolled ? (
-          <>
-            <div className="flex items-center justify-center h-16">
-              <div className="w-36 shrink-0">
-                <Link href="/" className="text-xl font-black gradient-text">Flex</Link>
-              </div>
-              <nav className="hidden md:flex items-center justify-center gap-1 flex-1">
-                {navItems.map(item => {
-                  const Icon = item.icon;
-                  const active = isActive(item.href);
-                  return (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      className={`relative flex items-center gap-2 px-4 py-2 text-sm font-semibold transition-colors ${
-                        active ? 'text-primary-600' : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
-                      }`}
-                    >
-                      <Icon className={`h-4 w-4 ${active ? 'text-primary-600' : ''}`} />
-                      <span>{item.label}</span>
-                      {item.count && item.count > 0 && (
-                        <span className="ml-0.5 text-[10px] font-bold bg-primary-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">{item.count}</span>
-                      )}
-                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-primary-600 rounded-full" />}
-                    </Link>
-                  );
-                })}
-              </nav>
-              <div className="w-36 shrink-0 flex items-center justify-end gap-3">
-                {user ? (
-                  <div className="relative hidden md:block" ref={profileRef}>
-                    <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-                      <User className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                      <span className="text-xs font-bold text-gray-800 dark:text-gray-100">{user.firstName}</span>
-                    </button>
-                    {showProfileMenu && renderProfileMenu(closeProfile)}
-                  </div>
-                ) : (
-                  <div className="hidden md:flex items-center gap-3">
-                    <Link href="/login" className="text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-primary-600 transition-colors">Login</Link>
-                    <Link href="/signup" className="text-sm font-bold text-white bg-primary-600 hover:bg-primary-700 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
-                  </div>
-                )}
-                <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-white/50 transition-colors">
-                  {showMobileMenu ? <X className="h-5 w-5 text-gray-700 dark:text-gray-300" /> : <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />}
-                </button>
+          <React.Fragment>
+            <div className="bg-gradient-to-b from-gray-200 to-gray-400">
+              <div className="container flex items-center justify-center h-20">
+                <div className="w-36 shrink-0">
+                  <Link href="/" className="text-xl font-black gradient-text">Flex</Link>
+                </div>
+                <nav className="hidden md:flex items-center justify-center gap-6 flex-1">
+                  {navItems.map(item => {
+                    const active = isActive(item.href);
+                    return (
+                      <Link
+                        key={item.href}
+                        href={item.href}
+                        className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
+                          active ? 'text-black' : 'text-gray-800 hover:text-white'
+                        }`}
+                      >
+                        <span className="relative inline-flex shrink-0">
+                          <img src={item.imgSrc} alt="" className="h-[60px] w-[60px] object-contain transition-transform duration-200 ease-out group-hover:scale-125" draggable={false} />
+                          {item.count != null && item.count > 0 && (
+                            <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-black text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
+                          )}
+                        </span>
+                        <span>{item.label}</span>
+                        {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black rounded-full" />}
+                      </Link>
+                    );
+                  })}
+                </nav>
+                <div className="w-36 shrink-0 flex items-center justify-end gap-3">
+                  {user ? (
+                    <div className="relative hidden md:block" ref={profileRef}>
+                      <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 hover:shadow-md transition-all">
+                        <User className="h-4 w-4 text-gray-800" />
+                        <span className="text-xs font-bold text-gray-800">{user.firstName}</span>
+                      </button>
+                      {showProfileMenu && renderProfileMenu(closeProfile)}
+                    </div>
+                  ) : (
+                    <div className="hidden md:flex items-center gap-3">
+                      <Link href="/login" className="text-sm font-bold text-gray-800 hover:text-white transition-colors">Login</Link>
+                      <Link href="/signup" className="text-sm font-bold text-white bg-black hover:bg-gray-800 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
+                    </div>
+                  )}
+                  <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-white/50 transition-colors">
+                    {showMobileMenu ? <X className="h-5 w-5 text-gray-700 dark:text-gray-300" /> : <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />}
+                  </button>
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-center pt-4 pb-5 relative">
-              <div ref={searchRef} className="relative flex-1 max-w-xl">
+            <div className="bg-gray-400">
+              <div className="flex justify-center pt-4 pb-5 relative">
+              <div ref={searchRef} className="relative flex-1 max-w-2xl">
                 <form onSubmit={handleSearch}>
-                  <div className="relative flex items-center bg-secondary-50 dark:bg-secondary-950/30 rounded-full shadow-md shadow-secondary-100/60 dark:shadow-secondary-900/50 border border-secondary-100 dark:border-secondary-900/40 hover:shadow-lg transition-shadow group">
+                  <div className="relative flex items-center bg-gray-200 rounded-full shadow-md shadow-gray-200/60 dark:shadow-gray-900/50 hover:shadow-lg transition-shadow group overflow-hidden" onMouseEnter={() => setSearchHovered(true)} onMouseLeave={() => setSearchHovered(false)}>
                     <div
-                      className={`absolute top-1 bottom-1 rounded-full bg-white dark:bg-gray-800 shadow-md transition-all duration-300 ease-out pointer-events-none ${
-                        activeSection === 'what' || (!activeSection && hoveredSection === 'what')
-                          ? 'left-1 w-[calc(50%-24px)] opacity-100'
-                          : activeSection === 'where' || (!activeSection && hoveredSection === 'where')
-                          ? 'left-[calc(50%-20px)] w-[calc(50%-24px)] opacity-100'
-                          : 'left-1 w-0 opacity-0'
+                      className={`absolute rounded-full bg-gray-50 shadow-md transition-all duration-300 ease-out pointer-events-none z-0 ${
+                        (activeSection || hoveredSection) ? 'opacity-100' : 'opacity-0'
                       }`}
+                      style={{
+                        top: activeSection ? 0 : 1,
+                        bottom: activeSection ? 0 : 1,
+                        left: (activeSection || hoveredSection) ? sliderStyle.left : 4,
+                        width: (activeSection || hoveredSection) ? sliderStyle.width : 0,
+                      }}
                     />
                     <div
                       ref={whatRef}
-                      className={`relative flex-1 min-w-0 px-4 pt-2.5 pb-1.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'what' ? '' : 'hover:bg-transparent'}`}
-                      onClick={() => setActiveSection(activeSection === 'what' ? null : 'what')}
+                      className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'what' ? '' : 'hover:bg-transparent'}`}
                       onMouseEnter={() => setHoveredSection('what')}
                       onMouseLeave={() => setHoveredSection(null)}
+                      onClick={() => whatInputRef.current?.focus()}
                     >
-                      <label className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'what' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>What</label>
+                      <label htmlFor="search-what" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'what' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>What</label>
                       <input
+                        id="search-what"
+                        ref={whatInputRef}
                         type="text"
                         placeholder="Search categories..."
                         className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
                         value={searchQuery}
                         onChange={(e) => { setSearchQuery(e.target.value); if (!activeSection) setActiveSection('what'); }}
-                        onFocus={() => setActiveSection('what')}
+                        onFocus={() => {
+                          const next = activeSection === 'both' ? 'what' : (activeSection === 'where' ? 'both' : 'what');
+                          setLastClicked('what');
+                          setActiveSection(next);
+                        }}
                       />
                     </div>
-                    <div className="w-px h-8 bg-primary-200/60 dark:bg-primary-800/30 shrink-0 shadow-[0_0_4px_rgba(255,0,110,0.1)] transition-opacity duration-200 z-10" />
+                    <div className={`w-px h-8 bg-gray-900 shrink-0 transition-opacity duration-200 z-10 ${(searchHovered || activeSection) ? 'opacity-0' : 'opacity-100'}`} />
                     <div
                       ref={whereRef}
-                      className={`relative flex-1 min-w-0 px-4 pt-2.5 pb-1.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'where' ? '' : 'hover:bg-transparent'}`}
-                      onClick={() => setActiveSection(activeSection === 'where' ? null : 'where')}
+                      className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'where' ? '' : 'hover:bg-transparent'}`}
                       onMouseEnter={() => setHoveredSection('where')}
                       onMouseLeave={() => setHoveredSection(null)}
+                      onClick={() => whereInputRef.current?.focus()}
                     >
-                      <label className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'where' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>Where</label>
+                      <label htmlFor="search-where" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'where' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>Where</label>
                       <input
+                        id="search-where"
+                        ref={whereInputRef}
                         type="text"
-                        placeholder="Search destinations"
+                        placeholder="Search locations"
                         className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
                         value={cityInput}
                         onChange={(e) => {
@@ -255,19 +306,25 @@ export function Header() {
                           }
                           if (!activeSection) setActiveSection('where');
                         }}
-                        onFocus={() => setActiveSection('where')}
+                        onFocus={() => {
+                          const next = activeSection === 'both' ? 'where' : (activeSection === 'what' ? 'both' : 'where');
+                          setLastClicked('where');
+                          setActiveSection(next);
+                        }}
                       />
                     </div>
-                    <div className="pr-1 shrink-0">
-                      <button type="submit" className="h-9 w-9 bg-primary-600 hover:bg-primary-700 text-white rounded-full flex items-center justify-center transition-colors shadow-md">
-                        <Search className="h-4 w-4" />
+                    <div ref={btnRef} className="pr-1 shrink-0 z-20 relative">
+                      <button type="submit" className={`h-11 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center transition-all shadow-md ${activeSection ? 'px-3 gap-1.5' : 'w-11'}`}>
+                        <Search className="h-5 w-5 shrink-0" />
+                        {activeSection && <span className="text-xs font-bold whitespace-nowrap">Search</span>}
                       </button>
                     </div>
                   </div>
                 </form>
               </div>
             </div>
-          </>
+            </div>
+          </React.Fragment>
         ) : (
           <div className="flex items-center justify-between h-14 gap-4">
             <Link href="/" className="text-lg font-black gradient-text shrink-0">Flex</Link>
@@ -277,7 +334,7 @@ export function Header() {
                   <input type="text" placeholder="Search anything..." className="w-full bg-transparent border-none outline-none text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                 </div>
                 <div className="pr-1.5 shrink-0">
-                  <button type="submit" className="h-8 w-8 bg-primary-600 hover:bg-primary-700 text-white rounded-full flex items-center justify-center transition-colors">
+                  <button type="submit" className="h-8 w-8 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center transition-colors">
                     <Search className="h-3.5 w-3.5" />
                   </button>
                 </div>
@@ -294,8 +351,8 @@ export function Header() {
                 </div>
               ) : (
                 <div className="hidden md:flex items-center gap-3">
-                  <Link href="/login" className="text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-primary-600 transition-colors">Login</Link>
-                  <Link href="/signup" className="text-xs font-bold text-white bg-primary-600 hover:bg-primary-700 px-4 py-1.5 rounded-full transition-colors">Sign Up</Link>
+                  <Link href="/login" className="text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-black transition-colors">Login</Link>
+                  <Link href="/signup" className="text-xs font-bold text-white bg-black hover:bg-gray-800 px-4 py-1.5 rounded-full transition-colors">Sign Up</Link>
                 </div>
               )}
               <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-white/50 transition-colors">
@@ -307,31 +364,30 @@ export function Header() {
       </div>
 
       {showMobileMenu && (
-        <div className="md:hidden border-t border-secondary-200/50 dark:border-secondary-800/30 bg-secondary-50/95 dark:bg-secondary-950/40 backdrop-blur-xl">
+        <div className="md:hidden border-t border-gray-200/50 dark:border-gray-800/30 bg-gray-50/95 dark:bg-gray-950/40 backdrop-blur-xl">
           <nav className="container py-4 space-y-1">
             {navItems.map(item => {
-              const Icon = item.icon;
               return (
-                <Link key={item.href} href={item.href} onClick={() => setShowMobileMenu(false)} className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${isActive(item.href) ? 'text-primary-600 bg-primary-50 dark:bg-primary-900/20' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50'}`}>
-                  <Icon className="h-4 w-4" />
+                <Link key={item.href} href={item.href} onClick={() => setShowMobileMenu(false)} className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${isActive(item.href) ? 'text-black bg-gray-100 dark:bg-gray-800' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50'}`}>
+                  <img src={item.imgSrc} alt="" className="h-6 w-6 object-contain" />
                   <span>{item.label}</span>
-                  {item.count && item.count > 0 && (
-                    <span className="ml-auto text-[10px] font-bold bg-primary-600 text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">{item.count}</span>
+                  {item.count != null && item.count > 0 && (
+                    <span className="ml-auto text-[10px] font-bold bg-black text-white rounded-full w-4 h-4 flex items-center justify-center leading-none">{item.count}</span>
                   )}
                 </Link>
               );
             })}
-            <hr className="my-2 border-secondary-200/50 dark:border-secondary-800/30" />
+            <hr className="my-2 border-gray-200/50 dark:border-gray-800/30" />
             {user ? (
-              <>
+          <React.Fragment>
                 <Link href="/profile" onClick={() => setShowMobileMenu(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-white/50 rounded-xl"><User className="h-4 w-4" /> Profile</Link>
                 <Link href="/seller/dashboard" onClick={() => setShowMobileMenu(false)} className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:bg-white/50 rounded-xl"><LayoutGrid className="h-4 w-4" /> Dashboard</Link>
                 <button onClick={() => { logout(); setShowMobileMenu(false); }} className="w-full text-left px-4 py-3 text-sm font-semibold text-red-500 hover:bg-white/50 rounded-xl">Log out</button>
-              </>
+          </React.Fragment>
             ) : (
               <div className="flex gap-3 px-4 pt-2">
-                <Link href="/login" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-primary-600 border border-primary-200 py-2.5 rounded-full">Login</Link>
-                <Link href="/signup" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-white bg-primary-600 py-2.5 rounded-full">Sign Up</Link>
+                <Link href="/login" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-black border border-gray-300 py-2.5 rounded-full">Login</Link>
+                <Link href="/signup" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-white bg-black py-2.5 rounded-full">Sign Up</Link>
               </div>
             )}
           </nav>
@@ -341,12 +397,12 @@ export function Header() {
       {activeSection && dropdownPos && typeof window !== 'undefined' && createPortal(
         <div
           className="fixed bg-white dark:bg-gray-800 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden z-[9999]"
-          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width }}
+          style={{ top: dropdownPos.top, left: dropdownPos.left, width: dropdownPos.width, transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)' }}
           onMouseDown={(e) => e.stopPropagation()}
         >
           {activeSection === 'what' && (
             <div className="p-4">
-              <p className="text-xs font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide mb-3">Categories</p>
+              <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">Browse by category</p>
               <div className="grid grid-cols-3 gap-2">
                 {categories.map(cat => {
                   const Icon = cat.icon;
@@ -355,16 +411,19 @@ export function Header() {
                       key={cat.label}
                       type="button"
                       onClick={() => { setSearchQuery(cat.query); setActiveSection(null); }}
-                      className={`flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all hover:shadow-md ${
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all hover:shadow-md ${
                         searchQuery === cat.query
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                          : 'border-gray-100 dark:border-gray-700 hover:border-primary-200'
+                          ? 'bg-gray-100 dark:bg-gray-800 ring-2 ring-gray-500'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                       }`}
                     >
-                      <div className="w-10 h-10 rounded-full bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center">
-                        <Icon className="h-5 w-5 text-primary-600" />
+                      <div className={`w-12 h-12 rounded-2xl ${cat.color} flex items-center justify-center`}>
+                        <Icon className="h-6 w-6" />
                       </div>
-                      <span className="text-xs font-semibold text-gray-700 dark:text-gray-300">{cat.label}</span>
+                      <div className="text-center">
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 block">{cat.label}</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{cat.subtitle}</span>
+                      </div>
                     </button>
                   );
                 })}
@@ -374,58 +433,116 @@ export function Header() {
 
           {activeSection === 'where' && (
             <div className="max-h-80 overflow-y-auto">
-              <div className="p-3 border-b border-gray-100 dark:border-gray-700">
-                <div className="flex items-center gap-2 px-3 py-2 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                  <MapPin className="h-4 w-4 text-gray-400" />
-                  <input
-                    type="text"
-                    placeholder="Search destinations"
-                    className="w-full bg-transparent border-none outline-none text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
-                    value={cityInput}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setCityInput(val);
-                      const match = cities.find(c => c.name.toLowerCase().includes(val.toLowerCase()));
-                      if (match && val.length >= match.name.length) {
-                        setSelectedCity(match.id);
-                      } else {
-                        setSelectedCity('');
-                      }
-                    }}
-                    autoFocus
-                  />
-                </div>
+              <div className="p-4 pb-2">
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Suggested destinations</p>
               </div>
-              <div className="p-2">
-                {filteredCities.length > 0 ? filteredCities.map(city => (
+              <div className="p-2 pt-0">
+                {filteredCities.length > 0 ? filteredCities.map((city, i) => (
                   <button
                     key={city.id}
                     type="button"
                     onClick={() => { setSelectedCity(city.id); setCityInput(city.name); setActiveSection(null); }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
                       selectedCity === city.id
-                        ? 'bg-primary-50 dark:bg-primary-900/20'
+                        ? 'bg-gray-100 dark:bg-gray-800'
                         : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
                     }`}
                   >
-                    <div className="w-8 h-8 rounded-lg bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center shrink-0">
-                      <MapPin className="h-4 w-4 text-primary-600" />
+                    <div className={`w-12 h-12 rounded-2xl ${cityIcons[i % cityIcons.length]} flex items-center justify-center shrink-0`}>
+                      <MapPin className="h-5 w-5" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{city.name}</p>
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{city.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{citySubtitles[i % citySubtitles.length]}</p>
                     </div>
                   </button>
                 )) : (
                   <button
                     type="button"
                     onClick={() => { setSelectedCity(''); setActiveSection(null); }}
-                    className="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
                   >
-                    <div className="w-8 h-8 rounded-lg bg-secondary-50 dark:bg-secondary-900/40 flex items-center justify-center shrink-0">
-                      <MapPin className="h-4 w-4 text-primary-600" />
+                    <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                      <MapPin className="h-5 w-5 text-gray-400" />
                     </div>
                     <div className="text-left">
-                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">All locations</p>
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-200">All locations</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Browse everything</p>
+                    </div>
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'both' && lastClicked === 'what' && (
+            <div className="p-4">
+              <p className="text-sm font-bold text-gray-800 dark:text-gray-200 mb-3">Browse by category</p>
+              <div className="grid grid-cols-3 gap-2">
+                {categories.map(cat => {
+                  const Icon = cat.icon;
+                  return (
+                    <button
+                      key={cat.label}
+                      type="button"
+                      onClick={() => { setSearchQuery(cat.query); setActiveSection(null); }}
+                      className={`flex flex-col items-center gap-2 p-3 rounded-xl transition-all hover:shadow-md ${
+                        searchQuery === cat.query
+                          ? 'bg-gray-100 dark:bg-gray-800 ring-2 ring-gray-500'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                      }`}
+                    >
+                      <div className={`w-12 h-12 rounded-2xl ${cat.color} flex items-center justify-center`}>
+                        <Icon className="h-6 w-6" />
+                      </div>
+                      <div className="text-center">
+                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200 block">{cat.label}</span>
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{cat.subtitle}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {activeSection === 'both' && lastClicked === 'where' && (
+            <div className="max-h-80 overflow-y-auto">
+              <div className="p-4 pb-2">
+                <p className="text-sm font-bold text-gray-800 dark:text-gray-200">Suggested destinations</p>
+              </div>
+              <div className="p-2 pt-0">
+                {filteredCities.length > 0 ? filteredCities.map((city, i) => (
+                  <button
+                    key={city.id}
+                    type="button"
+                    onClick={() => { setSelectedCity(city.id); setCityInput(city.name); setActiveSection(null); }}
+                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors ${
+                      selectedCity === city.id
+                        ? 'bg-gray-100 dark:bg-gray-800'
+                        : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'
+                    }`}
+                  >
+                    <div className={`w-12 h-12 rounded-2xl ${cityIcons[i % cityIcons.length]} flex items-center justify-center shrink-0`}>
+                      <MapPin className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-200">{city.name}</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">{citySubtitles[i % citySubtitles.length]}</p>
+                    </div>
+                  </button>
+                )) : (
+                  <button
+                    type="button"
+                    onClick={() => { setSelectedCity(''); setActiveSection(null); }}
+                    className="w-full flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-gray-100 dark:bg-gray-700 flex items-center justify-center shrink-0">
+                      <MapPin className="h-5 w-5 text-gray-400" />
+                    </div>
+                    <div className="text-left">
+                      <p className="text-sm font-bold text-gray-800 dark:text-gray-200">All locations</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500">Browse everything</p>
                     </div>
                   </button>
                 )}
