@@ -35,6 +35,9 @@ export function Header() {
   const btnRef = useRef<HTMLDivElement>(null);
   const whatInputRef = useRef<HTMLInputElement>(null);
   const whereInputRef = useRef<HTMLInputElement>(null);
+  const bigRef = useRef<HTMLDivElement>(null);
+  const miniRef = useRef<HTMLDivElement>(null);
+  const [morphTarget, setMorphTarget] = useState({ dx: 0, dy: 0, scale: 1 });
 
   const categories = [
     { label: 'Laptops', icon: Laptop, query: 'laptop', color: 'bg-blue-100 text-blue-600', subtitle: 'Work & study' },
@@ -49,7 +52,15 @@ export function Header() {
   const citySubtitles = ['Popular rental spot', 'Near you', 'Trending now', 'Top rated', 'Budget friendly', 'Premium picks'];
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 80);
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y > 80) {
+        setScrolled(true);
+        setActiveSection(null);
+      } else if (y <= 60) {
+        setScrolled(false);
+      }
+    };
     onScroll();
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
@@ -172,6 +183,23 @@ export function Header() {
     return () => cancelAnimationFrame(id);
   }, [activeSection, hoveredSection, lastClicked]);
 
+  useEffect(() => {
+    const calc = () => {
+      if (bigRef.current && miniRef.current) {
+        const big = bigRef.current.getBoundingClientRect();
+        const mini = miniRef.current.getBoundingClientRect();
+        setMorphTarget({
+          dx: (mini.left + mini.width / 2) - (big.left + big.width / 2),
+          dy: (mini.top + mini.height / 2) - (big.top + big.height / 2),
+          scale: mini.width / big.width,
+        });
+      }
+    };
+    calc();
+    window.addEventListener('resize', calc);
+    return () => window.removeEventListener('resize', calc);
+  }, []);
+
   const renderProfileMenu = (close: () => void) => {
     return (
       <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-surface-dark rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-50">
@@ -183,176 +211,93 @@ export function Header() {
     );
   };
 
-  const headerClass = `sticky top-0 z-50 w-full overflow-visible transition-all duration-300 ${scrolled ? 'shadow-lg' : 'shadow-md'}`;
+  const headerClass = `fixed top-0 z-50 w-full overflow-visible transition-all duration-300`;
 
   return (
+    <>
     <header className={headerClass}>
       <div className="overflow-visible">
-        {!scrolled ? (
-          <React.Fragment>
-            <div className="bg-gradient-to-b from-gray-200 to-gray-400">
-              <div className="container flex items-center justify-center h-20">
-                <div className="w-36 shrink-0">
-                  <Link href="/" className="text-xl font-black gradient-text">Flex</Link>
-                </div>
-                <nav className="hidden md:flex items-center justify-center gap-6 flex-1">
-                  {navItems.map(item => {
-                    const active = isActive(item.href);
-                    return (
-                      <Link
-                        key={item.href}
-                        href={item.href}
-                        className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
-                          active ? 'text-black' : 'text-gray-800 hover:text-white'
-                        }`}
-                      >
-                        <span className="relative inline-flex shrink-0">
-                          <img src={item.imgSrc} alt="" className="h-[60px] w-[60px] object-contain transition-transform duration-200 ease-out group-hover:scale-125" draggable={false} />
-                          {item.count != null && item.count > 0 && (
-                            <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-black text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
-                          )}
-                        </span>
-                        <span>{item.label}</span>
-                        {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black rounded-full" />}
-                      </Link>
-                    );
-                  })}
-                </nav>
-                <div className="w-36 shrink-0 flex items-center justify-end gap-3">
-                  {user ? (
-                    <div className="relative hidden md:block" ref={profileRef}>
-                      <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 hover:shadow-md transition-all">
-                        <User className="h-4 w-4 text-gray-800" />
-                        <span className="text-xs font-bold text-gray-800">{user.firstName}</span>
-                      </button>
-                      {showProfileMenu && renderProfileMenu(closeProfile)}
-                    </div>
-                  ) : (
-                    <div className="hidden md:flex items-center gap-3">
-                      <Link href="/login" className="text-sm font-bold text-gray-800 hover:text-white transition-colors">Login</Link>
-                      <Link href="/signup" className="text-sm font-bold text-white bg-black hover:bg-gray-800 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
-                    </div>
-                  )}
-                  <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-white/50 transition-colors">
-                    {showMobileMenu ? <X className="h-5 w-5 text-gray-700 dark:text-gray-300" /> : <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />}
-                  </button>
-                </div>
-              </div>
+        <div className="bg-gradient-to-b from-gray-200 to-[#FDF8F0] relative z-10">
+          <div className="container flex items-center justify-center h-20 relative">
+            <div className="w-36 shrink-0">
+              <Link href="/" className="text-xl font-black gradient-text">Flex</Link>
             </div>
 
-            <div className="bg-gray-400">
-              <div className="flex justify-center pt-4 pb-5 relative">
-              <div ref={searchRef} className="relative flex-1 max-w-2xl">
-                <form onSubmit={handleSearch}>
-                  <div className="relative flex items-center bg-gray-200 rounded-full shadow-md shadow-gray-200/60 dark:shadow-gray-900/50 hover:shadow-lg transition-shadow group overflow-hidden" onMouseEnter={() => setSearchHovered(true)} onMouseLeave={() => setSearchHovered(false)}>
-                    <div
-                      className={`absolute rounded-full bg-gray-50 shadow-md transition-all duration-300 ease-out pointer-events-none z-0 ${
-                        (activeSection || hoveredSection) ? 'opacity-100' : 'opacity-0'
+            <nav className="hidden md:flex items-center flex-1 gap-2">
+              <div className="flex items-center justify-end gap-6 flex-1">
+                {navItems.slice(0, 3).map(item => {
+                  const active = isActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
+                        active ? 'text-black' : 'text-gray-800 hover:text-white'
                       }`}
-                      style={{
-                        top: activeSection ? 0 : 1,
-                        bottom: activeSection ? 0 : 1,
-                        left: (activeSection || hoveredSection) ? sliderStyle.left : 4,
-                        width: (activeSection || hoveredSection) ? sliderStyle.width : 0,
-                      }}
+                    >
+                      <span className="relative inline-flex shrink-0">
+                        <img src={item.imgSrc} alt="" className="h-[60px] w-[60px] object-contain transition-transform duration-200 ease-out group-hover:scale-125" draggable={false} />
+                        {item.count != null && item.count > 0 && (
+                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-black text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
+                        )}
+                      </span>
+                      <span>{item.label}</span>
+                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black rounded-full" />}
+                    </Link>
+                  );
+                })}
+              </div>
+              <div ref={miniRef} className={`flex items-center transition-all duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
+                <form onSubmit={handleSearch}>
+                  <div className="flex items-center bg-gray-100 rounded-full px-3 py-1.5 shadow-sm">
+                    <Search className="h-3.5 w-3.5 text-gray-500 mr-1.5 shrink-0" />
+                    <input
+                      type="text"
+                      placeholder="Search anything..."
+                      className="w-[120px] bg-transparent border-none outline-none text-xs font-medium text-gray-900 placeholder:text-gray-400 p-0"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
                     />
-                    <div
-                      ref={whatRef}
-                      className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'what' ? '' : 'hover:bg-transparent'}`}
-                      onMouseEnter={() => setHoveredSection('what')}
-                      onMouseLeave={() => setHoveredSection(null)}
-                      onClick={() => whatInputRef.current?.focus()}
-                    >
-                      <label htmlFor="search-what" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'what' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>What</label>
-                      <input
-                        id="search-what"
-                        ref={whatInputRef}
-                        type="text"
-                        placeholder="Search categories..."
-                        className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
-                        value={searchQuery}
-                        onChange={(e) => { setSearchQuery(e.target.value); if (!activeSection) setActiveSection('what'); }}
-                        onFocus={() => {
-                          const next = activeSection === 'both' ? 'what' : (activeSection === 'where' ? 'both' : 'what');
-                          setLastClicked('what');
-                          setActiveSection(next);
-                        }}
-                      />
-                    </div>
-                    <div className={`w-px h-8 bg-gray-900 shrink-0 transition-opacity duration-200 z-10 ${(searchHovered || activeSection) ? 'opacity-0' : 'opacity-100'}`} />
-                    <div
-                      ref={whereRef}
-                      className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'where' ? '' : 'hover:bg-transparent'}`}
-                      onMouseEnter={() => setHoveredSection('where')}
-                      onMouseLeave={() => setHoveredSection(null)}
-                      onClick={() => whereInputRef.current?.focus()}
-                    >
-                      <label htmlFor="search-where" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'where' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>Where</label>
-                      <input
-                        id="search-where"
-                        ref={whereInputRef}
-                        type="text"
-                        placeholder="Search locations"
-                        className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
-                        value={cityInput}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setCityInput(val);
-                          const match = cities.find(c => c.name.toLowerCase().includes(val.toLowerCase()));
-                          if (match && val.length >= match.name.length) {
-                            setSelectedCity(match.id);
-                          } else {
-                            setSelectedCity('');
-                          }
-                          if (!activeSection) setActiveSection('where');
-                        }}
-                        onFocus={() => {
-                          const next = activeSection === 'both' ? 'where' : (activeSection === 'what' ? 'both' : 'where');
-                          setLastClicked('where');
-                          setActiveSection(next);
-                        }}
-                      />
-                    </div>
-                    <div ref={btnRef} className="pr-1 shrink-0 z-20 relative">
-                      <button type="submit" className={`h-11 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center transition-all shadow-md ${activeSection ? 'px-3 gap-1.5' : 'w-11'}`}>
-                        <Search className="h-5 w-5 shrink-0" />
-                        {activeSection && <span className="text-xs font-bold whitespace-nowrap">Search</span>}
-                      </button>
-                    </div>
                   </div>
                 </form>
               </div>
-            </div>
-            </div>
-          </React.Fragment>
-        ) : (
-          <div className="flex items-center justify-between h-14 gap-4">
-            <Link href="/" className="text-lg font-black gradient-text shrink-0">Flex</Link>
-            <form onSubmit={handleSearch} className="flex-1 max-w-lg mx-auto">
-              <div className="flex items-center bg-white dark:bg-gray-800 rounded-full shadow-md shadow-gray-200/60 border border-gray-100 dark:border-gray-700 hover:shadow-lg transition-shadow">
-                <div className="flex-1 min-w-0 px-4 py-2">
-                  <input type="text" placeholder="Search anything..." className="w-full bg-transparent border-none outline-none text-sm font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                </div>
-                <div className="pr-1.5 shrink-0">
-                  <button type="submit" className="h-8 w-8 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center transition-colors">
-                    <Search className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+              <div className="flex items-center justify-start gap-6 flex-1">
+                {navItems.slice(3).map(item => {
+                  const active = isActive(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
+                        active ? 'text-black' : 'text-gray-800 hover:text-white'
+                      }`}
+                    >
+                      <span className="relative inline-flex shrink-0">
+                        <img src={item.imgSrc} alt="" className="h-[60px] w-[60px] object-contain transition-transform duration-200 ease-out group-hover:scale-125" draggable={false} />
+                        {item.count != null && item.count > 0 && (
+                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-black text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
+                        )}
+                      </span>
+                      <span>{item.label}</span>
+                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black rounded-full" />}
+                    </Link>
+                  );
+                })}
               </div>
-            </form>
-            <div className="flex items-center gap-3 shrink-0">
+            </nav>
+            <div className="w-36 shrink-0 flex items-center justify-end gap-3">
               {user ? (
                 <div className="relative hidden md:block" ref={profileRef}>
-                  <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all">
-                    <User className="h-4 w-4 text-gray-600 dark:text-gray-300" />
-                    <span className="text-xs font-bold text-gray-800 dark:text-gray-100">{user.firstName}</span>
+                  <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 hover:shadow-md transition-all">
+                    <User className="h-4 w-4 text-gray-800" />
+                    <span className="text-xs font-bold text-gray-800">{user.firstName}</span>
                   </button>
                   {showProfileMenu && renderProfileMenu(closeProfile)}
                 </div>
               ) : (
                 <div className="hidden md:flex items-center gap-3">
-                  <Link href="/login" className="text-xs font-bold text-gray-600 dark:text-gray-300 hover:text-black transition-colors">Login</Link>
-                  <Link href="/signup" className="text-xs font-bold text-white bg-black hover:bg-gray-800 px-4 py-1.5 rounded-full transition-colors">Sign Up</Link>
+                  <Link href="/login" className="text-sm font-bold text-gray-800 hover:text-white transition-colors">Login</Link>
+                  <Link href="/signup" className="text-sm font-bold text-white bg-black hover:bg-gray-800 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
                 </div>
               )}
               <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-white/50 transition-colors">
@@ -360,7 +305,100 @@ export function Header() {
               </button>
             </div>
           </div>
-        )}
+        </div>
+
+        <div className="relative">
+          <div className={`absolute inset-0 bg-gray-400 transition-all duration-700 ease-out ${scrolled ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} />
+          <div className="flex justify-center pt-4 pb-5 relative">
+            <div ref={searchRef} className="relative flex-1 max-w-2xl">
+              <form onSubmit={handleSearch}>
+                <div ref={bigRef} className="relative flex items-center bg-gray-200 rounded-full shadow-md shadow-gray-200/60 dark:shadow-gray-900/50 hover:shadow-lg transition-shadow group overflow-hidden"
+                  style={{
+                    transform: scrolled ? `translate(${morphTarget.dx}px, ${morphTarget.dy}px) scale(${morphTarget.scale})` : 'translate(0px, 0px) scale(1)',
+                    opacity: scrolled ? 0 : 1,
+                    transformOrigin: 'center center',
+                    transition: 'all 0.7s ease-out',
+                  }}
+                  onMouseEnter={() => setSearchHovered(true)} onMouseLeave={() => setSearchHovered(false)}>
+                  <div
+                    className={`absolute rounded-full bg-gray-50 shadow-md transition-all duration-300 ease-out pointer-events-none z-0 ${
+                      (activeSection || hoveredSection) ? 'opacity-100' : 'opacity-0'
+                    }`}
+                    style={{
+                      top: activeSection ? 0 : 1,
+                      bottom: activeSection ? 0 : 1,
+                      left: (activeSection || hoveredSection) ? sliderStyle.left : 4,
+                      width: (activeSection || hoveredSection) ? sliderStyle.width : 0,
+                    }}
+                  />
+                  <div
+                    ref={whatRef}
+                    className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'what' ? '' : 'hover:bg-transparent'}`}
+                    onMouseEnter={() => setHoveredSection('what')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => whatInputRef.current?.focus()}
+                  >
+                    <label htmlFor="search-what" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'what' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>What</label>
+                    <input
+                      id="search-what"
+                      ref={whatInputRef}
+                      type="text"
+                      placeholder="Search categories..."
+                      className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
+                      value={searchQuery}
+                      onChange={(e) => { setSearchQuery(e.target.value); if (!activeSection) setActiveSection('what'); }}
+                      onFocus={() => {
+                        const next = activeSection === 'both' ? 'what' : (activeSection === 'where' ? 'both' : 'what');
+                        setLastClicked('what');
+                        setActiveSection(next);
+                      }}
+                    />
+                  </div>
+                  <div className={`w-px h-8 bg-gray-900 shrink-0 transition-opacity duration-200 z-10 ${(searchHovered || activeSection) ? 'opacity-0' : 'opacity-100'}`} />
+                  <div
+                    ref={whereRef}
+                    className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'where' ? '' : 'hover:bg-transparent'}`}
+                    onMouseEnter={() => setHoveredSection('where')}
+                    onMouseLeave={() => setHoveredSection(null)}
+                    onClick={() => whereInputRef.current?.focus()}
+                  >
+                    <label htmlFor="search-where" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'where' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>Where</label>
+                    <input
+                      id="search-where"
+                      ref={whereInputRef}
+                      type="text"
+                      placeholder="Search locations"
+                      className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
+                      value={cityInput}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        setCityInput(val);
+                        const match = cities.find(c => c.name.toLowerCase().includes(val.toLowerCase()));
+                        if (match && val.length >= match.name.length) {
+                          setSelectedCity(match.id);
+                        } else {
+                          setSelectedCity('');
+                        }
+                        if (!activeSection) setActiveSection('where');
+                      }}
+                      onFocus={() => {
+                        const next = activeSection === 'both' ? 'where' : (activeSection === 'what' ? 'both' : 'where');
+                        setLastClicked('where');
+                        setActiveSection(next);
+                      }}
+                    />
+                  </div>
+                  <div ref={btnRef} className="pr-1 shrink-0 z-20 relative">
+                    <button type="submit" className={`h-11 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center transition-all shadow-md ${activeSection ? 'px-3 gap-1.5' : 'w-11'}`}>
+                      <Search className="h-5 w-5 shrink-0" />
+                      {activeSection && <span className="text-xs font-bold whitespace-nowrap">Search</span>}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
+           </div>
+        </div>
       </div>
 
       {showMobileMenu && (
@@ -553,5 +591,7 @@ export function Header() {
         document.body
       )}
     </header>
+      <div className="transition-all duration-700 ease-out" style={{ height: scrolled ? 80 : 176 }} />
+    </>
   );
 }
