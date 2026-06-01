@@ -27,7 +27,8 @@ body {
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: #9CA3AF;
+  background: linear-gradient(to bottom, #E5E7EB, #F3F4F6);
+  min-height: 100vh;
 }
 
 a {
@@ -83,6 +84,22 @@ a {
 
 .animate-pulse {
   animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg, #e5e7eb 25%, #f3f4f6 50%, #e5e7eb 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(90deg, #374151 25%, #4b5563 50%, #374151 75%);
+  background-size: 200% 100%;
 }
 
 /* Custom button styles */

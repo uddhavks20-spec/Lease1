@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react";
 import Image from "next/image"
 import Link from 'next/link'
+import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Home, Search, Shield, TrendingUp, Users, Calendar, ArrowRight, Zap, Sparkles, ShoppingBag, CreditCard, Percent, Smartphone, MapPin } from 'lucide-react'
+import { Home, Search, Shield, TrendingUp, Users, Calendar, ArrowRight, Zap, Sparkles, ShoppingBag, CreditCard, Percent, Smartphone, MapPin, Flame } from 'lucide-react'
 import api from '@/lib/api'
 import { formatCurrency } from "@/lib/utils";
 import { useAuth } from '@/lib/auth-context'
@@ -49,6 +50,16 @@ export default function HomePage() {
   };
 
   const imgSrc = (url: string | null | undefined) => url && url.startsWith('http') ? url : FALLBACK_IMG
+
+  const conditionBorder = (cond?: string) => {
+    switch (cond?.toLowerCase()) {
+      case 'new': return 'border-l-4 border-l-emerald-400';
+      case 'mint': return 'border-l-4 border-l-blue-400';
+      case 'good': return 'border-l-4 border-l-gray-300 dark:border-l-gray-600';
+      case 'fair': return 'border-l-4 border-l-amber-400';
+      default: return '';
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -149,9 +160,16 @@ export default function HomePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-                {nearbyItems.length > 0 ? nearbyItems.map((item: any) => (
-                  <Link key={item.id} href={`/items/${item.id}`}>
-                    <div className="group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl transform-gpu">
+                {nearbyItems.length > 0 ? nearbyItems.map((item: any, i: number) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ delay: i * 0.05, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                  >
+                  <Link href={`/items/${item.id}`}>
+                    <div className={`group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transform-gpu ${conditionBorder(item.condition)}`}>
                       <div className="aspect-square relative overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-10">
                         <Image
                           src={imgSrc(item.image_url)}
@@ -160,6 +178,11 @@ export default function HomePage() {
                           height={250}
                           className="object-contain transition-transform duration-300 ease-out group-hover:scale-110 transform-gpu"
                         />
+                        {item.retail_price > 0 && item.retail_price > item.monthly_rent * 8 && (
+                          <Badge className="absolute bottom-4 left-4 bg-emerald-500/90 text-white border-none text-[8px] font-black px-2 py-0.5 backdrop-blur-sm">
+                            Save {Math.round((1 - item.monthly_rent * 12 / item.retail_price) * 100)}%
+                          </Badge>
+                        )}
                         <Badge className="absolute top-4 left-4 bg-primary-600/90 text-white backdrop-blur-md border-none text-[10px] font-black uppercase px-3 py-1">
                           Near You
                         </Badge>
@@ -167,14 +190,15 @@ export default function HomePage() {
                       <div className="p-6">
                         <h3 className="text-gray-900 dark:text-white font-black text-lg mb-1 leading-tight group-hover:text-primary-600 transition-colors">{item.title}</h3>
                         <div className="flex items-center justify-between mt-4">
-                          <p className="text-amber-600 font-black text-xl">{formatCurrency(item.monthly_rent)}/mo</p>
+                          <p className="text-green-600 font-black text-xl group-hover:scale-105 transition-transform duration-300 origin-left">{formatCurrency(item.monthly_rent)}/mo</p>
                           <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                            <ArrowRight className="w-5 h-5" />
+                            <ArrowRight className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
                           </div>
                         </div>
                       </div>
                     </div>
                   </Link>
+                  </motion.div>
                 )) : (
                   <div className="col-span-full text-center py-8 bg-gray-50 dark:bg-gray-900/50 rounded-[32px]">
                     <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-2" />
@@ -197,9 +221,16 @@ export default function HomePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-                {popularItems.length > 0 ? popularItems.map((item) => (
-                  <Link key={item.id} href={`/items/${item.id}`}>
-                    <div className="group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl transform-gpu">
+                {popularItems.length > 0 ? popularItems.map((item, i) => (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 24 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-40px" }}
+                    transition={{ delay: i * 0.05, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                  >
+                  <Link href={`/items/${item.id}`}>
+                    <div className={`group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transform-gpu ${conditionBorder(item.condition)}`}>
                       <div className="aspect-square relative overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-10">
                         <Image
                           src={imgSrc(item.image_url)}
@@ -208,25 +239,34 @@ export default function HomePage() {
                           height={250}
                           className="object-contain transition-transform duration-300 ease-out group-hover:scale-110 transform-gpu"
                         />
-                        <Badge className="absolute top-4 left-4 bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white backdrop-blur-md border-none text-[10px] font-black uppercase tracking-tighter px-3 py-1">
-                          Popular
-                        </Badge>
                         <div className="absolute top-4 right-4 z-10">
                           <WishlistButton itemId={item.id} size="sm" />
                         </div>
+                        <div className="absolute top-4 left-4 flex gap-1.5">
+                          <Badge className="bg-white/90 dark:bg-black/50 text-gray-900 dark:text-white backdrop-blur-md border-none text-[10px] font-black uppercase tracking-tighter px-3 py-1 flex items-center gap-1">
+                            {i < 2 && <Flame className="w-3 h-3 text-orange-500" />}
+                            Popular
+                          </Badge>
+                        </div>
+                        {item.retail_price > 0 && item.retail_price > item.monthly_rent * 8 && (
+                          <Badge className="absolute bottom-4 left-4 bg-emerald-500/90 text-white border-none text-[8px] font-black px-2 py-0.5 backdrop-blur-sm">
+                            Save {Math.round((1 - item.monthly_rent * 12 / item.retail_price) * 100)}%
+                          </Badge>
+                        )}
                       </div>
                       <div className="p-6">
                         <h3 className="text-gray-900 dark:text-white font-black text-lg mb-1 leading-tight group-hover:text-primary-600 transition-colors">{item.title}</h3>
                         <div className="flex items-center justify-between mt-4">
-                          <p className="text-amber-600 font-black text-xl">{formatCurrency(item.monthly_rent)}/mo</p>
+                          <p className="text-green-600 font-black text-xl group-hover:scale-105 transition-transform duration-300 origin-left">{formatCurrency(item.monthly_rent)}/mo</p>
                           <div className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center text-white opacity-0 group-hover:opacity-100 translate-y-2 group-hover:translate-y-0 transition-all duration-300">
-                            <ArrowRight className="w-5 h-5" />
+                            <ArrowRight className="w-5 h-5 group-hover:rotate-45 transition-transform duration-300" />
                           </div>
                         </div>
                       </div>
                     </div>
                   </Link>
-                )) : [1,2,3,4].map(i => <div key={i} className="aspect-square bg-gray-200 dark:bg-gray-800 animate-pulse rounded-[32px]" />)}
+                  </motion.div>
+                )) : [1,2,3,4].map(i => <div key={i} className="aspect-square animate-shimmer rounded-[32px]" />)}
               </div>
             </section>
 
@@ -247,11 +287,18 @@ export default function HomePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
                 {loading ? (
-                  [1, 2, 3, 4, 5].map(i => <div key={i} className="h-64 bg-gray-200 dark:bg-gray-800 animate-pulse rounded-2xl" />)
+                  [1, 2, 3, 4, 5].map(i => <div key={i} className="h-64 animate-shimmer rounded-[32px]" />)
                 ) : (
-                  latestItems.map((item) => (
-                    <Link key={item.id} href={`/items/${item.id}`}>
-                      <Card className="group hover:scale-105 hover:shadow-2xl transition-all duration-300 ease-out border-none bg-white dark:bg-gray-800 overflow-hidden rounded-[32px] transform-gpu">
+                  latestItems.map((item, i) => (
+                    <motion.div
+                      key={item.id}
+                      initial={{ opacity: 0, y: 24 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, margin: "-40px" }}
+                      transition={{ delay: i * 0.04, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
+                    >
+                    <Link href={`/items/${item.id}`}>
+                      <Card className={`group hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transition-all duration-300 ease-out border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 overflow-hidden rounded-[32px] transform-gpu ${conditionBorder(item.condition)}`}>
                         <CardContent className="p-0">
                           <div className="relative h-48 w-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6 overflow-hidden">
                             <Image
@@ -267,16 +314,22 @@ export default function HomePage() {
                             <Badge className="absolute top-4 left-4 bg-white/90 text-primary-600 hover:bg-white backdrop-blur-sm border-none shadow-sm">
                               New
                             </Badge>
+                            {item.retail_price > 0 && item.retail_price > item.monthly_rent * 8 && (
+                              <Badge className="absolute bottom-4 left-4 bg-emerald-500/90 text-white border-none text-[8px] font-black px-2 py-0.5 backdrop-blur-sm">
+                                Save {Math.round((1 - item.monthly_rent * 12 / item.retail_price) * 100)}%
+                              </Badge>
+                            )}
                           </div>
                           <div className="p-5">
                             <h3 className="font-black text-gray-900 dark:text-white mb-1 line-clamp-1 uppercase text-sm tracking-tight">{item.title}</h3>
-                            <p className="text-primary-600 font-black text-lg">
+                            <p className="text-green-600 font-black text-lg group-hover:scale-105 transition-transform duration-300 origin-left">
                               {formatCurrency(item.monthly_rent)}/mo
                             </p>
                           </div>
                         </CardContent>
                       </Card>
                     </Link>
+                    </motion.div>
                   ))
                 )}
                 {!loading && latestItems.length === 0 && (
@@ -290,20 +343,20 @@ export default function HomePage() {
             {/* Lease Money - Coming Soon */}
 <section className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-gray-800 to-gray-900 p-8 md:p-16 text-white shadow-2xl opacity-80">
   <div className="relative z-10 text-center">
-    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-400/20 border border-yellow-400/30 text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-6">
+    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-400/20 border border-green-400/30 text-[10px] font-black uppercase tracking-widest text-green-400 mb-6">
       <Zap className="w-3 h-3" />
       Coming Soon
     </div>
     <h2 className="text-4xl md:text-6xl font-black leading-tight tracking-tighter mb-4">
-      Lease <span className="text-yellow-400">Money</span>
+      Lease <span className="text-green-400">Money</span>
     </h2>
     <p className="text-lg text-gray-400 font-medium max-w-lg mx-auto">
       Your campus credit line is cooking. Zero interest. Instant approval. Launching soon.
     </p>
     <div className="flex justify-center gap-2 mt-8">
-      <div className="w-3 h-3 rounded-full bg-yellow-400 animate-bounce" style={{ animationDelay: "0s" }} />
-      <div className="w-3 h-3 rounded-full bg-yellow-400 animate-bounce" style={{ animationDelay: "0.15s" }} />
-      <div className="w-3 h-3 rounded-full bg-yellow-400 animate-bounce" style={{ animationDelay: "0.3s" }} />
+      <div className="w-3 h-3 rounded-full bg-green-400 animate-bounce" style={{ animationDelay: "0s" }} />
+      <div className="w-3 h-3 rounded-full bg-green-400 animate-bounce" style={{ animationDelay: "0.15s" }} />
+      <div className="w-3 h-3 rounded-full bg-green-400 animate-bounce" style={{ animationDelay: "0.3s" }} />
     </div>
   </div>
 </section>{/* Why Choose Lease? */}
@@ -410,7 +463,7 @@ export default function HomePage() {
                       <div className="relative z-10">
                         <Badge className="bg-white/20 text-white border-none mb-2 backdrop-blur-sm text-[10px]">AD</Badge>
                         <h4 className="font-bold text-lg mb-1">{ad.title}</h4>
-                        <p className="text-sm text-amber-300 font-bold mb-4">{ad.desc}</p>
+                        <p className="text-sm text-green-300 font-bold mb-4">{ad.desc}</p>
                         <Button size="sm" variant="secondary" className="bg-white text-black dark:text-gray-900 hover:bg-gray-100 font-bold rounded-full">
                           Rent Now
                         </Button>
@@ -428,10 +481,10 @@ export default function HomePage() {
               </div>
 
               {/* Promo Card */}
-              <div className="bg-yellow-400 rounded-2xl p-6 text-yellow-900 shadow-lg shadow-yellow-100">
+              <div className="bg-green-600 rounded-2xl p-6 text-white shadow-lg shadow-green-200/50">
                 <h4 className="font-black text-xl mb-2">Refer a Friend!</h4>
-                <p className="text-sm font-medium mb-4">Get ₹100 credit for every successful referral.</p>
-                <Button onClick={copyReferralLink} className="w-full bg-yellow-900 text-yellow-400 hover:bg-yellow-800 font-bold rounded-xl">
+                <p className="text-sm font-medium mb-4 text-green-100">Get ₹100 credit for every successful referral.</p>
+                <Button onClick={copyReferralLink} className="w-full bg-green-700 text-green-100 hover:bg-green-800 font-bold rounded-xl">
                   {copied ? "Copied!" : "Invite Now"}
                 </Button>
               </div>

@@ -477,7 +477,7 @@ export default function CheckoutPage() {
                         <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${item.damageWaiver ? 'translate-x-6' : 'translate-x-1'}`} />
                       </button>
                       <span className="text-xs font-bold text-gray-900 dark:text-white">
-                        Damage Waiver — <span className="text-amber-600">₹{DAMAGE_WAIVER_FEE}/mo</span>
+                        Damage Waiver — <span className="text-green-600">₹{DAMAGE_WAIVER_FEE}/mo</span>
                       </span>
                     </div>
                   </div>

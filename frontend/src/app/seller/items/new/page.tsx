@@ -981,12 +981,12 @@ export default function NewItemPage() {
                 <span className="text-[10px] font-black text-gray-500 uppercase tracking-[0.2em]">Set Your Listing Price</span>
               </div>
               <div className="space-y-6">
-                <div className="bg-amber-50 dark:bg-amber-900/10 p-4 rounded-3xl border border-amber-200 dark:border-amber-900/30">
+                <div className="bg-green-50 dark:bg-green-900/10 p-4 rounded-3xl border border-green-200 dark:border-green-900/30">
                   <div className="flex items-center gap-2 mb-2">
-                    <Calculator className="w-4 h-4 text-amber-600" />
-                    <span className="text-[10px] font-black text-amber-700 uppercase tracking-widest">Set Your Listing Price (Editable)</span>
+                    <Calculator className="w-4 h-4 text-green-600" />
+                    <span className="text-[10px] font-black text-green-700 uppercase tracking-widest">Set Your Listing Price (Editable)</span>
                   </div>
-                  <p className="text-[9px] text-amber-600 font-bold mb-3">The suggested rent is pre-filled below. You can override it anytime — your price, your call.</p>
+                  <p className="text-[9px] text-green-600 font-bold mb-3">The suggested rent is pre-filled below. You can override it anytime — your price, your call.</p>
                   <div className="flex justify-between items-center">
                     <div>
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] block">Monthly Rent (₹)</label>
@@ -997,7 +997,7 @@ export default function NewItemPage() {
                       <input 
                         className={`w-36 bg-white dark:bg-gray-900 border-2 rounded-2xl px-5 py-3 text-right font-black text-2xl outline-none transition-all ${
                           manualRentOverride
-                            ? 'border-amber-400 text-amber-600 ring-2 ring-amber-200'
+                            ? 'border-green-400 text-green-600 ring-2 ring-green-200'
                             : 'border-primary-300 text-gray-900 dark:text-white'
                         }`}
                         type="number" value={form.monthlyRent || ''} 
@@ -1006,7 +1006,7 @@ export default function NewItemPage() {
                     </div>
                   </div>
                   {manualRentOverride && (
-                    <p className="text-[9px] text-amber-600 font-black mt-2 flex items-center gap-1">
+                    <p className="text-[9px] text-green-600 font-black mt-2 flex items-center gap-1">
                       <AlertCircle className="w-3 h-3" /> Manual override — pricing recommendations below are based on your entered value
                     </p>
                   )}
@@ -1036,7 +1036,7 @@ export default function NewItemPage() {
                 </div>
                 <div className="flex justify-between text-[10px] font-black uppercase tracking-widest text-gray-900 dark:text-white">
                   <span>Renter Pays (Monthly Rent)</span>
-                  <span className="text-amber-600">₹{Math.ceil(form.monthlyRent).toLocaleString('en-IN')}/mo</span>
+                  <span className="text-green-600">₹{Math.ceil(form.monthlyRent).toLocaleString('en-IN')}/mo</span>
                 </div>
                 <div className="pt-3 border-t border-gray-200 dark:border-gray-700 space-y-2">
                   <div className="text-[9px] font-black text-gray-400 uppercase tracking-[0.2em] mb-1">Total Cost to Renter (Full Duration)</div>
@@ -1050,7 +1050,7 @@ export default function NewItemPage() {
                   </div>
                   <div className="flex justify-between text-[12px] font-black tracking-widest pt-2 border-t border-gray-200 dark:border-gray-700">
                     <span className="text-gray-900 dark:text-white">Total Renter Pays</span>
-                    <span className="text-amber-600">₹{(form.minRentDuration * Math.ceil(form.monthlyRent) + form.depositAmount).toLocaleString('en-IN')}</span>
+                    <span className="text-green-600">₹{(form.minRentDuration * Math.ceil(form.monthlyRent) + form.depositAmount).toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               </div>

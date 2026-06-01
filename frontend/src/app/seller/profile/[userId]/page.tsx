@@ -94,7 +94,7 @@ export default function SellerProfilePage() {
                 className="rounded-2xl object-cover w-24 h-24" />
             ) : (
               <div className="w-24 h-24 rounded-2xl bg-primary-100 dark:bg-primary-900 flex items-center justify-center">
-                <span className="text-3xl font-bold text-amber-600 dark:text-amber-300">
+                <span className="text-3xl font-bold text-green-600 dark:text-green-300">
                   {profile.displayName.charAt(0).toUpperCase()}
                 </span>
               </div>
@@ -188,7 +188,7 @@ export default function SellerProfilePage() {
                         {item.title}
                       </h3>
                       <div className="flex items-center justify-between mt-2">
-                        <span className="text-lg font-black text-amber-600">
+                        <span className="text-lg font-black text-green-600">
                           {formatCurrency(item.monthly_rent)}<span className="text-xs font-normal text-gray-400">/mo</span>
                         </span>
                         <Badge variant="outline" className="text-[10px] capitalize">{item.condition}</Badge>

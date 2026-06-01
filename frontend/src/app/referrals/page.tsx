@@ -77,11 +77,11 @@ export default function ReferralsPage() {
             <p className="text-sm text-green-500 font-bold">Completed</p>
           </CardContent>
         </Card>
-        <Card className="border-none bg-amber-50/50 shadow-sm">
+        <Card className="border-none bg-green-50/50 shadow-sm">
           <CardContent className="py-6 text-center">
-            <IndianRupee className="h-8 w-8 text-amber-600 mx-auto mb-2" />
-            <div className="text-3xl font-black text-amber-700">{stats?.totalReward || 0}</div>
-            <p className="text-sm text-amber-500 font-bold">Pending Reward</p>
+            <IndianRupee className="h-8 w-8 text-green-600 mx-auto mb-2" />
+            <div className="text-3xl font-black text-green-700">{stats?.totalReward || 0}</div>
+            <p className="text-sm text-green-500 font-bold">Pending Reward</p>
           </CardContent>
         </Card>
       </div>

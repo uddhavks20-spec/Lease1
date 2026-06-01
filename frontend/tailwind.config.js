@@ -70,12 +70,12 @@ module.exports = {
           900: '#7f1d1d',
         },
         surface: {
-          DEFAULT: '#FDF8F0',
-          dark: '#FDF8F0',
-          card: '#FFFFFF',
-          'card-dark': '#F5F0E8',
-          muted: '#F5F0E8',
-          'muted-dark': '#EBE5D8',
+          DEFAULT: '#E5E7EB',
+          dark: '#E5E7EB',
+          card: '#E5E7EB',
+          'card-dark': '#E5E7EB',
+          muted: '#E5E7EB',
+          'muted-dark': '#E5E7EB',
         },
       },
       fontFamily: {

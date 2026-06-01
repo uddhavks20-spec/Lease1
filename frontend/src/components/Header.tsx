@@ -217,7 +217,7 @@ export function Header() {
     <>
     <header className={headerClass}>
       <div className="overflow-visible">
-        <div className="bg-gradient-to-b from-gray-200 to-[#FDF8F0] relative z-10">
+        <div className="bg-gradient-to-b from-gray-300 to-gray-200 relative z-10">
           <div className="container flex items-center justify-center h-20 relative">
             <div className="w-36 shrink-0">
               <Link href="/" className="text-xl font-black gradient-text">Flex</Link>
@@ -249,7 +249,7 @@ export function Header() {
               </div>
               <div ref={miniRef} className={`flex items-center transition-all duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <form onSubmit={handleSearch}>
-                  <div className="flex items-center bg-gray-100 rounded-full px-3 py-1.5 shadow-sm">
+                  <div className="flex items-center bg-white rounded-full px-3 py-1.5 shadow-sm">
                     <Search className="h-3.5 w-3.5 text-gray-500 mr-1.5 shrink-0" />
                     <input
                       type="text"
@@ -307,97 +307,92 @@ export function Header() {
           </div>
         </div>
 
-        <div className="relative">
-          <div className={`absolute inset-0 bg-gray-400 transition-all duration-700 ease-out ${scrolled ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'}`} />
-          <div className="flex justify-center pt-4 pb-5 relative">
-            <div ref={searchRef} className="relative flex-1 max-w-2xl">
-              <form onSubmit={handleSearch}>
-                <div ref={bigRef} className="relative flex items-center bg-gray-200 rounded-full shadow-md shadow-gray-200/60 dark:shadow-gray-900/50 hover:shadow-lg transition-shadow group overflow-hidden"
-                  style={{
-                    transform: scrolled ? `translate(${morphTarget.dx}px, ${morphTarget.dy}px) scale(${morphTarget.scale})` : 'translate(0px, 0px) scale(1)',
-                    opacity: scrolled ? 0 : 1,
-                    transformOrigin: 'center center',
-                    transition: 'all 0.7s ease-out',
+        <div ref={searchRef} className="relative z-20 flex-1 max-w-2xl mx-auto my-3">
+          <form onSubmit={handleSearch}>
+            <div ref={bigRef} className="relative flex items-center bg-white rounded-full shadow-md shadow-gray-300/60 dark:shadow-gray-900/50 hover:shadow-lg transition-shadow group overflow-hidden"
+              style={{
+                transform: scrolled ? `translate(${morphTarget.dx}px, ${morphTarget.dy}px) scale(${morphTarget.scale})` : 'translate(0px, 0px) scale(1)',
+                opacity: scrolled ? 0 : 1,
+                transformOrigin: 'center center',
+                transition: 'all 0.7s ease-out',
+              }}
+              onMouseEnter={() => setSearchHovered(true)} onMouseLeave={() => setSearchHovered(false)}>
+              <div
+                className={`absolute rounded-full bg-gray-200 shadow-md transition-all duration-300 ease-out pointer-events-none z-0 ${
+                  (activeSection || hoveredSection) ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{
+                  top: activeSection ? 0 : 1,
+                  bottom: activeSection ? 0 : 1,
+                  left: (activeSection || hoveredSection) ? sliderStyle.left : 4,
+                  width: (activeSection || hoveredSection) ? sliderStyle.width : 0,
+                }}
+              />
+              <div
+                ref={whatRef}
+                className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'what' ? '' : 'hover:bg-transparent'}`}
+                onMouseEnter={() => setHoveredSection('what')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => whatInputRef.current?.focus()}
+              >
+                <label htmlFor="search-what" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'what' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>What</label>
+                <input
+                  id="search-what"
+                  ref={whatInputRef}
+                  type="text"
+                  placeholder="Search categories..."
+                  className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
+                  value={searchQuery}
+                  onChange={(e) => { setSearchQuery(e.target.value); if (!activeSection) setActiveSection('what'); }}
+                  onFocus={() => {
+                    const next = activeSection === 'both' ? 'what' : (activeSection === 'where' ? 'both' : 'what');
+                    setLastClicked('what');
+                    setActiveSection(next);
                   }}
-                  onMouseEnter={() => setSearchHovered(true)} onMouseLeave={() => setSearchHovered(false)}>
-                  <div
-                    className={`absolute rounded-full bg-gray-50 shadow-md transition-all duration-300 ease-out pointer-events-none z-0 ${
-                      (activeSection || hoveredSection) ? 'opacity-100' : 'opacity-0'
-                    }`}
-                    style={{
-                      top: activeSection ? 0 : 1,
-                      bottom: activeSection ? 0 : 1,
-                      left: (activeSection || hoveredSection) ? sliderStyle.left : 4,
-                      width: (activeSection || hoveredSection) ? sliderStyle.width : 0,
-                    }}
-                  />
-                  <div
-                    ref={whatRef}
-                    className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'what' ? '' : 'hover:bg-transparent'}`}
-                    onMouseEnter={() => setHoveredSection('what')}
-                    onMouseLeave={() => setHoveredSection(null)}
-                    onClick={() => whatInputRef.current?.focus()}
-                  >
-                    <label htmlFor="search-what" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'what' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>What</label>
-                    <input
-                      id="search-what"
-                      ref={whatInputRef}
-                      type="text"
-                      placeholder="Search categories..."
-                      className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
-                      value={searchQuery}
-                      onChange={(e) => { setSearchQuery(e.target.value); if (!activeSection) setActiveSection('what'); }}
-                      onFocus={() => {
-                        const next = activeSection === 'both' ? 'what' : (activeSection === 'where' ? 'both' : 'what');
-                        setLastClicked('what');
-                        setActiveSection(next);
-                      }}
-                    />
-                  </div>
-                  <div className={`w-px h-8 bg-gray-900 shrink-0 transition-opacity duration-200 z-10 ${(searchHovered || activeSection) ? 'opacity-0' : 'opacity-100'}`} />
-                  <div
-                    ref={whereRef}
-                    className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'where' ? '' : 'hover:bg-transparent'}`}
-                    onMouseEnter={() => setHoveredSection('where')}
-                    onMouseLeave={() => setHoveredSection(null)}
-                    onClick={() => whereInputRef.current?.focus()}
-                  >
-                    <label htmlFor="search-where" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'where' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>Where</label>
-                    <input
-                      id="search-where"
-                      ref={whereInputRef}
-                      type="text"
-                      placeholder="Search locations"
-                      className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
-                      value={cityInput}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setCityInput(val);
-                        const match = cities.find(c => c.name.toLowerCase().includes(val.toLowerCase()));
-                        if (match && val.length >= match.name.length) {
-                          setSelectedCity(match.id);
-                        } else {
-                          setSelectedCity('');
-                        }
-                        if (!activeSection) setActiveSection('where');
-                      }}
-                      onFocus={() => {
-                        const next = activeSection === 'both' ? 'where' : (activeSection === 'what' ? 'both' : 'where');
-                        setLastClicked('where');
-                        setActiveSection(next);
-                      }}
-                    />
-                  </div>
-                  <div ref={btnRef} className="pr-1 shrink-0 z-20 relative">
-                    <button type="submit" className={`h-11 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center transition-all shadow-md ${activeSection ? 'px-3 gap-1.5' : 'w-11'}`}>
-                      <Search className="h-5 w-5 shrink-0" />
-                      {activeSection && <span className="text-xs font-bold whitespace-nowrap">Search</span>}
-                    </button>
-                  </div>
-                </div>
-              </form>
+                />
+              </div>
+              <div className={`w-px h-8 bg-gray-900 shrink-0 transition-opacity duration-200 z-10 ${(searchHovered || activeSection) ? 'opacity-0' : 'opacity-100'}`} />
+              <div
+                ref={whereRef}
+                className={`relative flex-1 min-w-0 px-4 pt-3.5 pb-2.5 rounded-full transition-all duration-200 cursor-pointer z-10 ${activeSection === 'where' ? '' : 'hover:bg-transparent'}`}
+                onMouseEnter={() => setHoveredSection('where')}
+                onMouseLeave={() => setHoveredSection(null)}
+                onClick={() => whereInputRef.current?.focus()}
+              >
+                <label htmlFor="search-where" className={`block text-[9px] font-bold uppercase tracking-wide leading-none mb-1 transition-colors duration-200 ${activeSection === 'where' ? 'text-gray-800 dark:text-gray-200' : 'text-gray-500 dark:text-gray-400'}`}>Where</label>
+                <input
+                  id="search-where"
+                  ref={whereInputRef}
+                  type="text"
+                  placeholder="Search locations"
+                  className="w-full bg-transparent border-none outline-none text-xs font-medium text-gray-900 dark:text-gray-100 placeholder:text-gray-400 p-0"
+                  value={cityInput}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    setCityInput(val);
+                    const match = cities.find(c => c.name.toLowerCase().includes(val.toLowerCase()));
+                    if (match && val.length >= match.name.length) {
+                      setSelectedCity(match.id);
+                    } else {
+                      setSelectedCity('');
+                    }
+                    if (!activeSection) setActiveSection('where');
+                  }}
+                  onFocus={() => {
+                    const next = activeSection === 'both' ? 'where' : (activeSection === 'where' ? 'both' : 'where');
+                    setLastClicked('where');
+                    setActiveSection(next);
+                  }}
+                />
+              </div>
+              <div ref={btnRef} className="pr-1 shrink-0 z-20 relative">
+                <button type="submit" className={`h-11 bg-black hover:bg-gray-800 text-white rounded-full flex items-center justify-center transition-all shadow-md ${activeSection ? 'px-3 gap-1.5' : 'w-11'}`}>
+                  <Search className="h-5 w-5 shrink-0" />
+                  {activeSection && <span className="text-xs font-bold whitespace-nowrap">Search</span>}
+                </button>
+              </div>
             </div>
-           </div>
+          </form>
         </div>
       </div>
 
@@ -591,7 +586,7 @@ export function Header() {
         document.body
       )}
     </header>
-      <div className="transition-all duration-700 ease-out" style={{ height: scrolled ? 80 : 176 }} />
+      <div className="transition-all duration-700 ease-out" style={{ height: scrolled ? 80 : 160 }} />
     </>
   );
 }

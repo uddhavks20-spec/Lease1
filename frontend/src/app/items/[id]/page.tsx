@@ -433,7 +433,7 @@ export default function ItemDetailPage() {
                 <div className="bg-primary-50 dark:bg-primary-900/10 p-4 rounded-2xl space-y-3 border border-primary-100 dark:border-primary-900/30">
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black uppercase tracking-widest text-primary-900 dark:text-primary-300">Monthly Rent</span>
-                    <span className="text-xl font-black text-amber-600">{formatCurrency(monthlyRent)}</span>
+                    <span className="text-xl font-black text-green-600">{formatCurrency(monthlyRent)}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-[10px] font-black uppercase tracking-widest text-primary-900 dark:text-primary-300">Security Deposit</span>
@@ -584,7 +584,7 @@ export default function ItemDetailPage() {
                         </div>
                         <div className="p-3">
                           <p className="text-[11px] font-bold text-gray-900 dark:text-white truncate">{rel.title}</p>
-                          <p className="text-[10px] text-amber-600 font-black mt-1">{formatCurrency(Number(rel.monthly_rent))}/mo</p>
+                          <p className="text-[10px] text-green-600 font-black mt-1">{formatCurrency(Number(rel.monthly_rent))}/mo</p>
                         </div>
                       </div>
                     </Link>
