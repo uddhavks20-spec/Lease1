@@ -65,18 +65,19 @@ export default function HomePage() {
             <section className="relative min-h-screen -mt-8 -mx-4 px-4 flex items-center overflow-hidden">
 
               {/* Content */}
-              <div className="relative z-10 w-full max-w-7xl mx-auto pt-24 pb-16">
+              <div className="relative z-10 w-full max-w-7xl mx-auto pt-24 pb-16 flex flex-col lg:flex-row items-center gap-12">
+                {/* Left: Text */}
                 <motion.div
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, x: -60 }}
+                  animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="max-w-2xl"
+                  className="flex-1 max-w-xl"
                 >
                   <motion.h1
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.6 }}
-                    className="text-6xl sm:text-7xl md:text-9xl font-black mb-4 leading-[1.05] tracking-tighter text-white"
+                    className="text-5xl sm:text-6xl md:text-8xl font-black mb-4 leading-[1.05] tracking-tighter text-white"
                   >
                     Rent Smart.
                     <br />
@@ -87,7 +88,7 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.4, duration: 0.6 }}
-                    className="text-lg md:text-xl text-white/70 mb-10 max-w-xl font-medium"
+                    className="text-lg md:text-xl text-white/70 mb-10 max-w-lg font-medium"
                   >
                     Access premium gadgets, furniture and essentials without the upfront cost.
                   </motion.p>
@@ -110,6 +111,51 @@ export default function HomePage() {
                     </Link>
                   </motion.div>
                 </motion.div>
+
+                {/* Right: Animated Cards */}
+                <div className="flex-1 relative h-[500px] w-full max-w-lg hidden md:block">
+                  <motion.div
+                    initial={{ opacity: 0, x: 200, rotate: -12 }}
+                    animate={{ opacity: 1, x: 0, rotate: -8 }}
+                    transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
+                    whileHover={{ scale: 1.08, rotate: -2, zIndex: 20, y: -10 }}
+                    className="absolute top-0 right-20 w-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                  >
+                    <Image
+                      src="/hero-meme.jpg"
+                      alt="Rich flex"
+                      width={300}
+                      height={400}
+                      className="w-full h-auto object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <h3 className="text-white font-black text-xl mb-1">Why Rent?</h3>
+                      <p className="text-white/70 text-sm">Flex without the financial damage.</p>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, x: 200, rotate: 12 }}
+                    animate={{ opacity: 1, x: 0, rotate: 6 }}
+                    transition={{ duration: 0.8, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
+                    whileHover={{ scale: 1.08, rotate: 2, zIndex: 20, y: -10 }}
+                    className="absolute bottom-0 right-0 w-64 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                  >
+                    <Image
+                      src="/hero-meme2.jpg"
+                      alt="Lease vibe"
+                      width={260}
+                      height={340}
+                      className="w-full h-auto object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-6 left-6 right-6">
+                      <h3 className="text-white font-black text-lg mb-1">Stay Smart.</h3>
+                      <p className="text-white/70 text-xs">Rent. Return. Repeat.</p>
+                    </div>
+                  </motion.div>
+                </div>
               </div>
 
               {/* Scroll indicator */}
