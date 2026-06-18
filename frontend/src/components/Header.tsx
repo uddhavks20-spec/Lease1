@@ -217,7 +217,7 @@ export function Header() {
     <>
     <header className={headerClass}>
       <div className="overflow-visible">
-        <div className="bg-gradient-to-b from-gray-300 to-gray-200 relative z-10">
+        <div className="bg-gradient-to-b from-gray-300/80 to-gray-200/80 backdrop-blur-md relative z-10">
           <div className="container flex items-center justify-center h-20 relative">
             <div className="w-36 shrink-0">
               <Link href="/" className="text-xl font-black gradient-text">Flex</Link>
@@ -397,7 +397,7 @@ export function Header() {
       </div>
 
       {showMobileMenu && (
-        <div className="md:hidden border-t border-gray-200/50 dark:border-gray-800/30 bg-gray-50/95 dark:bg-gray-950/40 backdrop-blur-xl">
+        <div className="md:hidden border-t border-gray-200/50 dark:border-gray-800/30 bg-gray-50/90 dark:bg-gray-950/40 backdrop-blur-xl">
           <nav className="container py-4 space-y-1">
             {navItems.map(item => {
               return (

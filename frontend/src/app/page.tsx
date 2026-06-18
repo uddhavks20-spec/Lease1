@@ -86,39 +86,162 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-surface dark:bg-surface-dark">
+    <div className="min-h-screen" style={{ background: 'transparent' }}>
       <div className="container mx-auto px-4 py-8">
         <div className="flex flex-col lg:flex-row gap-8">
           
           {/* Main Content */}
           <div className="flex-1 space-y-16">
             
-            {/* Hero Section */}
-            <section className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-gray-900 to-black p-6 md:p-20 text-white shadow-2xl">
-              <div className="relative z-10 max-w-2xl">
-                <Badge className="bg-primary-600 text-white border-none mb-6 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest inline-block">
-                  🚀 Campus Exclusive
-                </Badge>
-                <h1 className="text-4xl sm:text-5xl md:text-7xl font-black mb-6 leading-[1.1] tracking-tighter">
-                  Rent Smart, <br />
-                  <span className="text-primary-500 italic">Live Premium</span>
-                </h1>
-                <p className="text-lg md:text-xl text-gray-400 mb-10 leading-relaxed font-medium">
-                  Skip the upfront cost. Rent high-quality ACs, Laptops, and Furniture from your peers with zero hassle.
-                </p>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/browse">
-                    <Button size="lg" className="w-full sm:w-auto bg-white text-black hover:bg-primary-500 hover:text-white font-black h-16 px-10 rounded-2xl transition-all duration-300">
-                      Explore Catalog
-                    </Button>
-                  </Link>
-                </div>
+            {/* Hero Section - Full Screen Immersive */}
+            <section className="relative min-h-screen -mt-8 -mx-4 px-4 flex items-center overflow-hidden">
+              {/* Dark Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/70 to-black/50" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+
+              {/* Content */}
+              <div className="relative z-10 w-full max-w-7xl mx-auto pt-24 pb-16">
+                <motion.div
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="max-w-2xl"
+                >
+                  {/* Badge */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.6 }}
+                  >
+                    <Badge className="bg-white/10 backdrop-blur-md text-white border border-white/20 mb-8 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2 shadow-lg">
+                      <span className="w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
+                      🏫 Campus Exclusive Marketplace
+                    </Badge>
+                  </motion.div>
+
+                  {/* Heading */}
+                  <motion.h1
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35, duration: 0.6 }}
+                    className="text-5xl sm:text-6xl md:text-8xl font-black mb-4 leading-[1.05] tracking-tighter text-white"
+                  >
+                    Rent Smart.
+                    <br />
+                    <span className="bg-gradient-to-r from-primary-400 via-primary-500 to-secondary-400 bg-clip-text text-transparent">Live Better.</span>
+                  </motion.h1>
+
+                  {/* Subtitle */}
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                    className="text-lg md:text-xl text-gray-300 mb-3 font-medium max-w-xl"
+                  >
+                    Access premium gadgets, furniture and essentials without the upfront cost.
+                  </motion.p>
+
+                  {/* Supporting */}
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.6 }}
+                    className="text-sm md:text-base text-gray-400 mb-10 max-w-xl leading-relaxed"
+                  >
+                    Rent laptops, ACs, gaming setups, appliances and furniture directly from verified students in your campus.
+                  </motion.p>
+
+                  {/* CTA Buttons */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7, duration: 0.6 }}
+                    className="flex flex-col sm:flex-row gap-4 mb-12"
+                  >
+                    <Link href="/browse">
+                      <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-black h-16 px-12 rounded-2xl shadow-xl shadow-primary-600/30 hover:shadow-primary-500/40 transition-all duration-300 text-base">
+                        Explore Rentals
+                      </Button>
+                    </Link>
+                    <Link href="/seller/items/new">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-black h-16 px-12 rounded-2xl backdrop-blur-sm transition-all duration-300 text-base">
+                        List Your Item
+                      </Button>
+                    </Link>
+                  </motion.div>
+
+                  {/* Trust Indicators */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.85, duration: 0.6 }}
+                    className="flex flex-wrap gap-6 text-sm"
+                  >
+                    {[
+                      'Campus Verified Users',
+                      'Secure Payments',
+                      'Affordable Monthly Rentals',
+                    ].map((item) => (
+                      <div key={item} className="flex items-center gap-2 text-gray-300">
+                        <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <span className="font-medium text-xs uppercase tracking-wider">{item}</span>
+                      </div>
+                    ))}
+                  </motion.div>
+                </motion.div>
+
+                {/* Glassmorphism Search Bar */}
+                <motion.div
+                  initial={{ opacity: 0, y: 30 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 1.0, duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
+                  className="mt-16 max-w-3xl"
+                >
+                  <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] p-2 shadow-2xl shadow-black/20">
+                    <div className="flex flex-col sm:flex-row gap-2">
+                      <div className="flex-1 relative">
+                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                        <input
+                          type="text"
+                          placeholder="What do you need?"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-11 py-4 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all"
+                        />
+                      </div>
+                      <div className="flex-1 relative">
+                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
+                        <input
+                          type="text"
+                          placeholder="Location"
+                          className="w-full bg-white/5 border border-white/10 rounded-xl px-11 py-4 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all"
+                        />
+                      </div>
+                      <Button className="bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-primary-600/30 transition-all duration-300 whitespace-nowrap">
+                        Search
+                      </Button>
+                    </div>
+                  </div>
+                </motion.div>
               </div>
-              
-              {/* Decorative background image */}
-              <div className="absolute right-0 bottom-0 w-1/2 h-full opacity-20 pointer-events-none">
-                <Image src="https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=800" alt="Hero" fill className="object-contain translate-x-1/4 translate-y-1/4 scale-150" />
-              </div>
+
+              {/* Scroll indicator */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 1.5, duration: 1 }}
+                className="absolute bottom-8 left-1/2 -translate-x-1/2"
+              >
+                <motion.div
+                  animate={{ y: [0, 8, 0] }}
+                  transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                  className="w-6 h-10 rounded-full border-2 border-white/20 flex items-start justify-center p-1.5"
+                >
+                  <div className="w-1.5 h-1.5 rounded-full bg-white/60" />
+                </motion.div>
+              </motion.div>
             </section>
 
             {/* Category Grid - RentoMojo Style */}
@@ -134,7 +257,7 @@ export default function HomePage() {
                   return (
                     <Link key={cat.id} href={`/browse?category=${slug}`}>
                       <div className="group cursor-pointer flex flex-col items-center">
-                        <div className="w-full aspect-square mb-4 relative overflow-hidden rounded-[32px] bg-gray-50 dark:bg-gray-900 border border-gray-100 dark:border-gray-800 flex items-center justify-center p-8 transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-primary-100 dark:group-hover:shadow-none transform-gpu">
+                        <div className="w-full aspect-square mb-4 relative overflow-hidden rounded-[32px] bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm border border-gray-100/50 dark:border-gray-800/50 flex items-center justify-center p-8 transition-all duration-300 ease-out group-hover:scale-105 group-hover:shadow-2xl group-hover:shadow-primary-100 dark:group-hover:shadow-none transform-gpu">
                           <span className="text-5xl opacity-30 group-hover:opacity-50 transition-opacity">{cat.icon || '📦'}</span>
                         </div>
                         <h3 className="text-gray-900 dark:text-white font-black text-sm uppercase tracking-widest text-center line-clamp-2 group-hover:text-primary-600 transition-colors">
@@ -169,8 +292,8 @@ export default function HomePage() {
                     transition={{ delay: i * 0.05, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
                   >
                   <Link href={`/items/${item.id}`}>
-                    <div className={`group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transform-gpu ${conditionBorder(item.condition)}`}>
-                      <div className="aspect-square relative overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-10">
+                    <div className={`group cursor-pointer bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-[32px] overflow-hidden border border-gray-100/50 dark:border-gray-800/50 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transform-gpu ${conditionBorder(item.condition)}`}>
+                      <div className="aspect-square relative overflow-hidden bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-10">
                         <Image
                           src={imgSrc(item.image_url)}
                           alt={item.title}
@@ -200,7 +323,7 @@ export default function HomePage() {
                   </Link>
                   </motion.div>
                 )) : (
-                  <div className="col-span-full text-center py-8 bg-gray-50 dark:bg-gray-900/50 rounded-[32px]">
+                  <div className="col-span-full text-center py-8 bg-gray-50/80 dark:bg-gray-900/50 backdrop-blur-sm rounded-[32px]">
                     <MapPin className="w-8 h-8 text-gray-300 mx-auto mb-2" />
                     <p className="text-gray-500 text-sm">Select your city to see items available near you</p>
                   </div>
@@ -230,8 +353,8 @@ export default function HomePage() {
                     transition={{ delay: i * 0.05, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
                   >
                   <Link href={`/items/${item.id}`}>
-                    <div className={`group cursor-pointer bg-white dark:bg-gray-800 rounded-[32px] overflow-hidden border border-gray-100 dark:border-gray-800 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transform-gpu ${conditionBorder(item.condition)}`}>
-                      <div className="aspect-square relative overflow-hidden bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-10">
+                    <div className={`group cursor-pointer bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-[32px] overflow-hidden border border-gray-100/50 dark:border-gray-800/50 transition-all duration-300 ease-out hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transform-gpu ${conditionBorder(item.condition)}`}>
+                      <div className="aspect-square relative overflow-hidden bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-10">
                         <Image
                           src={imgSrc(item.image_url)}
                           alt={item.title}
@@ -298,9 +421,9 @@ export default function HomePage() {
                       transition={{ delay: i * 0.04, duration: 0.4, ease: [0.25, 0.1, 0.25, 1] }}
                     >
                     <Link href={`/items/${item.id}`}>
-                      <Card className={`group hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transition-all duration-300 ease-out border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-800 overflow-hidden rounded-[32px] transform-gpu ${conditionBorder(item.condition)}`}>
+                      <Card className={`group hover:scale-105 hover:shadow-2xl hover:shadow-primary-500/5 transition-all duration-300 ease-out border border-gray-100/50 dark:border-gray-800/50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm overflow-hidden rounded-[32px] transform-gpu ${conditionBorder(item.condition)}`}>
                         <CardContent className="p-0">
-                          <div className="relative h-48 w-full bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-6 overflow-hidden">
+                            <div className="relative h-48 w-full bg-gray-50/80 dark:bg-gray-900/80 backdrop-blur-sm flex items-center justify-center p-6 overflow-hidden">
                             <Image
                               src={imgSrc(item.image_url)}
                               alt={item.title}
@@ -341,7 +464,7 @@ export default function HomePage() {
             </section>
 
             {/* Lease Money - Coming Soon */}
-<section className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-gray-800 to-gray-900 p-8 md:p-16 text-white shadow-2xl opacity-80">
+<section className="relative overflow-hidden rounded-[40px] bg-gradient-to-br from-gray-800/80 to-gray-900/80 backdrop-blur-sm p-8 md:p-16 text-white shadow-2xl opacity-80">
   <div className="relative z-10 text-center">
     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-green-400/20 border border-green-400/30 text-[10px] font-black uppercase tracking-widest text-green-400 mb-6">
       <Zap className="w-3 h-3" />
@@ -359,8 +482,8 @@ export default function HomePage() {
       <div className="w-3 h-3 rounded-full bg-green-400 animate-bounce" style={{ animationDelay: "0.3s" }} />
     </div>
   </div>
-</section>{/* Why Choose Lease? */}
-            <section className="py-12 border-y border-gray-100 dark:border-gray-800">
+</section>            {/* Why Choose Lease? */}
+            <section className="py-12 border-y border-gray-100/50 dark:border-gray-800/50">
               <div className="text-center mb-16">
                 <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
                   Why Choose Lease?
@@ -371,7 +494,7 @@ export default function HomePage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 md:gap-8">
-                <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="text-center border-none bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="w-12 h-12 bg-pink-100 dark:bg-pink-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl">🪞</span>
@@ -383,7 +506,7 @@ export default function HomePage() {
                   </CardHeader>
                 </Card>
 
-                <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="text-center border-none bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl">💸</span>
@@ -395,7 +518,7 @@ export default function HomePage() {
                   </CardHeader>
                 </Card>
 
-                <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="text-center border-none bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl">🔄</span>
@@ -407,7 +530,7 @@ export default function HomePage() {
                   </CardHeader>
                 </Card>
 
-                <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="text-center border-none bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl">🔒</span>
@@ -419,7 +542,7 @@ export default function HomePage() {
                   </CardHeader>
                 </Card>
 
-                <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="text-center border-none bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl">🤧</span>
@@ -431,7 +554,7 @@ export default function HomePage() {
                   </CardHeader>
                 </Card>
 
-                <Card className="text-center border-none bg-white dark:bg-gray-800 shadow-sm hover:shadow-md transition-shadow">
+                <Card className="text-center border-none bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow">
                   <CardHeader>
                     <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
                       <span className="text-2xl">🎒</span>
@@ -450,7 +573,7 @@ export default function HomePage() {
           {/* Sidebar Advertisements */}
           <aside className="w-full lg:w-96 space-y-6">
             <div className="sticky top-24 space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-[32px] p-6 shadow-sm border border-gray-100 dark:border-gray-800">
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-[32px] p-6 shadow-sm border border-gray-100/50 dark:border-gray-800/50">
                 <h3 className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5" />
                   Featured Gadgets
@@ -481,7 +604,7 @@ export default function HomePage() {
               </div>
 
               {/* Promo Card */}
-              <div className="bg-green-600 rounded-2xl p-6 text-white shadow-lg shadow-green-200/50">
+              <div className="bg-green-600/80 backdrop-blur-sm rounded-2xl p-6 text-white shadow-lg shadow-green-200/50">
                 <h4 className="font-black text-xl mb-2">Refer a Friend!</h4>
                 <p className="text-sm font-medium mb-4 text-green-100">Get ₹100 credit for every successful referral.</p>
                 <Button onClick={copyReferralLink} className="w-full bg-green-700 text-green-100 hover:bg-green-800 font-bold rounded-xl">
@@ -495,7 +618,7 @@ export default function HomePage() {
       </div>
 
       {/* CTA Section */}
-      <section className="bg-primary-600 dark:bg-primary-700 py-20 mt-12">
+      <section className="bg-primary-600/80 dark:bg-primary-700/80 backdrop-blur-sm py-20 mt-12">
         <div className="container mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
             Ready to Join the Lease Community?
@@ -519,7 +642,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 text-gray-400 py-12 border-t border-gray-800">
+      <footer className="bg-gray-900/80 backdrop-blur-sm text-gray-400 py-12 border-t border-gray-800">
         <div className="container mx-auto px-4">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
             <div>

@@ -40,6 +40,25 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
+        {/* Background Video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="fixed inset-0 w-full h-full object-cover blur-md scale-110 pointer-events-none"
+          style={{ zIndex: -1 }}
+        >
+          <source src="/bg-video.mp4" type="video/mp4" />
+        </video>
+        {/* Dark overlay for readability */}
+        <div
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            zIndex: -1,
+            background: 'rgba(0, 0, 0, 0.5)',
+          }}
+        />
         {/* 3. Razorpay Script must be inside the body to work with afterInteractive */}
         <Script
           id="razorpay-checkout-script"

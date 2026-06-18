@@ -27,7 +27,7 @@ body {
 
 body {
   color: rgb(var(--foreground-rgb));
-  background: linear-gradient(to bottom, #E5E7EB, #F3F4F6);
+  background: transparent;
   min-height: 100vh;
 }
 
@@ -316,7 +316,7 @@ h1, h2, h3, h4, h5, h6, p, span, a, button, li {
 
 /* ─── Dark mode remap (bg stays warm cream) ─── */
 html.dark .dark\:bg-gray-900 {
-  background-color: #F5F0E8;
+  background-color: rgba(245, 240, 232, 0.85);
 }
 html.dark .dark\:bg-gray-900\/50 {
   background-color: rgba(245, 240, 232, 0.5);
@@ -325,7 +325,7 @@ html.dark .dark\:bg-gray-900\/95 {
   background-color: rgba(253, 248, 240, 0.95);
 }
 html.dark .dark\:bg-gray-800 {
-  background-color: #EBE5D8;
+  background-color: rgba(235, 229, 216, 0.85);
 }
 html.dark .dark\:text-white,
 html.dark .dark\:text-gray-100,
