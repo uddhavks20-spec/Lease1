@@ -7,7 +7,7 @@ export function BgVideo() {
 
   useEffect(() => {
     if (ref.current) {
-      ref.current.playbackRate = 0.5;
+      ref.current.playbackRate = 0.25;
     }
   }, []);
 
