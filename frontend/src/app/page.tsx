@@ -113,14 +113,14 @@ export default function HomePage() {
                 </motion.div>
 
                 {/* Right: Animated Cards - Fanned Deck */}
-                <div className="flex-1 relative h-[420px] w-full max-w-md hidden md:flex items-end justify-center">
+                <div className="flex-1 relative h-[460px] w-full max-w-lg hidden md:flex items-center justify-center -mt-4">
                   {/* Card 1 - leftmost */}
                   <motion.div
                     initial={{ opacity: 0, y: 100, rotate: -30 }}
                     animate={{ opacity: 1, y: 0, rotate: -22 }}
                     transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: -6, zIndex: 20, y: -16 }}
-                    className="absolute bottom-0 left-1/2 -ml-48 w-48 h-64 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-300 hover:shadow-emerald-400/40 origin-bottom border border-lime-400/20"
+                    whileHover={{ scale: 1.12, rotate: -6, zIndex: 20, y: -24 }}
+                    className="absolute bottom-0 left-1/2 -ml-56 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-emerald-400/50 origin-bottom border border-lime-400/20"
                   >
                     <Image
                       src="/hero-meme.jpg"
@@ -130,8 +130,8 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-lime-300 font-black text-sm mb-0.5 drop-shadow-md">Why Rent?</h3>
-                      <p className="text-white/80 text-[9px] drop-shadow">Flex without the financial damage.</p>
+                      <h3 className="text-lime-300 font-black text-base mb-0.5 drop-shadow-md">Why Rent?</h3>
+                      <p className="text-white/80 text-[10px] drop-shadow">Flex without the financial damage.</p>
                     </div>
                   </motion.div>
 
@@ -140,8 +140,8 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 100, rotate: -10 }}
                     animate={{ opacity: 1, y: 0, rotate: -7 }}
                     transition={{ duration: 0.8, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: 0, zIndex: 20, y: -16 }}
-                    className="absolute bottom-0 left-1/2 -ml-20 w-48 h-64 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-300 hover:shadow-emerald-400/40 origin-bottom border border-lime-400/20"
+                    whileHover={{ scale: 1.12, rotate: 0, zIndex: 20, y: -24 }}
+                    className="absolute bottom-0 left-1/2 -ml-24 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-emerald-400/50 origin-bottom border border-lime-400/20"
                   >
                     <Image
                       src="/hero-meme3.jpg"
@@ -151,8 +151,8 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-lime-300 font-black text-sm mb-0.5 drop-shadow-md">Stay Broke.</h3>
-                      <p className="text-white/80 text-[9px] drop-shadow">Buy less. Rent more. Stay rich.</p>
+                      <h3 className="text-lime-300 font-black text-base mb-0.5 drop-shadow-md">Stay Broke.</h3>
+                      <p className="text-white/80 text-[10px] drop-shadow">Buy less. Rent more. Stay rich.</p>
                     </div>
                   </motion.div>
 
@@ -161,8 +161,8 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 100, rotate: 10 }}
                     animate={{ opacity: 1, y: 0, rotate: 7 }}
                     transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: 0, zIndex: 20, y: -16 }}
-                    className="absolute bottom-0 left-1/2 ml-8 w-48 h-64 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-300 hover:shadow-emerald-400/40 origin-bottom border border-lime-400/20"
+                    whileHover={{ scale: 1.12, rotate: 0, zIndex: 20, y: -24 }}
+                    className="absolute bottom-0 left-1/2 ml-8 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-emerald-400/50 origin-bottom border border-lime-400/20"
                   >
                     <Image
                       src="/hero-meme4.jpg"
@@ -172,8 +172,8 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-lime-300 font-black text-sm mb-0.5 drop-shadow-md">Stay drippy.</h3>
-                      <p className="text-white/80 text-[9px] drop-shadow">Rent the drip. Return the drip.</p>
+                      <h3 className="text-lime-300 font-black text-base mb-0.5 drop-shadow-md">Stay drippy.</h3>
+                      <p className="text-white/80 text-[10px] drop-shadow">Rent the drip. Return the drip.</p>
                     </div>
                   </motion.div>
 
@@ -182,8 +182,8 @@ export default function HomePage() {
                     initial={{ opacity: 0, y: 100, rotate: 30 }}
                     animate={{ opacity: 1, y: 0, rotate: 22 }}
                     transition={{ duration: 0.8, delay: 0.75, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: 6, zIndex: 20, y: -16 }}
-                    className="absolute bottom-0 left-1/2 ml-36 w-48 h-64 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-300 hover:shadow-emerald-400/40 origin-bottom border border-lime-400/20"
+                    whileHover={{ scale: 1.12, rotate: 6, zIndex: 20, y: -24 }}
+                    className="absolute bottom-0 left-1/2 ml-32 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-emerald-400/50 origin-bottom border border-lime-400/20"
                   >
                     <Image
                       src="/hero-meme2.jpg"
@@ -193,8 +193,8 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-lime-300 font-black text-sm mb-0.5 drop-shadow-md">Stay Smart.</h3>
-                      <p className="text-white/80 text-[9px] drop-shadow">Rent. Return. Repeat.</p>
+                      <h3 className="text-lime-300 font-black text-base mb-0.5 drop-shadow-md">Stay Smart.</h3>
+                      <p className="text-white/80 text-[10px] drop-shadow">Rent. Return. Repeat.</p>
                     </div>
                   </motion.div>
                 </div>
