@@ -112,14 +112,15 @@ export default function HomePage() {
                   </motion.div>
                 </motion.div>
 
-                {/* Right: Animated Cards */}
-                <div className="flex-1 relative h-[500px] w-full max-w-lg hidden md:block">
+                {/* Right: Animated Cards - Fanned Deck */}
+                <div className="flex-1 relative h-[500px] w-full max-w-md hidden md:flex items-end justify-center pb-12">
+                  {/* Card 1 - leftmost */}
                   <motion.div
-                    initial={{ opacity: 0, x: 200, rotate: -15 }}
-                    animate={{ opacity: 1, x: 0, rotate: -12 }}
+                    initial={{ opacity: 0, y: 100, rotate: -30 }}
+                    animate={{ opacity: 1, y: 0, rotate: -24 }}
                     transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: -2, zIndex: 20, y: -10 }}
-                    className="absolute top-2 left-0 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    whileHover={{ scale: 1.1, rotate: -8, zIndex: 20, y: -20 }}
+                    className="absolute bottom-0 left-1/2 -ml-52 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/50 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/40 origin-bottom"
                   >
                     <Image
                       src="/hero-meme.jpg"
@@ -127,19 +128,20 @@ export default function HomePage() {
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-white font-black text-base mb-1">Why Rent?</h3>
                       <p className="text-white/70 text-[10px]">Flex without the financial damage.</p>
                     </div>
                   </motion.div>
 
+                  {/* Card 2 - center left */}
                   <motion.div
-                    initial={{ opacity: 0, x: 200, rotate: -4 }}
-                    animate={{ opacity: 1, x: 0, rotate: -3 }}
+                    initial={{ opacity: 0, y: 100, rotate: -10 }}
+                    animate={{ opacity: 1, y: 0, rotate: -8 }}
                     transition={{ duration: 0.8, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: 2, zIndex: 20, y: -10 }}
-                    className="absolute top-28 left-20 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    whileHover={{ scale: 1.1, rotate: 0, zIndex: 20, y: -20 }}
+                    className="absolute bottom-0 left-1/2 -ml-24 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/50 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/40 origin-bottom"
                   >
                     <Image
                       src="/hero-meme3.jpg"
@@ -147,19 +149,20 @@ export default function HomePage() {
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-white font-black text-base mb-1">Stay Broke.</h3>
                       <p className="text-white/70 text-[10px]">Buy less. Rent more. Stay rich.</p>
                     </div>
                   </motion.div>
 
+                  {/* Card 3 - center right */}
                   <motion.div
-                    initial={{ opacity: 0, x: 200, rotate: 8 }}
-                    animate={{ opacity: 1, x: 0, rotate: 6 }}
+                    initial={{ opacity: 0, y: 100, rotate: 10 }}
+                    animate={{ opacity: 1, y: 0, rotate: 8 }}
                     transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: 0, zIndex: 20, y: -10 }}
-                    className="absolute bottom-28 right-16 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    whileHover={{ scale: 1.1, rotate: 0, zIndex: 20, y: -20 }}
+                    className="absolute bottom-0 left-1/2 ml-4 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/50 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/40 origin-bottom"
                   >
                     <Image
                       src="/hero-meme4.jpg"
@@ -167,19 +170,20 @@ export default function HomePage() {
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-white font-black text-base mb-1">Stay drippy.</h3>
                       <p className="text-white/70 text-[10px]">Rent the drip. Return the drip.</p>
                     </div>
                   </motion.div>
 
+                  {/* Card 4 - rightmost */}
                   <motion.div
-                    initial={{ opacity: 0, x: 200, rotate: 15 }}
-                    animate={{ opacity: 1, x: 0, rotate: 10 }}
+                    initial={{ opacity: 0, y: 100, rotate: 30 }}
+                    animate={{ opacity: 1, y: 0, rotate: 24 }}
                     transition={{ duration: 0.8, delay: 0.75, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: 2, zIndex: 20, y: -10 }}
-                    className="absolute bottom-2 right-0 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    whileHover={{ scale: 1.1, rotate: 8, zIndex: 20, y: -20 }}
+                    className="absolute bottom-0 left-1/2 ml-32 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/50 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/40 origin-bottom"
                   >
                     <Image
                       src="/hero-meme2.jpg"
@@ -187,7 +191,7 @@ export default function HomePage() {
                       fill
                       className="object-cover"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
                     <div className="absolute bottom-4 left-4 right-4">
                       <h3 className="text-white font-black text-base mb-1">Stay Smart.</h3>
                       <p className="text-white/70 text-[10px]">Rent. Return. Repeat.</p>
