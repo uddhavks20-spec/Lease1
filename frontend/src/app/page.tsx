@@ -113,7 +113,7 @@ export default function HomePage() {
                 </motion.div>
 
                 {/* Right: Animated Cards - Fanned Deck */}
-                <div className="flex-1 relative h-[460px] w-full max-w-lg hidden md:flex items-center justify-center -mt-4">
+                <div className="flex-1 relative h-[460px] w-full max-w-lg hidden md:flex items-start justify-center pt-2">
                   {/* Card 1 - leftmost */}
                   <motion.div
                     initial={{ opacity: 0, y: 100, rotate: -30 }}

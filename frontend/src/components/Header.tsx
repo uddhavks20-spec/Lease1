@@ -232,29 +232,29 @@ export function Header() {
                       key={item.href}
                       href={item.href}
                       className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
-                        active ? 'text-lime-300' : 'text-white/70 hover:text-lime-300'
+                        active ? 'text-green-300' : 'text-white/70 hover:text-green-300'
                       }`}
                     >
                       <span className="relative inline-flex shrink-0">
                         <img src={item.imgSrc} alt="" className="h-[60px] w-[60px] object-contain transition-transform duration-200 ease-out group-hover:scale-125" draggable={false} />
                         {item.count != null && item.count > 0 && (
-                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-emerald-500 text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
+                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-green-700 text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
                         )}
                       </span>
                       <span>{item.label}</span>
-                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-lime-300 rounded-full" />}
+                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-green-700 rounded-full" />}
                     </Link>
                   );
                 })}
               </div>
               <div ref={miniRef} className={`flex items-center transition-all duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <form onSubmit={handleSearch}>
-                  <div className="flex items-center bg-emerald-900/40 backdrop-blur-md rounded-full px-3 py-1.5 shadow-sm border border-lime-400/20">
-                    <Search className="h-3.5 w-3.5 text-lime-300/60 mr-1.5 shrink-0" />
+                  <div className="flex items-center bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 shadow-sm border border-white/20">
+                    <Search className="h-3.5 w-3.5 text-white/50 mr-1.5 shrink-0" />
                     <input
                       type="text"
                       placeholder="Search anything..."
-                      className="w-[120px] bg-transparent border-none outline-none text-xs font-medium text-lime-300 placeholder:text-lime-300/40 p-0"
+                      className="w-[120px] bg-transparent border-none outline-none text-xs font-medium text-white placeholder:text-white/40 p-0"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -269,17 +269,17 @@ export function Header() {
                       key={item.href}
                       href={item.href}
                       className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
-                        active ? 'text-lime-300' : 'text-white/70 hover:text-lime-300'
+                        active ? 'text-green-300' : 'text-white/70 hover:text-green-300'
                       }`}
                     >
                       <span className="relative inline-flex shrink-0">
                         <img src={item.imgSrc} alt="" className="h-[60px] w-[60px] object-contain transition-transform duration-200 ease-out group-hover:scale-125" draggable={false} />
                         {item.count != null && item.count > 0 && (
-                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-emerald-500 text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
+                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-green-700 text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
                         )}
                       </span>
                       <span>{item.label}</span>
-                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-lime-300 rounded-full" />}
+                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-green-700 rounded-full" />}
                     </Link>
                   );
                 })}
@@ -288,16 +288,16 @@ export function Header() {
             <div className="w-36 shrink-0 flex items-center justify-end gap-3">
               {user ? (
                 <div className="relative hidden md:block" ref={profileRef}>
-                  <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-lime-300/40 hover:shadow-md transition-all">
-                    <User className="h-4 w-4 text-lime-300" />
-                    <span className="text-xs font-bold text-lime-300">{user.firstName}</span>
+                  <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/20 hover:shadow-md transition-all">
+                    <User className="h-4 w-4 text-green-300" />
+                    <span className="text-xs font-bold text-green-300">{user.firstName}</span>
                   </button>
                   {showProfileMenu && renderProfileMenu(closeProfile)}
                 </div>
               ) : (
                 <div className="hidden md:flex items-center gap-3">
-                  <Link href="/login" className="text-sm font-bold text-lime-300/80 hover:text-lime-300 transition-colors">Login</Link>
-                  <Link href="/signup" className="text-sm font-bold text-black bg-gradient-to-r from-lime-300 to-emerald-300 hover:from-lime-200 hover:to-emerald-200 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
+                  <Link href="/login" className="text-sm font-bold text-green-300/80 hover:text-green-300 transition-colors">Login</Link>
+                  <Link href="/signup" className="text-sm font-bold text-white bg-green-800 hover:bg-green-700 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
                 </div>
               )}
               <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-emerald-900/30 transition-colors">
