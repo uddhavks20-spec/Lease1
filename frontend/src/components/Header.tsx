@@ -202,11 +202,11 @@ export function Header() {
 
   const renderProfileMenu = (close: () => void) => {
     return (
-      <div className="absolute right-0 top-full mt-2 w-44 bg-white dark:bg-surface-dark rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 py-2 z-50">
-        <Link href="/profile" className="block px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800" onClick={close}>Profile</Link>
-        <Link href="/seller/dashboard" className="block px-4 py-2.5 text-xs font-bold text-gray-700 dark:text-gray-300 hover:text-gray-900 hover:bg-gray-50 dark:hover:bg-gray-800" onClick={close}>Dashboard</Link>
-        <hr className="my-1 border-gray-100 dark:border-gray-700" />
-        <button onClick={() => { logout(); close(); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-500 hover:bg-gray-50 dark:hover:bg-gray-800">Log out</button>
+      <div className="absolute right-0 top-full mt-2 w-44 bg-gray-900/90 backdrop-blur-md rounded-xl shadow-xl border border-white/10 py-2 z-50">
+        <Link href="/profile" className="block px-4 py-2.5 text-xs font-bold text-white/80 hover:text-white hover:bg-white/10" onClick={close}>Profile</Link>
+        <Link href="/seller/dashboard" className="block px-4 py-2.5 text-xs font-bold text-white/80 hover:text-white hover:bg-white/10" onClick={close}>Dashboard</Link>
+        <hr className="my-1 border-white/10" />
+        <button onClick={() => { logout(); close(); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-white/10">Log out</button>
       </div>
     );
   };
@@ -217,7 +217,7 @@ export function Header() {
     <>
     <header className={headerClass}>
       <div className="overflow-visible">
-        <div className="bg-gradient-to-b from-gray-300/80 to-gray-200/80 backdrop-blur-md relative z-10">
+        <div className="bg-transparent relative z-10">
           <div className="container flex items-center justify-center h-20 relative">
             <div className="w-36 shrink-0">
               <Link href="/" className="text-xl font-black gradient-text">Flex</Link>
@@ -232,7 +232,7 @@ export function Header() {
                       key={item.href}
                       href={item.href}
                       className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
-                        active ? 'text-black' : 'text-gray-800 hover:text-white'
+                        active ? 'text-white' : 'text-white/70 hover:text-white'
                       }`}
                     >
                       <span className="relative inline-flex shrink-0">
@@ -242,19 +242,19 @@ export function Header() {
                         )}
                       </span>
                       <span>{item.label}</span>
-                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black rounded-full" />}
+                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />}
                     </Link>
                   );
                 })}
               </div>
               <div ref={miniRef} className={`flex items-center transition-all duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <form onSubmit={handleSearch}>
-                  <div className="flex items-center bg-white rounded-full px-3 py-1.5 shadow-sm">
-                    <Search className="h-3.5 w-3.5 text-gray-500 mr-1.5 shrink-0" />
+                  <div className="flex items-center bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 shadow-sm border border-white/20">
+                    <Search className="h-3.5 w-3.5 text-white/60 mr-1.5 shrink-0" />
                     <input
                       type="text"
                       placeholder="Search anything..."
-                      className="w-[120px] bg-transparent border-none outline-none text-xs font-medium text-gray-900 placeholder:text-gray-400 p-0"
+                      className="w-[120px] bg-transparent border-none outline-none text-xs font-medium text-white placeholder:text-white/40 p-0"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -269,7 +269,7 @@ export function Header() {
                       key={item.href}
                       href={item.href}
                       className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
-                        active ? 'text-black' : 'text-gray-800 hover:text-white'
+                        active ? 'text-white' : 'text-white/70 hover:text-white'
                       }`}
                     >
                       <span className="relative inline-flex shrink-0">
@@ -279,7 +279,7 @@ export function Header() {
                         )}
                       </span>
                       <span>{item.label}</span>
-                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-black rounded-full" />}
+                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />}
                     </Link>
                   );
                 })}
@@ -288,20 +288,20 @@ export function Header() {
             <div className="w-36 shrink-0 flex items-center justify-end gap-3">
               {user ? (
                 <div className="relative hidden md:block" ref={profileRef}>
-                  <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-gray-300 hover:shadow-md transition-all">
-                    <User className="h-4 w-4 text-gray-800" />
-                    <span className="text-xs font-bold text-gray-800">{user.firstName}</span>
+                  <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/30 hover:shadow-md transition-all">
+                    <User className="h-4 w-4 text-white" />
+                    <span className="text-xs font-bold text-white">{user.firstName}</span>
                   </button>
                   {showProfileMenu && renderProfileMenu(closeProfile)}
                 </div>
               ) : (
                 <div className="hidden md:flex items-center gap-3">
-                  <Link href="/login" className="text-sm font-bold text-gray-800 hover:text-white transition-colors">Login</Link>
-                  <Link href="/signup" className="text-sm font-bold text-white bg-black hover:bg-gray-800 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
+                  <Link href="/login" className="text-sm font-bold text-white/80 hover:text-white transition-colors">Login</Link>
+                  <Link href="/signup" className="text-sm font-bold text-white bg-white/10 hover:bg-white/20 px-5 py-2 rounded-full transition-colors border border-white/20">Sign Up</Link>
                 </div>
               )}
-              <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-white/50 transition-colors">
-                {showMobileMenu ? <X className="h-5 w-5 text-gray-700 dark:text-gray-300" /> : <Menu className="h-5 w-5 text-gray-700 dark:text-gray-300" />}
+              <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-white/10 transition-colors">
+                {showMobileMenu ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
               </button>
             </div>
           </div>

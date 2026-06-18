@@ -64,8 +64,8 @@ export default function HomePage() {
             {/* Hero Section - Full Screen Immersive */}
             <section className="relative min-h-screen -mt-8 -mx-4 px-4 flex items-center overflow-hidden">
               {/* Dark Overlay Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/70 to-black/50" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/30" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
               {/* Content */}
               <div className="relative z-10 w-full max-w-7xl mx-auto pt-24 pb-16">
@@ -160,38 +160,6 @@ export default function HomePage() {
                       </div>
                     ))}
                   </motion.div>
-                </motion.div>
-
-                {/* Glassmorphism Search Bar */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 1.0, duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="mt-16 max-w-3xl"
-                >
-                  <div className="bg-white/10 backdrop-blur-xl border border-white/20 rounded-[20px] p-2 shadow-2xl shadow-black/20">
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <div className="flex-1 relative">
-                        <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
-                        <input
-                          type="text"
-                          placeholder="What do you need?"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-11 py-4 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all"
-                        />
-                      </div>
-                      <div className="flex-1 relative">
-                        <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/50" />
-                        <input
-                          type="text"
-                          placeholder="Location"
-                          className="w-full bg-white/5 border border-white/10 rounded-xl px-11 py-4 text-sm text-white placeholder-white/40 outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all"
-                        />
-                      </div>
-                      <Button className="bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-black h-12 px-8 rounded-xl shadow-lg shadow-primary-600/30 transition-all duration-300 whitespace-nowrap">
-                        Search
-                      </Button>
-                    </div>
-                  </div>
                 </motion.div>
               </div>
 
