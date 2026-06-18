@@ -9,6 +9,7 @@ import { CartProvider } from '@/lib/cart-context'
 import dynamic from 'next/dynamic'
 import { Suspense } from 'react'
 import { LeaseGuru } from '@/components/LeaseGuru' // Import Suspense
+import { BgVideo } from '@/components/BgVideo'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -41,16 +42,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={inter.className}>
         {/* Background Video */}
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="fixed inset-0 w-full h-full object-cover blur-sm scale-110 pointer-events-none"
-          style={{ zIndex: -1 }}
-        >
-          <source src="/bg-video.mp4" type="video/mp4" />
-        </video>
+        <BgVideo />
         {/* Dark overlay for readability */}
         <div
           className="fixed inset-0 pointer-events-none"
