@@ -119,14 +119,13 @@ export default function HomePage() {
                     animate={{ opacity: 1, x: 0, rotate: -10 }}
                     transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.08, rotate: -2, zIndex: 20, y: -10 }}
-                    className="absolute top-4 left-0 w-60 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    className="absolute top-4 left-0 w-64 h-80 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
                   >
                     <Image
                       src="/hero-meme.jpg"
                       alt="Rich flex"
-                      width={240}
-                      height={320}
-                      className="w-full h-auto object-cover"
+                      fill
+                      className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                     <div className="absolute bottom-5 left-5 right-5">
@@ -140,14 +139,13 @@ export default function HomePage() {
                     animate={{ opacity: 1, x: 0, rotate: 3 }}
                     transition={{ duration: 0.8, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.08, rotate: 0, zIndex: 20, y: -10 }}
-                    className="absolute top-1/2 -translate-y-1/2 left-16 w-64 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    className="absolute top-1/2 -translate-y-1/2 left-16 w-64 h-80 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
                   >
                     <Image
                       src="/hero-meme3.jpg"
                       alt="Lease grind"
-                      width={260}
-                      height={340}
-                      className="w-full h-auto object-cover"
+                      fill
+                      className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                     <div className="absolute bottom-5 left-5 right-5">
@@ -161,18 +159,17 @@ export default function HomePage() {
                     animate={{ opacity: 1, x: 0, rotate: 8 }}
                     transition={{ duration: 0.8, delay: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.08, rotate: 2, zIndex: 20, y: -10 }}
-                    className="absolute bottom-4 right-0 w-56 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    className="absolute bottom-4 right-0 w-64 h-80 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
                   >
                     <Image
                       src="/hero-meme2.jpg"
                       alt="Lease vibe"
-                      width={220}
-                      height={290}
-                      className="w-full h-auto object-cover"
+                      fill
+                      className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                     <div className="absolute bottom-5 left-5 right-5">
-                      <h3 className="text-white font-black text-base mb-1">Stay Smart.</h3>
+                      <h3 className="text-white font-black text-lg mb-1">Stay Smart.</h3>
                       <p className="text-white/70 text-xs">Rent. Return. Repeat.</p>
                     </div>
                   </motion.div>
