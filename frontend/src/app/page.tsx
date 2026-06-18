@@ -63,9 +63,6 @@ export default function HomePage() {
             
             {/* Hero Section - Full Screen Immersive */}
             <section className="relative min-h-screen -mt-8 -mx-4 px-4 flex items-center overflow-hidden">
-              {/* Dark Overlay Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/40 to-black/30" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent" />
 
               {/* Content */}
               <div className="relative z-10 w-full max-w-7xl mx-auto pt-24 pb-16">
