@@ -115,11 +115,11 @@ export default function HomePage() {
                 {/* Right: Animated Cards */}
                 <div className="flex-1 relative h-[500px] w-full max-w-lg hidden md:block">
                   <motion.div
-                    initial={{ opacity: 0, x: 200, rotate: -12 }}
-                    animate={{ opacity: 1, x: 0, rotate: -10 }}
+                    initial={{ opacity: 0, x: 200, rotate: -15 }}
+                    animate={{ opacity: 1, x: 0, rotate: -12 }}
                     transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.08, rotate: -2, zIndex: 20, y: -10 }}
-                    className="absolute top-4 left-0 w-64 h-80 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    className="absolute top-2 left-0 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
                   >
                     <Image
                       src="/hero-meme.jpg"
@@ -128,18 +128,18 @@ export default function HomePage() {
                       className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    <div className="absolute bottom-5 left-5 right-5">
-                      <h3 className="text-white font-black text-lg mb-1">Why Rent?</h3>
-                      <p className="text-white/70 text-xs">Flex without the financial damage.</p>
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="text-white font-black text-base mb-1">Why Rent?</h3>
+                      <p className="text-white/70 text-[10px]">Flex without the financial damage.</p>
                     </div>
                   </motion.div>
 
                   <motion.div
-                    initial={{ opacity: 0, x: 200, rotate: 0 }}
-                    animate={{ opacity: 1, x: 0, rotate: 3 }}
-                    transition={{ duration: 0.8, delay: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-                    whileHover={{ scale: 1.08, rotate: 0, zIndex: 20, y: -10 }}
-                    className="absolute top-1/2 -translate-y-1/2 left-16 w-64 h-80 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    initial={{ opacity: 0, x: 200, rotate: -4 }}
+                    animate={{ opacity: 1, x: 0, rotate: -3 }}
+                    transition={{ duration: 0.8, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
+                    whileHover={{ scale: 1.08, rotate: 2, zIndex: 20, y: -10 }}
+                    className="absolute top-28 left-20 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
                   >
                     <Image
                       src="/hero-meme3.jpg"
@@ -148,18 +148,38 @@ export default function HomePage() {
                       className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    <div className="absolute bottom-5 left-5 right-5">
-                      <h3 className="text-white font-black text-lg mb-1">Stay Broke.</h3>
-                      <p className="text-white/70 text-xs">Buy less. Rent more. Stay rich.</p>
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="text-white font-black text-base mb-1">Stay Broke.</h3>
+                      <p className="text-white/70 text-[10px]">Buy less. Rent more. Stay rich.</p>
                     </div>
                   </motion.div>
 
                   <motion.div
-                    initial={{ opacity: 0, x: 200, rotate: 12 }}
-                    animate={{ opacity: 1, x: 0, rotate: 8 }}
-                    transition={{ duration: 0.8, delay: 0.7, ease: [0.25, 0.1, 0.25, 1] }}
+                    initial={{ opacity: 0, x: 200, rotate: 8 }}
+                    animate={{ opacity: 1, x: 0, rotate: 6 }}
+                    transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
+                    whileHover={{ scale: 1.08, rotate: 0, zIndex: 20, y: -10 }}
+                    className="absolute bottom-28 right-16 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                  >
+                    <Image
+                      src="/hero-meme4.jpg"
+                      alt="Lease drip"
+                      fill
+                      className="object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="text-white font-black text-base mb-1">Stay drippy.</h3>
+                      <p className="text-white/70 text-[10px]">Rent the drip. Return the drip.</p>
+                    </div>
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, x: 200, rotate: 15 }}
+                    animate={{ opacity: 1, x: 0, rotate: 10 }}
+                    transition={{ duration: 0.8, delay: 0.75, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.08, rotate: 2, zIndex: 20, y: -10 }}
-                    className="absolute bottom-4 right-0 w-64 h-80 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
+                    className="absolute bottom-2 right-0 w-56 h-72 rounded-3xl overflow-hidden shadow-2xl shadow-black/40 cursor-pointer transition-shadow duration-300 hover:shadow-primary-500/30"
                   >
                     <Image
                       src="/hero-meme2.jpg"
@@ -168,9 +188,9 @@ export default function HomePage() {
                       className="object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
-                    <div className="absolute bottom-5 left-5 right-5">
-                      <h3 className="text-white font-black text-lg mb-1">Stay Smart.</h3>
-                      <p className="text-white/70 text-xs">Rent. Return. Repeat.</p>
+                    <div className="absolute bottom-4 left-4 right-4">
+                      <h3 className="text-white font-black text-base mb-1">Stay Smart.</h3>
+                      <p className="text-white/70 text-[10px]">Rent. Return. Repeat.</p>
                     </div>
                   </motion.div>
                 </div>
