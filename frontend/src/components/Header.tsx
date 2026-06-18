@@ -202,11 +202,11 @@ export function Header() {
 
   const renderProfileMenu = (close: () => void) => {
     return (
-      <div className="absolute right-0 top-full mt-2 w-44 bg-gray-900/90 backdrop-blur-md rounded-xl shadow-xl border border-white/10 py-2 z-50">
-        <Link href="/profile" className="block px-4 py-2.5 text-xs font-bold text-white/80 hover:text-white hover:bg-white/10" onClick={close}>Profile</Link>
-        <Link href="/seller/dashboard" className="block px-4 py-2.5 text-xs font-bold text-white/80 hover:text-white hover:bg-white/10" onClick={close}>Dashboard</Link>
-        <hr className="my-1 border-white/10" />
-        <button onClick={() => { logout(); close(); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-white/10">Log out</button>
+      <div className="absolute right-0 top-full mt-2 w-44 bg-emerald-900/90 backdrop-blur-md rounded-xl shadow-xl border border-lime-400/20 py-2 z-50">
+        <Link href="/profile" className="block px-4 py-2.5 text-xs font-bold text-lime-300/80 hover:text-lime-300 hover:bg-emerald-800/50" onClick={close}>Profile</Link>
+        <Link href="/seller/dashboard" className="block px-4 py-2.5 text-xs font-bold text-lime-300/80 hover:text-lime-300 hover:bg-emerald-800/50" onClick={close}>Dashboard</Link>
+        <hr className="my-1 border-lime-400/20" />
+        <button onClick={() => { logout(); close(); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-emerald-800/50">Log out</button>
       </div>
     );
   };
@@ -232,29 +232,29 @@ export function Header() {
                       key={item.href}
                       href={item.href}
                       className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
-                        active ? 'text-white' : 'text-white/70 hover:text-white'
+                        active ? 'text-lime-300' : 'text-white/70 hover:text-lime-300'
                       }`}
                     >
                       <span className="relative inline-flex shrink-0">
                         <img src={item.imgSrc} alt="" className="h-[60px] w-[60px] object-contain transition-transform duration-200 ease-out group-hover:scale-125" draggable={false} />
                         {item.count != null && item.count > 0 && (
-                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-black text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
+                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-emerald-500 text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
                         )}
                       </span>
                       <span>{item.label}</span>
-                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />}
+                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-lime-300 rounded-full" />}
                     </Link>
                   );
                 })}
               </div>
               <div ref={miniRef} className={`flex items-center transition-all duration-300 ease-out ${scrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                 <form onSubmit={handleSearch}>
-                  <div className="flex items-center bg-white/10 backdrop-blur-md rounded-full px-3 py-1.5 shadow-sm border border-white/20">
-                    <Search className="h-3.5 w-3.5 text-white/60 mr-1.5 shrink-0" />
+                  <div className="flex items-center bg-emerald-900/40 backdrop-blur-md rounded-full px-3 py-1.5 shadow-sm border border-lime-400/20">
+                    <Search className="h-3.5 w-3.5 text-lime-300/60 mr-1.5 shrink-0" />
                     <input
                       type="text"
                       placeholder="Search anything..."
-                      className="w-[120px] bg-transparent border-none outline-none text-xs font-medium text-white placeholder:text-white/40 p-0"
+                      className="w-[120px] bg-transparent border-none outline-none text-xs font-medium text-lime-300 placeholder:text-lime-300/40 p-0"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                     />
@@ -269,17 +269,17 @@ export function Header() {
                       key={item.href}
                       href={item.href}
                       className={`group relative flex items-center gap-2 px-3 py-1 text-sm font-semibold transition-colors ${
-                        active ? 'text-white' : 'text-white/70 hover:text-white'
+                        active ? 'text-lime-300' : 'text-white/70 hover:text-lime-300'
                       }`}
                     >
                       <span className="relative inline-flex shrink-0">
                         <img src={item.imgSrc} alt="" className="h-[60px] w-[60px] object-contain transition-transform duration-200 ease-out group-hover:scale-125" draggable={false} />
                         {item.count != null && item.count > 0 && (
-                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-black text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
+                          <span className="absolute -top-1 -right-1.5 text-[9px] font-bold bg-emerald-500 text-white rounded-full min-w-[16px] h-4 flex items-center justify-center leading-none px-1">{item.count}</span>
                         )}
                       </span>
                       <span>{item.label}</span>
-                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-white rounded-full" />}
+                      {active && <span className="absolute bottom-0 left-1/2 -translate-x-1/2 w-8 h-0.5 bg-lime-300 rounded-full" />}
                     </Link>
                   );
                 })}
@@ -288,20 +288,20 @@ export function Header() {
             <div className="w-36 shrink-0 flex items-center justify-end gap-3">
               {user ? (
                 <div className="relative hidden md:block" ref={profileRef}>
-                  <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-white/30 hover:shadow-md transition-all">
-                    <User className="h-4 w-4 text-white" />
-                    <span className="text-xs font-bold text-white">{user.firstName}</span>
+                  <button onClick={(e) => { e.stopPropagation(); setShowProfileMenu(!showProfileMenu); }} className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-lime-300/40 hover:shadow-md transition-all">
+                    <User className="h-4 w-4 text-lime-300" />
+                    <span className="text-xs font-bold text-lime-300">{user.firstName}</span>
                   </button>
                   {showProfileMenu && renderProfileMenu(closeProfile)}
                 </div>
               ) : (
                 <div className="hidden md:flex items-center gap-3">
-                  <Link href="/login" className="text-sm font-bold text-white/80 hover:text-white transition-colors">Login</Link>
-                  <Link href="/signup" className="text-sm font-bold text-white bg-white/10 hover:bg-white/20 px-5 py-2 rounded-full transition-colors border border-white/20">Sign Up</Link>
+                  <Link href="/login" className="text-sm font-bold text-lime-300/80 hover:text-lime-300 transition-colors">Login</Link>
+                  <Link href="/signup" className="text-sm font-bold text-black bg-gradient-to-r from-lime-300 to-emerald-300 hover:from-lime-200 hover:to-emerald-200 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
                 </div>
               )}
-              <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-white/10 transition-colors">
-                {showMobileMenu ? <X className="h-5 w-5 text-white" /> : <Menu className="h-5 w-5 text-white" />}
+              <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-emerald-900/30 transition-colors">
+                {showMobileMenu ? <X className="h-5 w-5 text-lime-300" /> : <Menu className="h-5 w-5 text-lime-300" />}
               </button>
             </div>
           </div>
@@ -397,11 +397,11 @@ export function Header() {
       </div>
 
       {showMobileMenu && (
-        <div className="md:hidden border-t border-gray-200/50 dark:border-gray-800/30 bg-gray-50/90 dark:bg-gray-950/40 backdrop-blur-xl">
+        <div className="md:hidden border-t border-lime-400/20 bg-emerald-900/90 backdrop-blur-xl">
           <nav className="container py-4 space-y-1">
             {navItems.map(item => {
               return (
-                <Link key={item.href} href={item.href} onClick={() => setShowMobileMenu(false)} className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${isActive(item.href) ? 'text-black bg-gray-100 dark:bg-gray-800' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50'}`}>
+                <Link key={item.href} href={item.href} onClick={() => setShowMobileMenu(false)} className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${isActive(item.href) ? 'text-lime-300 bg-emerald-800/50' : 'text-lime-300/60 hover:bg-emerald-800/30'}`}>
                   <img src={item.imgSrc} alt="" className="h-6 w-6 object-contain" />
                   <span>{item.label}</span>
                   {item.count != null && item.count > 0 && (
@@ -419,8 +419,8 @@ export function Header() {
           </React.Fragment>
             ) : (
               <div className="flex gap-3 px-4 pt-2">
-                <Link href="/login" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-black border border-gray-300 py-2.5 rounded-full">Login</Link>
-                <Link href="/signup" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-white bg-black py-2.5 rounded-full">Sign Up</Link>
+                <Link href="/login" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-lime-300 border border-lime-400/40 py-2.5 rounded-full">Login</Link>
+                <Link href="/signup" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-black bg-gradient-to-r from-lime-300 to-emerald-300 py-2.5 rounded-full">Sign Up</Link>
               </div>
             )}
           </nav>
