@@ -70,96 +70,19 @@ export default function HomePage() {
               {/* Content */}
               <div className="relative z-10 w-full max-w-7xl mx-auto pt-24 pb-16">
                 <motion.div
-                  initial={{ opacity: 0, y: 40 }}
-                  animate={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="max-w-2xl"
+                  className="max-w-lg"
                 >
-                  {/* Badge */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2, duration: 0.6 }}
-                  >
-                    <Badge className="bg-white/10 backdrop-blur-md text-white border border-white/20 mb-8 px-5 py-2 rounded-full text-xs font-black uppercase tracking-widest inline-flex items-center gap-2 shadow-lg">
-                      <span className="w-2 h-2 bg-primary-500 rounded-full animate-pulse" />
-                      🏫 Campus Exclusive Marketplace
-                    </Badge>
-                  </motion.div>
-
-                  {/* Heading */}
-                  <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35, duration: 0.6 }}
-                    className="text-5xl sm:text-6xl md:text-8xl font-black mb-4 leading-[1.05] tracking-tighter text-white"
-                  >
-                    Rent Smart.
-                    <br />
-                    <span className="bg-gradient-to-r from-primary-400 via-primary-500 to-secondary-400 bg-clip-text text-transparent">Live Better.</span>
-                  </motion.h1>
-
-                  {/* Subtitle */}
-                  <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.5, duration: 0.6 }}
-                    className="text-lg md:text-xl text-gray-300 mb-3 font-medium max-w-xl"
-                  >
-                    Access premium gadgets, furniture and essentials without the upfront cost.
-                  </motion.p>
-
-                  {/* Supporting */}
-                  <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6, duration: 0.6 }}
-                    className="text-sm md:text-base text-gray-400 mb-10 max-w-xl leading-relaxed"
-                  >
-                    Rent laptops, ACs, gaming setups, appliances and furniture directly from verified students in your campus.
-                  </motion.p>
-
-                  {/* CTA Buttons */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.7, duration: 0.6 }}
-                    className="flex flex-col sm:flex-row gap-4 mb-12"
-                  >
-                    <Link href="/browse">
-                      <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-black h-16 px-12 rounded-2xl shadow-xl shadow-primary-600/30 hover:shadow-primary-500/40 transition-all duration-300 text-base">
-                        Explore Rentals
-                      </Button>
-                    </Link>
-                    <Link href="/seller/items/new">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-black h-16 px-12 rounded-2xl backdrop-blur-sm transition-all duration-300 text-base">
-                        List Your Item
-                      </Button>
-                    </Link>
-                  </motion.div>
-
-                  {/* Trust Indicators */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.85, duration: 0.6 }}
-                    className="flex flex-wrap gap-6 text-sm"
-                  >
-                    {[
-                      'Campus Verified Users',
-                      'Secure Payments',
-                      'Affordable Monthly Rentals',
-                    ].map((item) => (
-                      <div key={item} className="flex items-center gap-2 text-gray-300">
-                        <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
-                          <svg className="w-3 h-3 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        </div>
-                        <span className="font-medium text-xs uppercase tracking-wider">{item}</span>
-                      </div>
-                    ))}
-                  </motion.div>
+                  <Image
+                    src="/hero-meme.jpg"
+                    alt="Rich flex meme"
+                    width={500}
+                    height={600}
+                    className="rounded-3xl drop-shadow-2xl"
+                    priority
+                  />
                 </motion.div>
               </div>
 
