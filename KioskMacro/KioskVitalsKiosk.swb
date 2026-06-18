@@ -1,0 +1,1271 @@
+'====================================================================
+' INTERACTIVE VITALS VISUALIZATION KIOSK - SolidWorks VBA Macro
+' Target: SolidWorks 2022+
+' Reference: Sertek Heartbeat Drum Exhibit + HTT-PP-0804202601
+'
+' HOW TO RUN:
+' 1. Open SolidWorks
+' 2. Tools > Macro > New (opens VBA Editor)
+' 3. File > Remove Module (remove old Module1 if any)
+' 4. File > Import File > select this .bas file
+' 5. Place cursor in BuildEntireKiosk and press F5
+'
+' No type library references needed (uses late binding).
+'====================================================================
+Option Explicit
+
+'--- Application References (late binding - no type library needed) ---
+Dim g_swApp As Object
+Dim g_swModel As Object
+Dim g_swPart As Object
+Dim g_swAssy As Object
+Dim g_swSkMgr As Object
+Dim g_swFeatMgr As Object
+
+Const MM As Double = 0.001
+
+'--- Project Path ---
+Const PROJ_PATH As String = "C:\Users\kisha\Documents\Kiosk\"
+
+'=== DIMENSIONS (mm) ===
+Const TW As Double = 500     ' tower width
+Const TD As Double = 400     ' tower depth
+Const TH As Double = 1600    ' tower height
+Const FS As Double = 40      ' frame size
+Const FW As Double = 3       ' frame wall
+Const PT As Double = 8       ' panel thickness
+
+Const DW As Double = 230     ' display width
+Const DH As Double = 155     ' display height
+Const DY As Double = 1050    ' display center Y
+
+Const LW As Double = 20      ' LED channel width
+Const LDp As Double = 12     ' LED channel depth
+
+Const DD As Double = 305     ' drum diameter
+Const DDe As Double = 150    ' drum depth
+Const DWal As Double = 6     ' drum wall
+Const DHT As Double = 2      ' drum head thick
+Const DYh As Double = 1200   ' drum Y height
+
+Const HH As Double = 100     ' heart height
+Const HW As Double = 90      ' heart width
+Const HDp As Double = 70     ' heart depth
+Const DMD As Double = 150    ' dome diameter
+Const DMW As Double = 3      ' dome wall
+Const HYh As Double = 1350   ' heart Y height
+
+Const PW As Double = 500     ' platform width
+Const PDim As Double = 500   ' platform depth
+Const PH As Double = 80      ' platform height
+Const PS As Double = 3       ' platform shell
+Const PMT As Double = 2      ' platform mat thick
+Const PCR As Double = 10     ' platform corner radius
+
+Const SERVO_W As Double = 23
+Const SERVO_H As Double = 12
+Const SERVO_D As Double = 29
+Const LINKAGE_T As Double = 2
+Const LINKAGE_L As Double = 30
+
+'--------------------------------------------------------------------
+' MAIN ENTRY POINT
+'--------------------------------------------------------------------
+Sub BuildEntireKiosk()
+    '--- Runtime check for SolidWorks ---
+    On Error Resume Next
+    Set g_swApp = Application.SldWorks
+    If g_swApp Is Nothing Then
+        MsgBox "Cannot access SolidWorks." & vbCrLf & vbCrLf & _
+               "CHECK:" & vbCrLf & _
+               "1. You must run this from within SolidWorks" & vbCrLf & _
+               "2. VBA Editor > Tools > References > check" & vbCrLf & _
+               "   'SOLIDWORKS 20XX Type Library'" & vbCrLf & _
+               "3. Make sure macros are enabled", vbCritical, "Setup Error"
+        End
+    End If
+    On Error GoTo 0
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If Not fso.FolderExists(PROJ_PATH) Then
+        fso.CreateFolder PROJ_PATH
+    End If
+    ' Ensure C:\Users\kisha\Documents exists
+    If Not fso.FolderExists("C:\Users\kisha\Documents") Then
+        fso.CreateFolder "C:\Users\kisha\Documents"
+    End If
+    
+    Debug.Print "=== Building Kiosk Assembly ==="
+    
+    CreateKioskTower
+    CreateDrumModule
+    CreateHeartModel
+    CreateWeightPlatform
+    CreateDisplayBezel
+    AssembleAll
+    SetupRendering
+    
+    Debug.Print "=== BUILD COMPLETE ==="
+    MsgBox "Kiosk build complete!" & vbCrLf & "Files saved to: " & PROJ_PATH
+End Sub
+
+'--------------------------------------------------------------------
+' HELPERS
+'--------------------------------------------------------------------
+Function m(val As Double) As Double
+    m = val * MM
+End Function
+
+Function GetPartTemplate() As String
+    GetPartTemplate = ""
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    
+    ' Try API first
+    On Error Resume Next
+    Dim apiPath As String
+    apiPath = g_swApp.GetUserPreferenceStringValue(71)
+    On Error GoTo 0
+    
+    If apiPath <> "" Then
+        If fso.FileExists(apiPath) Then
+            GetPartTemplate = apiPath
+            Debug.Print "Part template (API): " & GetPartTemplate
+            Exit Function
+        End If
+        Dim mbdPath As String
+        mbdPath = Left(apiPath, InStrRev(apiPath, "\")) & "MBD\" & Mid(apiPath, InStrRev(apiPath, "\") + 1)
+        If fso.FileExists(mbdPath) Then
+            GetPartTemplate = mbdPath
+            Debug.Print "Part template (API+MBD): " & GetPartTemplate
+            Exit Function
+        End If
+    End If
+    
+    ' Direct search
+    If fso.FileExists("C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates\MBD\part 0251mm to 1000mm.prtdot") Then
+        GetPartTemplate = "C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates\MBD\part 0251mm to 1000mm.prtdot"
+        Debug.Print "Part template (direct): " & GetPartTemplate
+        Exit Function
+    End If
+    If fso.FileExists("C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates\MBD\part 0051mm to 0250mm.prtdot") Then
+        GetPartTemplate = "C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates\MBD\part 0051mm to 0250mm.prtdot"
+        Debug.Print "Part template (direct): " & GetPartTemplate
+        Exit Function
+    End If
+    
+    ' Last resort: scan for any .prtdot
+    On Error Resume Next
+    Dim folder As Object
+    Set folder = fso.GetFolder("C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates")
+    Dim subFolder As Object
+    Dim file As Object
+    For Each subFolder In folder.SubFolders
+        For Each file In subFolder.Files
+            If Right(LCase(file.Name), 7) = ".prtdot" Then
+                GetPartTemplate = file.Path
+                Debug.Print "Part template (scan): " & GetPartTemplate
+                Exit Function
+            End If
+        Next file
+    Next subFolder
+    On Error GoTo 0
+    
+    Debug.Print "WARNING: No part template found"
+End Function
+
+Function GetAssyTemplate() As String
+    GetAssyTemplate = ""
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    
+    ' Try API first
+    On Error Resume Next
+    Dim apiPath As String
+    apiPath = g_swApp.GetUserPreferenceStringValue(72)
+    On Error GoTo 0
+    
+    If apiPath <> "" Then
+        If fso.FileExists(apiPath) Then
+            GetAssyTemplate = apiPath
+            Debug.Print "Assembly template (API): " & GetAssyTemplate
+            Exit Function
+        End If
+        ' API returned a path but file doesn't exist - try adding MBD
+        Dim mbdPath As String
+        mbdPath = Left(apiPath, InStrRev(apiPath, "\")) & "MBD\" & Mid(apiPath, InStrRev(apiPath, "\") + 1)
+        If fso.FileExists(mbdPath) Then
+            GetAssyTemplate = mbdPath
+            Debug.Print "Assembly template (API+MBD): " & GetAssyTemplate
+            Exit Function
+        End If
+    End If
+    
+    ' Direct search - try each path individually
+    If fso.FileExists("C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates\MBD\assembly 0251mm to 1000mm.asmdot") Then
+        GetAssyTemplate = "C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates\MBD\assembly 0251mm to 1000mm.asmdot"
+        Debug.Print "Assembly template (direct): " & GetAssyTemplate
+        Exit Function
+    End If
+    If fso.FileExists("C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates\MBD\assembly 0250mm and smaller.asmdot") Then
+        GetAssyTemplate = "C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates\MBD\assembly 0250mm and smaller.asmdot"
+        Debug.Print "Assembly template (direct): " & GetAssyTemplate
+        Exit Function
+    End If
+    
+    ' Last resort: try any .asmdot file in the templates folder
+    On Error Resume Next
+    Dim folder As Object
+    Set folder = fso.GetFolder("C:\ProgramData\SolidWorks\SOLIDWORKS 2026\templates")
+    Dim subFolder As Object
+    Dim file As Object
+    For Each subFolder In folder.SubFolders
+        For Each file In subFolder.Files
+            If Right(LCase(file.Name), 7) = ".asmdot" Then
+                GetAssyTemplate = file.Path
+                Debug.Print "Assembly template (scan): " & GetAssyTemplate
+                Exit Function
+            End If
+        Next file
+    Next subFolder
+    On Error GoTo 0
+    
+    Debug.Print "WARNING: No assembly template found"
+End Function
+
+Sub LogErr(op As String)
+    Dim e As Long
+    e = g_swApp.GetLastError
+    If e <> 0 Then Debug.Print "ERR " & op & ": " & e
+End Sub
+
+Function NewPart() As Boolean
+    Dim tmpl As String
+    tmpl = GetPartTemplate
+    If tmpl = "" Then
+        MsgBox "No part template found." & vbCrLf & _
+               "Checked: C:\ProgramData\SolidWorks\SOLIDWORKS 20XX\templates\" & vbCrLf & _
+               "Try setting your default part template in SolidWorks first:" & vbCrLf & _
+               "Tools > Options > System Options > File Locations > Document Templates", _
+               vbCritical, "Template Error"
+        NewPart = False
+        Exit Function
+    End If
+    Debug.Print "Part template: " & tmpl
+    Set g_swModel = g_swApp.NewDocument(tmpl, 0, 0, 0)
+    If g_swModel Is Nothing Then
+        MsgBox "Failed to create part document." & vbCrLf & "Template: " & tmpl, vbCritical
+        NewPart = False
+        Exit Function
+    End If
+    Set g_swPart = g_swModel
+    Set g_swSkMgr = g_swModel.SketchManager
+    Set g_swFeatMgr = g_swModel.FeatureManager
+    NewPart = True
+End Function
+
+Function NewAssembly() As Boolean
+    Dim tmpl As String
+    tmpl = GetAssyTemplate
+    
+    If tmpl <> "" Then
+        Debug.Print "Assembly template: " & tmpl
+        On Error Resume Next
+        Set g_swModel = g_swApp.NewDocument(tmpl, 0, 0, 0)
+        On Error GoTo 0
+    End If
+    
+    If g_swModel Is Nothing Then
+        Debug.Print "Template method failed, trying default..."
+        On Error Resume Next
+        Set g_swModel = g_swApp.NewDocument2(0)
+        On Error GoTo 0
+    End If
+    
+    If g_swModel Is Nothing Then
+        MsgBox "Could not create assembly." & vbCrLf & _
+               "Please create one manually:" & vbCrLf & _
+               "1. File > New > Assembly" & vbCrLf & _
+               "2. Then run AssembleAll from VBA editor", _
+               vbCritical, "Assembly Error"
+        NewAssembly = False
+        Exit Function
+    End If
+    
+    Set g_swAssy = g_swModel
+    Set g_swSkMgr = g_swModel.SketchManager
+    Set g_swFeatMgr = g_swModel.FeatureManager
+    NewAssembly = True
+End Function
+
+Sub SelPlane(name As String)
+    g_swModel.Extension.SelectByID2 name, "PLANE", 0, 0, 0, False, 0, Nothing, 0
+End Sub
+
+Sub StartSketch(plane As String)
+    SelPlane plane
+    g_swSkMgr.InsertSketch True
+End Sub
+
+Sub EndSketch()
+    g_swSkMgr.InsertSketch True
+End Sub
+
+Sub Rebuild()
+    g_swModel.ForceRebuild3 True
+End Sub
+
+Function DoExtrude(depthM As Double) As Object
+    Set DoExtrude = g_swFeatMgr.FeatureExtrusion2( _
+        True, False, False, _
+        0, 0, _
+        depthM, 0, _
+        False, False, _
+        0, 0, _
+        0, 0, _
+        False, False, _
+        False, False, _
+        True, True, True)
+End Function
+
+Function DoExtrudeMid(depthM As Double) As Object
+    Set DoExtrudeMid = g_swFeatMgr.FeatureExtrusion2( _
+        False, False, False, _
+        4, 0, _
+        depthM / 2, 0, _
+        False, False, _
+        0, 0, _
+        0, 0, _
+        False, False, _
+        False, False, _
+        True, True, True)
+End Function
+
+Function DoExtrudeRev(depthM As Double) As Object
+    Set DoExtrudeRev = g_swFeatMgr.FeatureExtrusion2( _
+        True, True, False, _
+        0, 0, _
+        depthM, 0, _
+        False, False, _
+        0, 0, _
+        0, 0, _
+        False, False, _
+        False, False, _
+        True, True, True)
+End Function
+
+Function DoCut(depthM As Double) As Object
+    Set DoCut = g_swFeatMgr.FeatureCut4( _
+        True, False, False, _
+        0, 0, _
+        depthM, 0, _
+        False, False, _
+        0, 0, _
+        0, 0, _
+        False, False, _
+        False, False, _
+        True, True, True, _
+        False, False, False)
+End Function
+
+Function DoCutThru() As Object
+    Set DoCutThru = g_swFeatMgr.InsertCutThruAll2(False)
+End Function
+
+Function DoRevolve() As Object
+    Set DoRevolve = g_swFeatMgr.FeatureRevolve2( _
+        6.283185307, False, False, _
+        0, 0, 0, 0, _
+        False, False, 0, 0, 0, 0, _
+        False, False, False, False, _
+        True, True, True)
+End Function
+
+Sub SaveDoc(name As String)
+    Dim path As String
+    Dim err As Long
+    Dim warn As Long
+    path = PROJ_PATH & name
+    g_swModel.SaveAs4 path, 0, 0, err, warn
+    LogErr "Save " & name
+End Sub
+
+Function CreateOffsetPlane(refPlane As String, distanceM As Double) As String
+    Dim pf As Object
+    SelPlane refPlane
+    Set pf = g_swFeatMgr.InsertRefPlane(1, distanceM, 0, 0, 0, 0, 0, 0, 0, 0)
+    If Not pf Is Nothing Then
+        CreateOffsetPlane = pf.Name
+    Else
+        CreateOffsetPlane = ""
+    End If
+End Function
+
+'====================================================================
+' MODULE 1: KIOSK TOWER
+'====================================================================
+Sub CreateKioskTower()
+    Debug.Print "=== Building Kiosk Tower ==="
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If fso.FileExists(PROJ_PATH & "KioskTower.SLDPRT") Then
+        Debug.Print "Tower part exists, skipping"
+        Exit Sub
+    End If
+    
+    If Not NewPart Then Exit Sub
+    
+    Dim f As Object
+    Dim i As Long
+    Dim cx As Double, cz As Double
+    Dim hfs As Double, hfi As Double
+    Dim pfName As String
+    
+    hfs = m(FS / 2)
+    hfi = m((FS - 2 * FW) / 2)
+    
+    '--------------------------------------------------------------
+    ' 1. Vertical frame posts (4 corners)
+    '--------------------------------------------------------------
+    StartSketch "Top Plane"
+    
+    Dim cxVals As Variant
+    Dim czVals As Variant
+    cxVals = Array(m(-TW / 2 + FS / 2), m(TW / 2 - FS / 2), m(-TW / 2 + FS / 2), m(TW / 2 - FS / 2))
+    czVals = Array(m(TD / 2 - FS / 2), m(TD / 2 - FS / 2), m(-TD / 2 + FS / 2), m(-TD / 2 + FS / 2))
+    
+    For i = 0 To 3
+        cx = cxVals(i)
+        cz = czVals(i)
+        g_swSkMgr.CreateCenterRectangle cx, cz, 0, cx + hfs, cz + hfs, 0
+        g_swSkMgr.CreateCenterRectangle cx, cz, 0, cx + hfi, cz + hfi, 0
+    Next i
+    
+    EndSketch
+    Set f = DoExtrude(m(TH))
+    If Not f Is Nothing Then f.Name = "Frame_VerticalPosts"
+    LogErr "Vertical Posts"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 2. Bottom horizontal rails
+    '--------------------------------------------------------------
+    Dim yBot As Double
+    yBot = m(FS / 2)
+    
+    ' Front + Rear rails (sketch on Right Plane, extrude in X)
+    StartSketch "Right Plane"
+    ' Front rail
+    g_swSkMgr.CreateCenterRectangle m(TD / 2 - FS / 2), yBot, 0, _
+        m(TD / 2 - FS / 2) + hfs, yBot + hfs, 0
+    g_swSkMgr.CreateCenterRectangle m(TD / 2 - FS / 2), yBot, 0, _
+        m(TD / 2 - FS / 2) + hfi, yBot + hfi, 0
+    ' Rear rail
+    g_swSkMgr.CreateCenterRectangle m(-TD / 2 + FS / 2), yBot, 0, _
+        m(-TD / 2 + FS / 2) + hfs, yBot + hfs, 0
+    g_swSkMgr.CreateCenterRectangle m(-TD / 2 + FS / 2), yBot, 0, _
+        m(-TD / 2 + FS / 2) + hfi, yBot + hfi, 0
+    EndSketch
+    Set f = DoExtrudeMid(m(TW - 2 * FS))
+    If Not f Is Nothing Then f.Name = "Frame_BottomFrontRear"
+    LogErr "Bottom F/R Rails"
+    Rebuild
+    
+    ' Left + Right rails (sketch on Front Plane, extrude in Z)
+    StartSketch "Front Plane"
+    g_swSkMgr.CreateCenterRectangle m(-TW / 2 + FS / 2), yBot, 0, _
+        m(-TW / 2 + FS / 2) + hfs, yBot + hfs, 0
+    g_swSkMgr.CreateCenterRectangle m(-TW / 2 + FS / 2), yBot, 0, _
+        m(-TW / 2 + FS / 2) + hfi, yBot + hfi, 0
+    g_swSkMgr.CreateCenterRectangle m(TW / 2 - FS / 2), yBot, 0, _
+        m(TW / 2 - FS / 2) + hfs, yBot + hfs, 0
+    g_swSkMgr.CreateCenterRectangle m(TW / 2 - FS / 2), yBot, 0, _
+        m(TW / 2 - FS / 2) + hfi, yBot + hfi, 0
+    EndSketch
+    Set f = DoExtrudeMid(m(TD - 2 * FS))
+    If Not f Is Nothing Then f.Name = "Frame_BottomLeftRight"
+    LogErr "Bottom L/R Rails"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 3. Top horizontal rails
+    '--------------------------------------------------------------
+    Dim yTop As Double
+    yTop = m(FS / 2)
+    
+    pfName = CreateOffsetPlane("Right Plane", m(TH - FS))
+    If pfName <> "" Then
+        Dim pf As Object
+        SelPlane pfName
+        Set pf = g_swModel.SelectionManager.GetSelectedObject6(1, -1)
+        If Not pf Is Nothing Then pf.Name = "Plane_TopFRails"
+    End If
+    
+    StartSketch pfName
+    g_swSkMgr.CreateCenterRectangle m(TD / 2 - FS / 2), yTop, 0, _
+        m(TD / 2 - FS / 2) + hfs, yTop + hfs, 0
+    g_swSkMgr.CreateCenterRectangle m(TD / 2 - FS / 2), yTop, 0, _
+        m(TD / 2 - FS / 2) + hfi, yTop + hfi, 0
+    g_swSkMgr.CreateCenterRectangle m(-TD / 2 + FS / 2), yTop, 0, _
+        m(-TD / 2 + FS / 2) + hfs, yTop + hfs, 0
+    g_swSkMgr.CreateCenterRectangle m(-TD / 2 + FS / 2), yTop, 0, _
+        m(-TD / 2 + FS / 2) + hfi, yTop + hfi, 0
+    EndSketch
+    Set f = DoExtrudeMid(m(TW - 2 * FS))
+    If Not f Is Nothing Then f.Name = "Frame_TopFrontRear"
+    LogErr "Top F/R Rails"
+    Rebuild
+    
+    ' Top side rails
+    pfName = CreateOffsetPlane("Front Plane", m(TH - FS))
+    If pfName <> "" Then
+        SelPlane pfName
+        Set pf = g_swModel.SelectionManager.GetSelectedObject6(1, -1)
+        If Not pf Is Nothing Then pf.Name = "Plane_TopLRails"
+    End If
+    
+    StartSketch pfName
+    g_swSkMgr.CreateCenterRectangle m(-TW / 2 + FS / 2), yTop, 0, _
+        m(-TW / 2 + FS / 2) + hfs, yTop + hfs, 0
+    g_swSkMgr.CreateCenterRectangle m(-TW / 2 + FS / 2), yTop, 0, _
+        m(-TW / 2 + FS / 2) + hfi, yTop + hfi, 0
+    g_swSkMgr.CreateCenterRectangle m(TW / 2 - FS / 2), yTop, 0, _
+        m(TW / 2 - FS / 2) + hfs, yTop + hfs, 0
+    g_swSkMgr.CreateCenterRectangle m(TW / 2 - FS / 2), yTop, 0, _
+        m(TW / 2 - FS / 2) + hfi, yTop + hfi, 0
+    EndSketch
+    Set f = DoExtrudeMid(m(TD - 2 * FS))
+    If Not f Is Nothing Then f.Name = "Frame_TopLeftRight"
+    LogErr "Top L/R Rails"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 4. Front panel (acrylic, 8mm) - flush with front face
+    '--------------------------------------------------------------
+    Dim frontPanelPlane As String
+    pfName = CreateOffsetPlane("Front Plane", m(TD / 2 - PT))
+    frontPanelPlane = pfName
+    If pfName <> "" Then
+        SelPlane pfName
+        Set pf = g_swModel.SelectionManager.GetSelectedObject6(1, -1)
+        If Not pf Is Nothing Then pf.Name = "Plane_FrontPanel"
+    End If
+    
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle _
+        m(-TW / 2 + FS), 0, 0, _
+        m(TW / 2 - FS), m(TH - FS), 0
+    EndSketch
+    Set f = DoExtrude(m(PT))
+    If Not f Is Nothing Then f.Name = "FrontPanel"
+    LogErr "Front Panel"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 5. Display cutout
+    '--------------------------------------------------------------
+    pfName = CreateOffsetPlane("Front Plane", m(TD / 2 - FS / 2 + PT))
+    If pfName <> "" Then
+        SelPlane pfName
+        Set pf = g_swModel.SelectionManager.GetSelectedObject6(1, -1)
+        If Not pf Is Nothing Then pf.Name = "Plane_DisplayOuter"
+    End If
+    
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle _
+        m(-DW / 2), m(DY - DH / 2), 0, _
+        m(DW / 2), m(DY + DH / 2), 0
+    EndSketch
+    Set f = DoCutThru
+    If Not f Is Nothing Then f.Name = "DisplayCutout"
+    LogErr "Display Cutout"
+    Rebuild
+    
+    ' Display pocket (8mm deep recess)
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle _
+        m(-DW / 2 + 5), m(DY - DH / 2 + 5), 0, _
+        m(DW / 2 - 5), m(DY + DH / 2 - 5), 0
+    EndSketch
+    Set f = g_swFeatMgr.FeatureCut4( _
+        True, True, False, _
+        0, 0, _
+        m(8), 0, _
+        False, False, _
+        0, 0, _
+        0, 0, _
+        False, False, _
+        False, False, _
+        True, True, True, _
+        False, False, False)
+    If Not f Is Nothing Then f.Name = "DisplayPocket"
+    LogErr "Display Pocket"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 6. Side panels
+    '--------------------------------------------------------------
+    pfName = CreateOffsetPlane("Right Plane", m(-TW / 2 + FS / 2))
+    If pfName <> "" Then
+        SelPlane pfName
+        Set pf = g_swModel.SelectionManager.GetSelectedObject6(1, -1)
+        If Not pf Is Nothing Then pf.Name = "Plane_LeftPanel"
+    End If
+    
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle _
+        m(-TD / 2 + FS), 0, 0, _
+        m(TD / 2 - FS), m(TH - FS), 0
+    EndSketch
+    Set f = DoExtrude(m(PT))
+    If Not f Is Nothing Then f.Name = "LeftPanel"
+    LogErr "Left Panel"
+    Rebuild
+    
+    pfName = CreateOffsetPlane("Right Plane", m(TW / 2 - FS / 2))
+    If pfName <> "" Then
+        SelPlane pfName
+        Set pf = g_swModel.SelectionManager.GetSelectedObject6(1, -1)
+        If Not pf Is Nothing Then pf.Name = "Plane_RightPanel"
+    End If
+    
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle _
+        m(-TD / 2 + FS), 0, 0, _
+        m(TD / 2 - FS), m(TH - FS), 0
+    EndSketch
+    Set f = DoExtrude(m(PT))
+    If Not f Is Nothing Then f.Name = "RightPanel"
+    LogErr "Right Panel"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 7. Rear panel with M4 holes
+    '--------------------------------------------------------------
+    pfName = CreateOffsetPlane("Front Plane", m(-TD / 2 + FS / 2))
+    If pfName <> "" Then
+        SelPlane pfName
+        Set pf = g_swModel.SelectionManager.GetSelectedObject6(1, -1)
+        If Not pf Is Nothing Then pf.Name = "Plane_RearPanel"
+    End If
+    
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle _
+        m(-TW / 2 + FS), 0, 0, _
+        m(TW / 2 - FS), m(TH - FS), 0
+    EndSketch
+    Set f = DoExtrudeRev(m(PT))
+    If Not f Is Nothing Then f.Name = "RearPanel"
+    LogErr "Rear Panel"
+    Rebuild
+    
+    ' M4 holes (4 corners)
+    StartSketch pfName
+    Dim hs As Double
+    Dim vs As Double
+    hs = m(TW / 2 - FS - 30)
+    vs = m(TH - FS - 30)
+    g_swSkMgr.CreateCircle -hs, m(30), 0, -hs + m(0.002), m(30), 0
+    g_swSkMgr.CreateCircle hs, m(30), 0, hs + m(0.002), m(30), 0
+    g_swSkMgr.CreateCircle -hs, vs, 0, -hs + m(0.002), vs, 0
+    g_swSkMgr.CreateCircle hs, vs, 0, hs + m(0.002), vs, 0
+    EndSketch
+    Set f = DoCutThru
+    If Not f Is Nothing Then f.Name = "RearPanel_M4Holes"
+    LogErr "Rear Panel Holes"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 8. Top cap
+    '--------------------------------------------------------------
+    pfName = CreateOffsetPlane("Top Plane", m(TH - FS))
+    
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle _
+        m(-TW / 2 + FS / 2), m(-TD / 2 + FS / 2), 0, _
+        m(TW / 2 - FS / 2), m(TD / 2 - FS / 2), 0
+    EndSketch
+    Set f = DoExtrude(m(PT))
+    If Not f Is Nothing Then f.Name = "TopCap"
+    LogErr "Top Cap"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 9. LED edge channels (on front panel)
+    '--------------------------------------------------------------
+    ' Left channel
+    SelPlane frontPanelPlane
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCornerRectangle _
+        m(-TW / 2 + FS + 2), m(10), 0, _
+        m(-TW / 2 + FS + 2 + LW), m(TH - FS - 10), 0
+    EndSketch
+    Set f = DoCut(m(LDp))
+    If Not f Is Nothing Then f.Name = "LeftLEDChannel"
+    LogErr "Left LED Channel"
+    Rebuild
+    
+    ' Right channel
+    SelPlane frontPanelPlane
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCornerRectangle _
+        m(TW / 2 - FS - 2 - LW), m(10), 0, _
+        m(TW / 2 - FS - 2), m(TH - FS - 10), 0
+    EndSketch
+    Set f = DoCut(m(LDp))
+    If Not f Is Nothing Then f.Name = "RightLEDChannel"
+    LogErr "Right LED Channel"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 10. Internal cable tray (U-channel, vertical, on Top Plane)
+    '--------------------------------------------------------------
+    ' U-channel centered in tower interior, open toward front (+Z)
+    StartSketch "Top Plane"
+    Dim ctHalfW As Double, ctDepth As Double, ctWall As Double
+    ctHalfW = m(30)
+    ctDepth = m(40)
+    ctWall = m(3)
+    Dim ctZ As Double
+    ctZ = m(TD / 2 - FS - 80)   ' position near front, inside cable space
+    
+    g_swSkMgr.CreateLine -ctHalfW, ctZ - ctDepth, 0, ctHalfW, ctZ - ctDepth, 0
+    g_swSkMgr.CreateLine ctHalfW, ctZ - ctDepth, 0, ctHalfW, ctZ, 0
+    g_swSkMgr.CreateLine ctHalfW, ctZ, 0, ctHalfW - ctWall, ctZ, 0
+    g_swSkMgr.CreateLine ctHalfW - ctWall, ctZ, 0, ctHalfW - ctWall, ctZ - ctDepth + ctWall, 0
+    g_swSkMgr.CreateLine ctHalfW - ctWall, ctZ - ctDepth + ctWall, 0, -ctHalfW + ctWall, ctZ - ctDepth + ctWall, 0
+    g_swSkMgr.CreateLine -ctHalfW + ctWall, ctZ - ctDepth + ctWall, 0, -ctHalfW + ctWall, ctZ, 0
+    g_swSkMgr.CreateLine -ctHalfW + ctWall, ctZ, 0, -ctHalfW, ctZ, 0
+    g_swSkMgr.CreateLine -ctHalfW, ctZ, 0, -ctHalfW, ctZ - ctDepth, 0
+    EndSketch
+    Set f = DoExtrude(m(TH - FS))
+    If Not f Is Nothing Then f.Name = "InternalCableTray"
+    LogErr "Cable Tray"
+    Rebuild
+    
+    SaveDoc "KioskTower.SLDPRT"
+    g_swApp.CloseDoc g_swModel.GetTitle
+    Debug.Print "Kiosk Tower complete"
+End Sub
+
+'====================================================================
+' MODULE 2: DRUM MODULE
+'====================================================================
+Sub CreateDrumModule()
+    Debug.Print "=== Building Drum Module ==="
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If fso.FileExists(PROJ_PATH & "DrumModule.SLDPRT") Then
+        Debug.Print "Drum module exists, skipping"
+        Exit Sub
+    End If
+    
+    If Not NewPart Then Exit Sub
+    
+    Dim f As Object
+    Dim ro As Double, ri As Double, dp As Double
+    ro = m(DD / 2)
+    ri = m(DD / 2 - DWal)
+    dp = m(DDe)
+    
+    '--------------------------------------------------------------
+    ' 1. Drum shell (revolved hollow cylinder)
+    '--------------------------------------------------------------
+    StartSketch "Front Plane"
+    g_swSkMgr.CreateCenterline 0, 0, 0, 0, dp, 0
+    g_swSkMgr.CreateLine ri, 0, 0, ro, 0, 0
+    g_swSkMgr.CreateLine ro, 0, 0, ro, dp, 0
+    g_swSkMgr.CreateLine ro, dp, 0, ri, dp, 0
+    g_swSkMgr.CreateLine ri, dp, 0, ri, 0, 0
+    EndSketch
+    Set f = DoRevolve
+    If Not f Is Nothing Then f.Name = "DrumShell"
+    LogErr "Drum Shell"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 2. Drum head (flat circular face)
+    '--------------------------------------------------------------
+    SelPlane "Top Plane"
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCircle 0, 0, 0, ro, 0, 0
+    EndSketch
+    Set f = DoExtrude(m(DHT))
+    If Not f Is Nothing Then f.Name = "DrumHead"
+    LogErr "Drum Head"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 3. Mounting bracket
+    '--------------------------------------------------------------
+    ' Bracket behind drum
+    SelPlane "Front Plane"
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCornerRectangle m(-40), m(-20), 0, m(40), m(20), 0
+    EndSketch
+    Set f = DoExtrude(m(6))
+    If Not f Is Nothing Then f.Name = "MountBracket"
+    LogErr "Mount Bracket"
+    Rebuild
+    
+    ' M6 holes
+    SelPlane "Top Plane"
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCircle m(-30), m(-12), 0, m(-27), m(-12), 0
+    g_swSkMgr.CreateCircle m(30), m(-12), 0, m(33), m(-12), 0
+    g_swSkMgr.CreateCircle m(-30), m(12), 0, m(-27), m(12), 0
+    g_swSkMgr.CreateCircle m(30), m(12), 0, m(33), m(12), 0
+    EndSketch
+    Set f = DoCutThru
+    If Not f Is Nothing Then f.Name = "Bracket_M6Holes"
+    LogErr "Bracket Holes"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 4. Solenoid + Mallet arm
+    '--------------------------------------------------------------
+    ' Arm rod
+    SelPlane "Front Plane"
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCircle m(60), 0, 0, m(66), 0, 0
+    EndSketch
+    Set f = DoExtrudeMid(m(12))
+    If Not f Is Nothing Then f.Name = "SolenoidArm"
+    LogErr "Solenoid Arm"
+    Rebuild
+    
+    ' Mallet head (sphere)
+    SelPlane "Front Plane"
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCenterline m(60 + 150 - 12.5), -m(12.5), 0, _
+        m(60 + 150 - 12.5), m(12.5), 0
+    g_swSkMgr.CreateArc3 _
+        m(60 + 150 - 25), 0, 0, _
+        m(60 + 150), 0, 0, _
+        m(60 + 150 - 12.5), m(12.5), 0
+    EndSketch
+    Set f = DoRevolve
+    If Not f Is Nothing Then f.Name = "MalletHead"
+    LogErr "Mallet Head"
+    Rebuild
+    
+    ' Solenoid body
+    SelPlane "Front Plane"
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCornerRectangle m(-20), m(-15), 0, m(20), m(15), 0
+    EndSketch
+    Set f = DoExtrudeMid(m(30))
+    If Not f Is Nothing Then f.Name = "SolenoidBody"
+    LogErr "Solenoid Body"
+    Rebuild
+    
+    SaveDoc "DrumModule.SLDPRT"
+    g_swApp.CloseDoc g_swModel.GetTitle
+    Debug.Print "Drum Module complete"
+End Sub
+
+'====================================================================
+' MODULE 3: HEART MODEL
+'====================================================================
+Sub CreateHeartModel()
+    Debug.Print "=== Building Heart Model ==="
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If fso.FileExists(PROJ_PATH & "HeartModel.SLDPRT") Then
+        Debug.Print "Heart model exists, skipping"
+        Exit Sub
+    End If
+    
+    If Not NewPart Then Exit Sub
+    
+    Dim f As Object
+    
+    '--------------------------------------------------------------
+    ' 1. Heart body (spline + mid-plane extrude)
+    '--------------------------------------------------------------
+    StartSketch "Front Plane"
+    
+    Dim hp As Variant
+    hp = Array( _
+        0, 0, 0, _
+        m(-20), m(25), 0, _
+        m(-42), m(50), 0, _
+        m(-35), m(75), 0, _
+        0, m(60), 0, _
+        m(35), m(75), 0, _
+        m(42), m(50), 0, _
+        m(20), m(25), 0, _
+        0, 0, 0)
+    
+    Dim swSp As Object
+    Set swSp = g_swSkMgr.CreateSpline(hp)
+    If swSp Is Nothing Then LogErr "Heart Spline"
+    EndSketch
+    
+    Set f = DoExtrudeMid(m(HDp))
+    If Not f Is Nothing Then f.Name = "HeartBody"
+    LogErr "Heart Body"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 2. Dome (revolved hemisphere, 3mm wall)
+    '--------------------------------------------------------------
+    StartSketch "Front Plane"
+    Dim rDom As Double
+    rDom = m(DMD / 2)
+    g_swSkMgr.CreateCenterline 0, 0, 0, 0, rDom, 0
+    ' Quarter-circle: from (rDom, 0) to (0, rDom) around origin
+    g_swSkMgr.CreateArc3 _
+        rDom, 0, 0, _
+        0, rDom, 0, _
+        rDom * 0.7071, rDom * 0.7071, 0
+    EndSketch
+    Set f = DoRevolve
+    If Not f Is Nothing Then f.Name = "Dome"
+    LogErr "Dome"
+    Rebuild
+    
+    ' Shell dome (3mm inward) - skipped for reliability, add manually if needed
+    Debug.Print "  NOTE: Dome shell skipped - apply Shell feature manually (3mm, inward)"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 3. Servo bodies
+    '--------------------------------------------------------------
+    StartSketch "Front Plane"
+    g_swSkMgr.CreateCornerRectangle _
+        m(-HW / 2 - 12), m(-SERVO_H / 2), 0, _
+        m(-HW / 2 - 12 + SERVO_W), m(SERVO_H / 2), 0
+    EndSketch
+    Set f = DoExtrudeMid(m(SERVO_D))
+    If Not f Is Nothing Then f.Name = "LeftServo"
+    LogErr "Left Servo"
+    Rebuild
+    
+    StartSketch "Front Plane"
+    g_swSkMgr.CreateCornerRectangle _
+        m(HW / 2 + 12 - SERVO_W), m(-SERVO_H / 2), 0, _
+        m(HW / 2 + 12), m(SERVO_H / 2), 0
+    EndSketch
+    Set f = DoExtrudeMid(m(SERVO_D))
+    If Not f Is Nothing Then f.Name = "RightServo"
+    LogErr "Right Servo"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 4. Linkage arms
+    '--------------------------------------------------------------
+    StartSketch "Front Plane"
+    g_swSkMgr.CreateCornerRectangle _
+        m(-HW / 2 - 12), m(-LINKAGE_T / 2), 0, _
+        m(-HW / 2 - 12 + LINKAGE_L), m(LINKAGE_T / 2), 0
+    EndSketch
+    Set f = DoExtrudeMid(m(LINKAGE_T))
+    If Not f Is Nothing Then f.Name = "LeftLinkage"
+    LogErr "Left Linkage"
+    Rebuild
+    
+    StartSketch "Front Plane"
+    g_swSkMgr.CreateCornerRectangle _
+        m(HW / 2 + 12 - LINKAGE_L), m(-LINKAGE_T / 2), 0, _
+        m(HW / 2 + 12), m(LINKAGE_T / 2), 0
+    EndSketch
+    Set f = DoExtrudeMid(m(LINKAGE_T))
+    If Not f Is Nothing Then f.Name = "RightLinkage"
+    LogErr "Right Linkage"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 5. Mount plate
+    '--------------------------------------------------------------
+    StartSketch "Front Plane"
+    g_swSkMgr.CreateCornerRectangle m(-80), m(-30), 0, m(80), m(30), 0
+    EndSketch
+    Set f = DoExtrudeMid(m(3))
+    If Not f Is Nothing Then f.Name = "HeartMountPlate"
+    LogErr "Mount Plate"
+    Rebuild
+    
+    SaveDoc "HeartModel.SLDPRT"
+    g_swApp.CloseDoc g_swModel.GetTitle
+    Debug.Print "Heart Model complete"
+End Sub
+
+'====================================================================
+' MODULE 4: WEIGHT PLATFORM
+'====================================================================
+Sub CreateWeightPlatform()
+    Debug.Print "=== Building Weight Platform ==="
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If fso.FileExists(PROJ_PATH & "WeightPlatform.SLDPRT") Then
+        Debug.Print "Weight platform exists, skipping"
+        Exit Sub
+    End If
+    
+    If Not NewPart Then Exit Sub
+    
+    Dim f As Object
+    Dim pfName As String
+    
+    '--------------------------------------------------------------
+    ' 1. Outer shell
+    '--------------------------------------------------------------
+    StartSketch "Top Plane"
+    g_swSkMgr.CreateCornerRectangle _
+        m(-PW / 2), m(-PDim / 2), 0, _
+        m(PW / 2), m(PDim / 2), 0
+    EndSketch
+    Set f = DoExtrude(m(PH))
+    If Not f Is Nothing Then f.Name = "PlatformBody"
+    LogErr "Platform Body"
+    Rebuild
+    
+    ' Shell - skipped for reliability, apply Shell feature manually (3mm wall)
+    Debug.Print "  NOTE: Platform shell skipped - apply Shell feature manually (3mm)"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 2. Anti-slip rubber mat (top surface)
+    '--------------------------------------------------------------
+    pfName = CreateOffsetPlane("Top Plane", m(PH))
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle _
+        m(-PW / 2 + 2), m(-PDim / 2 + 2), 0, _
+        m(PW / 2 - 2), m(PDim / 2 - 2), 0
+    EndSketch
+    Set f = DoExtrudeRev(m(PMT))
+    If Not f Is Nothing Then f.Name = "AntiSlipMat"
+    LogErr "Anti-slip Mat"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 3. Load cell recess
+    '--------------------------------------------------------------
+    StartSketch "Top Plane"
+    g_swSkMgr.CreateCornerRectangle _
+        m(-50), m(-10), 0, _
+        m(50), m(10), 0
+    EndSketch
+    Set f = DoCut(m(15))
+    If Not f Is Nothing Then f.Name = "LoadCellRecess"
+    LogErr "Load Cell Recess"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 4. Cable conduit (cylindrical cutout)
+    '--------------------------------------------------------------
+    SelPlane "Right Plane"
+    g_swSkMgr.InsertSketch True
+    g_swSkMgr.CreateCircle m(-PDim / 2 + 10), m(PH / 2), 0, _
+        m(-PDim / 2 + 20), m(PH / 2), 0
+    EndSketch
+    Set f = DoCutThru
+    If Not f Is Nothing Then f.Name = "CableConduit"
+    LogErr "Cable Conduit"
+    Rebuild
+    
+    SaveDoc "WeightPlatform.SLDPRT"
+    g_swApp.CloseDoc g_swModel.GetTitle
+    Debug.Print "Weight Platform complete"
+End Sub
+
+'====================================================================
+' MODULE 5: DISPLAY BEZEL
+'====================================================================
+Sub CreateDisplayBezel()
+    Debug.Print "=== Building Display Bezel ==="
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    If fso.FileExists(PROJ_PATH & "DisplayBezel.SLDPRT") Then
+        Debug.Print "Display bezel exists, skipping"
+        Exit Sub
+    End If
+    
+    If Not NewPart Then Exit Sub
+    
+    Dim f As Object
+    Dim pfName As String
+    
+    '--------------------------------------------------------------
+    ' 1. Bezel frame (ring shape on Front Plane, extrude Z)
+    '--------------------------------------------------------------
+    Dim bzW As Double
+    Dim bzH As Double
+    Dim bzInnerW As Double
+    Dim bzInnerH As Double
+    bzW = m(DW + 10)
+    bzH = m(DH + 10)
+    bzInnerW = m(DW - 2)
+    bzInnerH = m(DH - 2)
+    
+    StartSketch "Front Plane"
+    g_swSkMgr.CreateCornerRectangle -bzW / 2, -bzH / 2, 0, bzW / 2, bzH / 2, 0
+    g_swSkMgr.CreateCornerRectangle -bzInnerW / 2, -bzInnerH / 2, 0, bzInnerW / 2, bzInnerH / 2, 0
+    EndSketch
+    Set f = DoExtrude(m(5))
+    If Not f Is Nothing Then f.Name = "BezelFrame"
+    LogErr "Bezel Frame"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 2. Screen glass (behind bezel)
+    '--------------------------------------------------------------
+    pfName = CreateOffsetPlane("Front Plane", m(5))
+    StartSketch pfName
+    g_swSkMgr.CreateCornerRectangle -bzInnerW / 2, -bzInnerH / 2, 0, bzInnerW / 2, bzInnerH / 2, 0
+    EndSketch
+    Set f = DoExtrude(m(3))
+    If Not f Is Nothing Then f.Name = "ScreenGlass"
+    LogErr "Screen Glass"
+    Rebuild
+    
+    '--------------------------------------------------------------
+    ' 3. VESA mount bosses (on bezel rear, extrude -Z)
+    '--------------------------------------------------------------
+    ' Create plane at the rear of the bezel + glass
+    pfName = CreateOffsetPlane("Front Plane", m(5 + 3))
+    StartSketch pfName
+    Dim vHalf As Double
+    vHalf = m(75) / 2
+    g_swSkMgr.CreateCircle -vHalf, -vHalf, 0, -vHalf + m(0.002), -vHalf, 0
+    g_swSkMgr.CreateCircle vHalf, -vHalf, 0, vHalf + m(0.002), -vHalf, 0
+    g_swSkMgr.CreateCircle -vHalf, vHalf, 0, -vHalf + m(0.002), vHalf, 0
+    g_swSkMgr.CreateCircle vHalf, vHalf, 0, vHalf + m(0.002), vHalf, 0
+    EndSketch
+    Set f = DoExtrudeRev(m(4))   ' extrude in -Z (toward tower interior)
+    If Not f Is Nothing Then f.Name = "VESAMountBosses"
+    LogErr "VESA Mount Bosses"
+    Rebuild
+    
+    SaveDoc "DisplayBezel.SLDPRT"
+    g_swApp.CloseDoc g_swModel.GetTitle
+    Debug.Print "Display Bezel complete"
+End Sub
+
+'====================================================================
+' MODULE 6: ASSEMBLY
+'====================================================================
+Sub AssembleAll()
+    Debug.Print "=== Assembling Kiosk ==="
+    
+    ' Verify SolidWorks is still connected
+    On Error Resume Next
+    Dim testVal As String
+    testVal = g_swApp.UserName
+    On Error GoTo 0
+    If g_swApp Is Nothing Then
+        MsgBox "SolidWorks connection lost. Please re-run the macro.", vbCritical
+        Exit Sub
+    End If
+    
+    If Not NewAssembly Then Exit Sub
+    
+    Dim fso As Object
+    Set fso = CreateObject("Scripting.FileSystemObject")
+    
+    Dim parts As Variant
+    parts = Array( _
+        "KioskTower.SLDPRT", _
+        "DrumModule.SLDPRT", _
+        "HeartModel.SLDPRT", _
+        "WeightPlatform.SLDPRT", _
+        "DisplayBezel.SLDPRT")
+    
+    Dim i As Long
+    For i = 0 To UBound(parts)
+        If Not fso.FileExists(PROJ_PATH & parts(i)) Then
+            MsgBox "Missing part: " & parts(i), vbCritical
+            Exit Sub
+        End If
+    Next i
+    
+    Dim compTower As Object
+    Dim compDrum As Object
+    Dim compHeart As Object
+    Dim compPlatform As Object
+    Dim compBezel As Object
+    
+    ' AddComponent5 params: FileName, Options, ConfigName, UCSIndex, X, Y, Z, XRot, YRot, ZRot
+    ' Tower at origin (fixed)
+    Set compTower = g_swAssy.AddComponent5( _
+        PROJ_PATH & "KioskTower.SLDPRT", 0, "", 0, 0, 0, 0, 0, 0, 0)
+    If compTower Is Nothing Then LogErr "Add Tower"
+    compTower.Fixed = True
+    compTower.Name = "Kiosk Tower"
+    Debug.Print "  Tower added (fixed)"
+    Rebuild
+    
+    ' Drum module at Y=DYh, behind tower
+    Set compDrum = g_swAssy.AddComponent5( _
+        PROJ_PATH & "DrumModule.SLDPRT", 0, "", 0, 0, m(DYh), m(-TD / 2 - 20), 0, 0, 0)
+    If compDrum Is Nothing Then LogErr "Add Drum"
+    compDrum.Name = "Drum Module"
+    Debug.Print "  Drum added"
+    Rebuild
+    
+    ' Heart model at Y=HYh, in front of tower
+    Set compHeart = g_swAssy.AddComponent5( _
+        PROJ_PATH & "HeartModel.SLDPRT", 0, "", 0, 0, m(HYh), m(TD / 2 + DMD / 2 + 10), 0, 0, 0)
+    If compHeart Is Nothing Then LogErr "Add Heart"
+    compHeart.Name = "Heart Model"
+    Debug.Print "  Heart added"
+    Rebuild
+    
+    ' Weight platform at floor, 300mm in front of tower
+    Set compPlatform = g_swAssy.AddComponent5( _
+        PROJ_PATH & "WeightPlatform.SLDPRT", 0, "", 0, 0, 0, m(TD / 2 + 300), 0, 0, 0)
+    If compPlatform Is Nothing Then LogErr "Add Platform"
+    compPlatform.Name = "Weight Platform"
+    Debug.Print "  Platform added"
+    Rebuild
+    
+    ' Display bezel at DY height, flush with tower front face
+    Set compBezel = g_swAssy.AddComponent5( _
+        PROJ_PATH & "DisplayBezel.SLDPRT", 0, "", 0, 0, m(DY), m(TD / 2 - 5), 0, 0, 0)
+    If compBezel Is Nothing Then LogErr "Add Bezel"
+    compBezel.Name = "Display Bezel"
+    Debug.Print "  Bezel added"
+    Rebuild
+    
+    Debug.Print "  Approximate positions set via coordinates."
+    Debug.Print "  For precise mates: use the Mate tool or add InsertMate2 calls."
+    
+    SaveDoc "KioskAssembly.SLDASM"
+    g_swApp.CloseDoc g_swModel.GetTitle
+    Debug.Print "Assembly complete"
+End Sub
+
+'====================================================================
+' MODULE 7: RENDERING + APPEARANCES
+'====================================================================
+Sub SetupRendering()
+    Debug.Print "=== Setting up Rendering ==="
+    
+    ' Appearances are best set manually since the API varies by version.
+    ' This module provides guidance via message box.
+    
+    MsgBox "Assembly built successfully!" & vbCrLf & vbCrLf & _
+           "To apply appearances, right-click each part in the Feature Tree:" & vbCrLf & _
+           "  Frame    -> Brushed Aluminum" & vbCrLf & _
+           "  Panels   -> Frosted Acrylic (Dark)" & vbCrLf & _
+           "  Drum     -> Cherry Wood" & vbCrLf & _
+           "  Drum Head-> Natural Leather" & vbCrLf & _
+           "  Heart    -> Red Translucent Plastic" & vbCrLf & _
+           "  Dome     -> Clear Glass" & vbCrLf & _
+           "  LEDs     -> Red Translucent Plastic" & vbCrLf & _
+           "  Diffuser -> White Translucent Plastic" & vbCrLf & _
+           "  Platform -> Black Rubber (top)" & vbCrLf & _
+           "  Steel    -> Polished Steel" & vbCrLf & vbCrLf & _
+           "Color palette: Charcoal frame + Frosted panels + Red LED accents", _
+           vbInformation, "Appearance Guide"
+    
+    Debug.Print "Rendering guidance complete"
+End Sub
+

@@ -7,47 +7,19 @@ import { motion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Home, Search, Shield, TrendingUp, Users, Calendar, ArrowRight, Zap, Sparkles, ShoppingBag, CreditCard, Percent, Smartphone, MapPin, Flame } from 'lucide-react'
+import { Home, Search, ArrowRight, Zap, MapPin, Flame } from 'lucide-react'
 import api from '@/lib/api'
 import { formatCurrency } from "@/lib/utils";
-import { useAuth } from '@/lib/auth-context'
 import { WishlistButton } from '@/components/WishlistButton'
 
 const FALLBACK_IMG = 'data:image/svg+xml;base64,' + btoa('<svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 200 200"><rect fill="#f3f4f6" width="200" height="200"/><text fill="#9ca3af" font-family="Arial" font-size="14" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">No Image</text></svg>')
-
-const advertisement = [
-  { title: "iPhone 15 Pro", desc: "Rent at ₹1999/mo", img: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-black" },
-  { title: "Gaming Laptop", desc: "Next-gen Performance", img: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-blue-900" },
-  { title: "Noise Cancel Headphones", desc: "Pure Sound", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-purple-900" },
-]
-
-const advertisements = [
-  { title: "iPhone 15 Pro", desc: "Rent at ₹1999/mo", img: "https://images.unsplash.com/photo-1695048133142-1a20484d2569?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-black" },
-  { title: "Gaming Laptop", desc: "Next-gen Performance", img: "https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-blue-900" },
-  { title: "Noise Cancel Headphones", desc: "Pure Sound", img: "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&q=80&w=400&bg=fff", color: "bg-purple-900" },
-]
 
 export default function HomePage() {
   const [latestItems, setLatestItems] = useState<any[]>([]);
   const [popularItems, setPopularItems] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
-  const [creditData, setCreditData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [copied, setCopied] = useState(false);
   const [nearbyItems, setNearbyItems] = useState<any[]>([]);
-  const { user } = useAuth();
-
-  const referralCode = user?.id
-    ? user.id.slice(0, 8).toUpperCase()
-    : 'GUEST' + Math.random().toString(36).slice(2, 8).toUpperCase();
-
-  const copyReferralLink = () => {
-    const link = window.location.origin + '/signup?ref=' + referralCode;
-    navigator.clipboard.writeText(link).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    });
-  };
 
   const imgSrc = (url: string | null | undefined) => url && url.startsWith('http') ? url : FALLBACK_IMG
 
@@ -62,10 +34,6 @@ export default function HomePage() {
   }
 
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      api.get('/credit/me').then(r => setCreditData(r.data)).catch(() => {});
-    }
     Promise.all([
       api.get('/items?limit=10'),
       api.get('/items?limit=8&sortBy=popular'),
@@ -569,50 +537,6 @@ export default function HomePage() {
             </section>
 
           </div>
-
-          {/* Sidebar Advertisements */}
-          <aside className="w-full lg:w-96 space-y-6">
-            <div className="sticky top-24 space-y-6">
-              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-[32px] p-6 shadow-sm border border-gray-100/50 dark:border-gray-800/50">
-                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em] mb-2 flex items-center gap-2">
-                  <ShoppingBag className="w-5 h-5" />
-                  Featured Gadgets
-                </h3>
-                <p className="text-xs text-gray-400 mb-4 ml-8">Staring at it won't put it in your cart, pick a vibe or step aside. 🛑</p>
-                
-                <div className="space-y-4">
-                  {advertisements.map((ad, i) => (
-                    <div key={i} className={`relative overflow-hidden rounded-2xl ${ad.color} p-6 text-white group cursor-pointer`}>
-                      <div className="relative z-10">
-                        <Badge className="bg-white/20 text-white border-none mb-2 backdrop-blur-sm text-[10px]">AD</Badge>
-                        <h4 className="font-bold text-lg mb-1">{ad.title}</h4>
-                        <p className="text-sm text-green-300 font-bold mb-4">{ad.desc}</p>
-                        <Button size="sm" variant="secondary" className="bg-white text-black dark:text-gray-900 hover:bg-gray-100 font-bold rounded-full">
-                          Rent Now
-                        </Button>
-                      </div>
-                      <Image
-                        src={ad.img}
-                        alt={ad.title}
-                        width={150}
-                        height={150}
-                        className="absolute -right-4 -bottom-4 w-32 h-32 object-contain opacity-40 group-hover:scale-125 group-hover:opacity-60 transition-all duration-500"
-                      />
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Promo Card */}
-              <div className="bg-green-600/80 backdrop-blur-sm rounded-2xl p-6 text-white shadow-lg shadow-green-200/50">
-                <h4 className="font-black text-xl mb-2">Refer a Friend!</h4>
-                <p className="text-sm font-medium mb-4 text-green-100">Get ₹100 credit for every successful referral.</p>
-                <Button onClick={copyReferralLink} className="w-full bg-green-700 text-green-100 hover:bg-green-800 font-bold rounded-xl">
-                  {copied ? "Copied!" : "Invite Now"}
-                </Button>
-              </div>
-            </div>
-          </aside>
 
         </div>
       </div>
