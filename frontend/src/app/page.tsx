@@ -70,19 +70,48 @@ export default function HomePage() {
               {/* Content */}
               <div className="relative z-10 w-full max-w-7xl mx-auto pt-24 pb-16">
                 <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
+                  initial={{ opacity: 0, y: 40 }}
+                  animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, ease: [0.25, 0.1, 0.25, 1] }}
-                  className="max-w-lg"
+                  className="max-w-2xl"
                 >
-                  <Image
-                    src="/hero-meme.jpg"
-                    alt="Rich flex meme"
-                    width={500}
-                    height={600}
-                    className="rounded-3xl drop-shadow-2xl"
-                    priority
-                  />
+                  <motion.h1
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2, duration: 0.6 }}
+                    className="text-6xl sm:text-7xl md:text-9xl font-black mb-4 leading-[1.05] tracking-tighter text-white"
+                  >
+                    Rent Smart.
+                    <br />
+                    <span className="bg-gradient-to-r from-primary-400 via-primary-500 to-secondary-400 bg-clip-text text-transparent">Live Better.</span>
+                  </motion.h1>
+
+                  <motion.p
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4, duration: 0.6 }}
+                    className="text-lg md:text-xl text-white/70 mb-10 max-w-xl font-medium"
+                  >
+                    Access premium gadgets, furniture and essentials without the upfront cost.
+                  </motion.p>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.6, duration: 0.6 }}
+                    className="flex flex-col sm:flex-row gap-4"
+                  >
+                    <Link href="/browse">
+                      <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-500 hover:to-primary-400 text-white font-black h-16 px-12 rounded-2xl shadow-xl shadow-primary-600/30 hover:shadow-primary-500/40 transition-all duration-300 text-base">
+                        Explore Rentals
+                      </Button>
+                    </Link>
+                    <Link href="/seller/items/new">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-white/30 text-white hover:bg-white/10 hover:border-white/50 font-black h-16 px-12 rounded-2xl backdrop-blur-sm transition-all duration-300 text-base">
+                        List Your Item
+                      </Button>
+                    </Link>
+                  </motion.div>
                 </motion.div>
               </div>
 

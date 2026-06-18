@@ -18,7 +18,7 @@ export function BgVideo() {
       loop
       muted
       playsInline
-      className="fixed inset-0 w-full h-full object-cover blur-sm scale-110 pointer-events-none"
+      className="fixed inset-0 w-full h-full object-cover scale-110 pointer-events-none"
       style={{ zIndex: -1 }}
     >
       <source src="/bg-video.mp4" type="video/mp4" />

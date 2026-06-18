@@ -43,14 +43,6 @@ export default function RootLayout({
       <body className={inter.className}>
         {/* Background Video */}
         <BgVideo />
-        {/* Dark overlay for readability */}
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{
-            zIndex: -1,
-            background: 'rgba(0, 0, 0, 0.5)',
-          }}
-        />
         {/* 3. Razorpay Script must be inside the body to work with afterInteractive */}
         <Script
           id="razorpay-checkout-script"
