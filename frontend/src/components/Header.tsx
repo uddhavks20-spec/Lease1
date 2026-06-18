@@ -202,11 +202,11 @@ export function Header() {
 
   const renderProfileMenu = (close: () => void) => {
     return (
-      <div className="absolute right-0 top-full mt-2 w-44 bg-emerald-900/90 backdrop-blur-md rounded-xl shadow-xl border border-lime-400/20 py-2 z-50">
-        <Link href="/profile" className="block px-4 py-2.5 text-xs font-bold text-lime-300/80 hover:text-lime-300 hover:bg-emerald-800/50" onClick={close}>Profile</Link>
-        <Link href="/seller/dashboard" className="block px-4 py-2.5 text-xs font-bold text-lime-300/80 hover:text-lime-300 hover:bg-emerald-800/50" onClick={close}>Dashboard</Link>
-        <hr className="my-1 border-lime-400/20" />
-        <button onClick={() => { logout(); close(); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-emerald-800/50">Log out</button>
+      <div className="absolute right-0 top-full mt-2 w-44 bg-stone-900/90 backdrop-blur-md rounded-xl shadow-xl border border-amber-400/20 py-2 z-50">
+        <Link href="/profile" className="block px-4 py-2.5 text-xs font-bold text-amber-300/80 hover:text-amber-300 hover:bg-stone-800/50" onClick={close}>Profile</Link>
+        <Link href="/seller/dashboard" className="block px-4 py-2.5 text-xs font-bold text-amber-300/80 hover:text-amber-300 hover:bg-stone-800/50" onClick={close}>Dashboard</Link>
+        <hr className="my-1 border-amber-400/20" />
+        <button onClick={() => { logout(); close(); }} className="w-full text-left px-4 py-2.5 text-xs font-bold text-red-400 hover:bg-stone-800/50">Log out</button>
       </div>
     );
   };
@@ -300,8 +300,8 @@ export function Header() {
                   <Link href="/signup" className="text-sm font-bold text-white bg-green-800 hover:bg-green-700 px-5 py-2 rounded-full transition-colors">Sign Up</Link>
                 </div>
               )}
-              <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-emerald-900/30 transition-colors">
-                {showMobileMenu ? <X className="h-5 w-5 text-lime-300" /> : <Menu className="h-5 w-5 text-lime-300" />}
+              <button onClick={() => setShowMobileMenu(!showMobileMenu)} className="md:hidden p-2 rounded-full hover:bg-stone-900/30 transition-colors">
+                {showMobileMenu ? <X className="h-5 w-5 text-amber-300" /> : <Menu className="h-5 w-5 text-amber-300" />}
               </button>
             </div>
           </div>
@@ -397,11 +397,11 @@ export function Header() {
       </div>
 
       {showMobileMenu && (
-        <div className="md:hidden border-t border-lime-400/20 bg-emerald-900/90 backdrop-blur-xl">
+        <div className="md:hidden border-t border-amber-400/20 bg-stone-900/90 backdrop-blur-xl">
           <nav className="container py-4 space-y-1">
             {navItems.map(item => {
               return (
-                <Link key={item.href} href={item.href} onClick={() => setShowMobileMenu(false)} className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${isActive(item.href) ? 'text-lime-300 bg-emerald-800/50' : 'text-lime-300/60 hover:bg-emerald-800/30'}`}>
+                <Link key={item.href} href={item.href} onClick={() => setShowMobileMenu(false)} className={`flex items-center gap-3 px-4 py-3 text-sm font-semibold rounded-xl transition-colors ${isActive(item.href) ? 'text-amber-300 bg-stone-800/50' : 'text-amber-300/60 hover:bg-stone-800/30'}`}>
                   <img src={item.imgSrc} alt="" className="h-6 w-6 object-contain" />
                   <span>{item.label}</span>
                   {item.count != null && item.count > 0 && (
@@ -419,8 +419,8 @@ export function Header() {
           </React.Fragment>
             ) : (
               <div className="flex gap-3 px-4 pt-2">
-                <Link href="/login" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-lime-300 border border-lime-400/40 py-2.5 rounded-full">Login</Link>
-                <Link href="/signup" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-black bg-gradient-to-r from-lime-300 to-emerald-300 py-2.5 rounded-full">Sign Up</Link>
+                <Link href="/login" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-amber-300 border border-amber-400/40 py-2.5 rounded-full">Login</Link>
+                <Link href="/signup" onClick={() => setShowMobileMenu(false)} className="flex-1 text-center text-sm font-bold text-black bg-gradient-to-r from-amber-300 to-stone-300 py-2.5 rounded-full">Sign Up</Link>
               </div>
             )}
           </nav>

@@ -81,7 +81,7 @@ export default function HomePage() {
                   >
                     Rent Smart.
                     <br />
-                    <span className="bg-gradient-to-r from-yellow-300 via-lime-300 to-emerald-300 bg-clip-text text-transparent drop-shadow-lg">Live Better.</span>
+                    <span className="bg-gradient-to-r from-amber-200 via-amber-300 to-amber-400 bg-clip-text text-transparent drop-shadow-lg">Live Better.</span>
                   </motion.h1>
 
                   <motion.p
@@ -100,12 +100,12 @@ export default function HomePage() {
                     className="flex flex-col sm:flex-row gap-4"
                   >
                     <Link href="/browse">
-                      <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-emerald-500 to-lime-500 hover:from-emerald-400 hover:to-lime-400 text-black font-black h-14 px-10 rounded-2xl shadow-xl shadow-emerald-500/30 hover:shadow-lime-400/40 transition-all duration-300 text-base">
+                      <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-stone-900 font-black h-14 px-10 rounded-2xl shadow-xl shadow-amber-500/30 hover:shadow-amber-400/40 transition-all duration-300 text-base">
                         Explore Rentals
                       </Button>
                     </Link>
                     <Link href="/seller/items/new">
-                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-lime-300/50 text-lime-300 hover:bg-lime-300/10 hover:border-lime-300/70 font-black h-14 px-10 rounded-2xl backdrop-blur-sm transition-all duration-300 text-base">
+                      <Button size="lg" variant="outline" className="w-full sm:w-auto border-amber-300/50 text-amber-300 hover:bg-amber-300/10 hover:border-amber-300/70 font-black h-14 px-10 rounded-2xl backdrop-blur-sm transition-all duration-300 text-base">
                         List Your Item
                       </Button>
                     </Link>
@@ -113,14 +113,14 @@ export default function HomePage() {
                 </motion.div>
 
                 {/* Right: Animated Cards - Fanned Deck */}
-                <div className="flex-1 relative h-[460px] w-full max-w-lg hidden md:flex items-start justify-center pt-2">
+                <div className="flex-1 relative h-[460px] w-full max-w-lg hidden md:flex items-start justify-center pt-0">
                   {/* Card 1 - leftmost */}
                   <motion.div
                     initial={{ opacity: 0, y: 100, rotate: -30 }}
                     animate={{ opacity: 1, y: 0, rotate: -22 }}
                     transition={{ duration: 0.8, delay: 0.3, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.12, rotate: -6, zIndex: 20, y: -24 }}
-                    className="absolute bottom-0 left-1/2 -ml-56 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-emerald-400/50 origin-bottom border border-lime-400/20"
+                    className="absolute top-0 left-1/2 -ml-56 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-amber-400/50 origin-bottom border border-amber-300/20"
                   >
                     <Image
                       src="/hero-meme.jpg"
@@ -130,7 +130,7 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-lime-300 font-black text-base mb-0.5 drop-shadow-md">Why Rent?</h3>
+                      <h3 className="text-amber-300 font-black text-base mb-0.5 drop-shadow-md">Why Rent?</h3>
                       <p className="text-white/80 text-[10px] drop-shadow">Flex without the financial damage.</p>
                     </div>
                   </motion.div>
@@ -141,7 +141,7 @@ export default function HomePage() {
                     animate={{ opacity: 1, y: 0, rotate: -7 }}
                     transition={{ duration: 0.8, delay: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.12, rotate: 0, zIndex: 20, y: -24 }}
-                    className="absolute bottom-0 left-1/2 -ml-24 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-emerald-400/50 origin-bottom border border-lime-400/20"
+                    className="absolute top-0 left-1/2 -ml-24 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-amber-400/50 origin-bottom border border-amber-300/20"
                   >
                     <Image
                       src="/hero-meme3.jpg"
@@ -151,7 +151,7 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-lime-300 font-black text-base mb-0.5 drop-shadow-md">Stay Broke.</h3>
+                      <h3 className="text-amber-300 font-black text-base mb-0.5 drop-shadow-md">Stay Broke.</h3>
                       <p className="text-white/80 text-[10px] drop-shadow">Buy less. Rent more. Stay rich.</p>
                     </div>
                   </motion.div>
@@ -162,7 +162,7 @@ export default function HomePage() {
                     animate={{ opacity: 1, y: 0, rotate: 7 }}
                     transition={{ duration: 0.8, delay: 0.6, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.12, rotate: 0, zIndex: 20, y: -24 }}
-                    className="absolute bottom-0 left-1/2 ml-8 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-emerald-400/50 origin-bottom border border-lime-400/20"
+                    className="absolute top-0 left-1/2 ml-8 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-amber-400/50 origin-bottom border border-amber-300/20"
                   >
                     <Image
                       src="/hero-meme4.jpg"
@@ -172,7 +172,7 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-lime-300 font-black text-base mb-0.5 drop-shadow-md">Stay drippy.</h3>
+                      <h3 className="text-amber-300 font-black text-base mb-0.5 drop-shadow-md">Stay drippy.</h3>
                       <p className="text-white/80 text-[10px] drop-shadow">Rent the drip. Return the drip.</p>
                     </div>
                   </motion.div>
@@ -183,7 +183,7 @@ export default function HomePage() {
                     animate={{ opacity: 1, y: 0, rotate: 22 }}
                     transition={{ duration: 0.8, delay: 0.75, ease: [0.25, 0.1, 0.25, 1] }}
                     whileHover={{ scale: 1.12, rotate: 6, zIndex: 20, y: -24 }}
-                    className="absolute bottom-0 left-1/2 ml-32 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-emerald-400/50 origin-bottom border border-lime-400/20"
+                    className="absolute top-0 left-1/2 ml-32 w-56 h-72 rounded-2xl overflow-hidden shadow-2xl shadow-black/60 cursor-pointer transition-all duration-150 hover:shadow-amber-400/50 origin-bottom border border-amber-300/20"
                   >
                     <Image
                       src="/hero-meme2.jpg"
@@ -193,7 +193,7 @@ export default function HomePage() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
                     <div className="absolute bottom-3 left-3 right-3">
-                      <h3 className="text-lime-300 font-black text-base mb-0.5 drop-shadow-md">Stay Smart.</h3>
+                      <h3 className="text-amber-300 font-black text-base mb-0.5 drop-shadow-md">Stay Smart.</h3>
                       <p className="text-white/80 text-[10px] drop-shadow">Rent. Return. Repeat.</p>
                     </div>
                   </motion.div>
